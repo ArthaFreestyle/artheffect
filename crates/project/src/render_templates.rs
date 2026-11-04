@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::render_queue::{
     AlphaMode, Channels, CurrentOrOff, FieldRender, OutputFormat, OutputModule, ProResProfile, ProxyUse, RenderQuality, RenderSettings, SwitchOverride,
 };
-use effectcraft_time::FrameRate;
+use artheffect_time::FrameRate;
 
 /// A default slot (the Defaults section of the Templates dialogs).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]

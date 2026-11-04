@@ -82,16 +82,16 @@ impl<'a> Renderer<'a> {
         StyledLayer { passes, body, content, ..st }
     }
 
-    pub(crate) fn sampling(&self, layer: &Layer) -> effectcraft_raster::Sampling {
+    pub(crate) fn sampling(&self, layer: &Layer) -> artheffect_raster::Sampling {
         if self.quality(layer) == Quality::Draft {
             // Draft quality: no interpolation (nearest neighbour), as After Effects' Draft.
-            effectcraft_raster::Sampling::Nearest
+            artheffect_raster::Sampling::Nearest
         } else if self.opts.draft {
-            effectcraft_raster::Sampling::Bilinear
+            artheffect_raster::Sampling::Bilinear
         } else if layer.switches.sampling == Sampling::Bicubic {
-            effectcraft_raster::Sampling::Bicubic
+            artheffect_raster::Sampling::Bicubic
         } else {
-            effectcraft_raster::Sampling::Bilinear
+            artheffect_raster::Sampling::Bilinear
         }
     }
 
@@ -228,7 +228,7 @@ impl<'a> Renderer<'a> {
         let k = 1.0 / bufs.len() as f32;
         for b in &bufs {
             let m = Mat3::translate(vec2(off[0] - b.offset[0], off[1] - b.offset[1]));
-            effectcraft_raster::accumulate_warp(&mut acc, &b.img, &m, effectcraft_raster::Sampling::Bilinear, k);
+            artheffect_raster::accumulate_warp(&mut acc, &b.img, &m, artheffect_raster::Sampling::Bilinear, k);
         }
         Some(Buf { img: acc, offset: off, scale })
     }
@@ -283,7 +283,7 @@ impl<'a> Renderer<'a> {
         let (w, h) = (buf.img.width as f64, buf.img.height as f64);
         let corners = [(0.0, 0.0), (w, 0.0), (0.0, h), (w, h), (w * 0.5, h * 0.5)];
         const PROBES: usize = 8;
-        let mut prev: Option<Vec<effectcraft_geom::Vec2>> = None;
+        let mut prev: Option<Vec<artheffect_geom::Vec2>> = None;
         let mut travel = vec![0.0f64; corners.len()];
         for i in 0..PROBES {
             let m = self.buf_matrix_at(ctx, layer, buf, sh.offset(i, PROBES));
@@ -368,7 +368,7 @@ impl<'a> Renderer<'a> {
         let mut acc = Image::new(target.width, target.height);
         let k = 1.0 / pl.matrices.len() as f32;
         for m in &pl.matrices {
-            effectcraft_raster::accumulate_warp(&mut acc, &buf.img, m, opts.sampling, k);
+            artheffect_raster::accumulate_warp(&mut acc, &buf.img, m, opts.sampling, k);
         }
         target.blend_from(&acc, mode, opacity, pl.seed);
         None
@@ -510,8 +510,8 @@ impl<'a> Renderer<'a> {
                 let k = match kind {
                     MatteKind::Alpha => q[3],
                     MatteKind::AlphaInverted => 1.0 - q[3],
-                    MatteKind::Luma => effectcraft_color::luminance(q[0], q[1], q[2]),
-                    MatteKind::LumaInverted => 1.0 - effectcraft_color::luminance(q[0], q[1], q[2]),
+                    MatteKind::Luma => artheffect_color::luminance(q[0], q[1], q[2]),
+                    MatteKind::LumaInverted => 1.0 - artheffect_color::luminance(q[0], q[1], q[2]),
                 }
                 .clamp(0.0, 1.0);
                 for c in p.iter_mut() {
@@ -538,7 +538,7 @@ impl<'a> Renderer<'a> {
         let mut adjusted = self.apply_effects(ctx, layer, below, true);
         // An effect that changed the frame (Motion Tile's Output size): back onto the canvas.
         if let Some((dx, dy)) =
-            effectcraft_effects::adjustment_crop(adjusted.offset, o, (adjusted.img.width, adjusted.img.height), (canvas.width, canvas.height))
+            artheffect_effects::adjustment_crop(adjusted.offset, o, (adjusted.img.width, adjusted.img.height), (canvas.width, canvas.height))
         {
             adjusted.img = adjusted.img.crop(dx, dy, canvas.width, canvas.height);
         }
@@ -589,7 +589,7 @@ pub struct StyledLayer {
 pub struct Placement {
     /// Buffer pixel → output pixel; several = motion-blur sub-samples (equal weights).
     pub matrices: Vec<Mat3>,
-    pub sampling: effectcraft_raster::Sampling,
+    pub sampling: artheffect_raster::Sampling,
     /// Dissolve noise seed.
     pub seed: u32,
 }

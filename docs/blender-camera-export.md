@@ -26,11 +26,11 @@ That imports the scene in memory; it does not automatically save a `.blend`.
   reprojection error and first/last visible frame. A chosen ground plane becomes Blender's XY
   plane, with its origin preserved and a non-rendering wire plane as a placement guide.
 - Shutter duration (not automatically enabled), plus the original shutter phase in metadata.
-- A Blender Text datablock named `EffectCraft Tracking Metadata.json` containing the complete
+- A Blender Text datablock named `Artheffect Tracking Metadata.json` containing the complete
   solve, optional original 2D tracks, per-frame timings, source interpretation, diagnostics and
   export warnings. Radial distortion coefficients are also camera custom properties.
 
-Coordinates are converted from EffectCraft's right/down/forward world to Blender's
+Coordinates are converted from Artheffect's right/down/forward world to Blender's
 right/forward/up world, including the camera's local up and negative-Z viewing direction.
 Export uses the tracking input's framing, not the footage layer's final 2D placement in the
 composition. Camera pose and lens always come from the solve; subsequent manual pose/lens edits
@@ -43,7 +43,7 @@ f-stop or exposure from feature tracks. The default sensor width is an assumptio
 the focal length in millimeters is derived from it while preserving the solved field of view.
 The default scale is **0.01 Blender units per composition-world pixel**, not a measurement.
 Without a linked camera, DOF is disabled and focus distance uses the default solved scene depth.
-Blender's physical DOF approximates EffectCraft's blur model: Blur Level and Iris Roundness are
+Blender's physical DOF approximates Artheffect's blur model: Blur Level and Iris Roundness are
 retained in metadata, but have no direct Blender equivalent.
 
 Brown-model radial `k1`/`k2` coefficients use radius normalized to half the image diagonal.
@@ -93,9 +93,9 @@ focus/f-stop, zoom, ground placement, malformed solves and write failures. To ad
 the generated artifact against an installed Blender's public API:
 
 ```sh
-EFFECTCRAFT_BLENDER=/path/to/blender cargo test -p effectcraft-engine tests::blender -- --nocapture
+ARTHEFFECT_BLENDER=/path/to/blender cargo test -p artheffect-engine tests::blender -- --nocapture
 ```
 
-Optionally set `EFFECTCRAFT_BLENDER_PLATE` to a local synthetic 640×360 video to exercise media
+Optionally set `ARTHEFFECT_BLENDER_PLATE` to a local synthetic 640×360 video to exercise media
 loading and source-frame offsets. The oracle checks every synthetic point's projection through
 the imported camera on every frame, as well as animation, DOF, timing and scene preservation.

@@ -1,9 +1,9 @@
 {
-  description = "EffectCraft — motion graphics and visual effects, a free alternative to After Effects, in pure Rust";
+  description = "Artheffect — motion graphics and visual effects, a free alternative to After Effects, in pure Rust";
 
   inputs = {
-    # EffectCraft needs edition 2024 and rustc ≥ 1.95, so the flake tracks unstable. Consumers on a
-    # release channel can retarget it: `inputs.effectcraft.inputs.nixpkgs.follows = "nixpkgs";`
+    # Artheffect needs edition 2024 and rustc ≥ 1.95, so the flake tracks unstable. Consumers on a
+    # release channel can retarget it: `inputs.artheffect.inputs.nixpkgs.follows = "nixpkgs";`
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
@@ -42,24 +42,24 @@
       packages = forAllSystems (
         pkgs: _:
         let
-          effectcraft = pkgs.callPackage ./nix/package.nix packageArgs;
+          artheffect = pkgs.callPackage ./nix/package.nix packageArgs;
         in
         {
-          inherit effectcraft;
-          default = effectcraft;
+          inherit artheffect;
+          default = artheffect;
         }
       );
 
-      # `nixpkgs.overlays = [ inputs.effectcraft.overlays.default ]` → `pkgs.effectcraft` everywhere.
+      # `nixpkgs.overlays = [ inputs.artheffect.overlays.default ]` → `pkgs.artheffect` everywhere.
       overlays.default = final: _prev: {
-        effectcraft = final.callPackage ./nix/package.nix packageArgs;
+        artheffect = final.callPackage ./nix/package.nix packageArgs;
       };
 
       apps = forAllSystems (
         _: system: {
           default = {
             type = "app";
-            program = lib.getExe self.packages.${system}.effectcraft;
+            program = lib.getExe self.packages.${system}.artheffect;
           };
         }
       );
@@ -67,12 +67,12 @@
       devShells = forAllSystems (
         pkgs: system:
         let
-          effectcraft = self.packages.${system}.effectcraft;
+          artheffect = self.packages.${system}.artheffect;
         in
         {
           default = pkgs.mkShell ({
             # The package's own native inputs, so `cargo build` in the shell needs no extra setup.
-            inputsFrom = [ effectcraft ];
+            inputsFrom = [ artheffect ];
             packages = with pkgs; [
               cargo
               rustc
@@ -81,7 +81,7 @@
               rust-analyzer
             ];
             # `cargo run` dlopens the Vulkan loader, libwayland and libxkbcommon like the packaged binary.
-            LD_LIBRARY_PATH = lib.makeLibraryPath effectcraft.passthru.runtimeLibs;
+            LD_LIBRARY_PATH = lib.makeLibraryPath artheffect.passthru.runtimeLibs;
             RUST_BACKTRACE = "1";
           });
         }
@@ -89,11 +89,11 @@
 
       checks = forAllSystems (
         pkgs: system: {
-          effectcraft = self.packages.${system}.effectcraft;
+          artheffect = self.packages.${system}.artheffect;
 
           # `nix fmt` formats the flake; this keeps it formatted.
           formatting =
-            pkgs.runCommand "effectcraft-nix-formatting" { nativeBuildInputs = [ pkgs.nixfmt ]; }
+            pkgs.runCommand "artheffect-nix-formatting" { nativeBuildInputs = [ pkgs.nixfmt ]; }
               ''
                 nixfmt --check ${./flake.nix} ${./nix}
                 touch $out

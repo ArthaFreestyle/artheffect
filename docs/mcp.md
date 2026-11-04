@@ -1,6 +1,6 @@
 # MCP conventions
 
-Run `effectcraft-cli mcp` for a headless session, or `effectcraft-cli mcp --bridge 9877`
+Run `artheffect-cli mcp` for a headless session, or `artheffect-cli mcp --bridge 9877`
 to use the desktop app's control channel. Existing ports are unchanged.
 
 ## Confining file access
@@ -38,7 +38,7 @@ for the full catalog. Each tool has a title and read-only, destructive, idempote
 open-world hints. Tools with an optional output path are conservatively annotated as file writers.
 
 Unknown top-level tool argument keys return JSON-RPC `-32602` naming the key and accepted
-arguments. EffectCraft already rejects unknown engine command parameters; that behaviour is
+arguments. Artheffect already rejects unknown engine command parameters; that behaviour is
 preserved. Tool failures (including escaped panics) return `isError: true`, and so does any JSON
 result with a `failed` count above zero (a `command_batch` / `batch` with a failed step, a
 render whose queue items did not all finish), even though the other steps or items succeeded:
@@ -46,13 +46,13 @@ read `results` / `items` for the details. Malformed JSON
 returns `-32700` with a null id and the session keeps serving. The MCP backend owns its session
 without a mutex; the engine's render-job mutexes already recover poisoned locks.
 
-Resources `effectcraft://document` and `effectcraft://commands` return JSON matching
+Resources `artheffect://document` and `artheffect://commands` return JSON matching
 `doc_inspect` and `command_list`. Clients declaring MCP 2026-07-28 in per-request `_meta`
 receive `resultType: complete` and list/read cache hints; document reads are never cached.
 
 ```json
 {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"command_run","arguments":{"id":"comp.new","params":{"width":640,"height":360}}}}
-{"jsonrpc":"2.0","id":2,"method":"resources/read","params":{"uri":"effectcraft://document"}}
+{"jsonrpc":"2.0","id":2,"method":"resources/read","params":{"uri":"artheffect://document"}}
 ```
 
 ## Two outputs on one file

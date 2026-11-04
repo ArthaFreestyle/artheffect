@@ -11,8 +11,8 @@
 //! each layer's Blending Options shows it, and [`sync_global_light`] keeps every layer of a comp
 //! in step after any edit.
 
-use effectcraft_color::BlendMode;
-use effectcraft_keyframe::{Gradient, Value};
+use artheffect_color::BlendMode;
+use artheffect_keyframe::{Gradient, Value};
 use serde::{Deserialize, Serialize};
 
 use crate::build::Ids;
@@ -419,7 +419,7 @@ pub fn sync_comp(comp: &mut Comp) {
 }
 
 /// Set the comp's Global Light statically (`None` keeps a value) and mirror it to all layers.
-pub fn set_global_light(comp: &mut Comp, angle: Option<f64>, altitude: Option<f64>, t: effectcraft_time::Tick) {
+pub fn set_global_light(comp: &mut Comp, angle: Option<f64>, altitude: Option<f64>, t: artheffect_time::Tick) {
     if let Some(a) = angle {
         comp.global_light.angle.set_value_at(t, Value::Scalar(a));
     }
@@ -443,7 +443,7 @@ pub fn set_global_light(comp: &mut Comp, angle: Option<f64>, altitude: Option<f6
 mod tests {
     use super::*;
     use crate::{LayerSource, build};
-    use effectcraft_time::{FrameRate, Tick};
+    use artheffect_time::{FrameRate, Tick};
 
     fn setup() -> (Project, Comp, Layer) {
         let mut p = Project::default();

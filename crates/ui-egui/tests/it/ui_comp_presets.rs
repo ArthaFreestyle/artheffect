@@ -1,25 +1,25 @@
 //! Composition Settings: saving, picking and deleting your own presets (egui_kittest).
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::{Dialog, EffectcraftApp};
+use artheffect_engine::Session;
+use artheffect_ui_egui::{ArtheffectApp, Dialog};
 use egui::{Event, Key, Modifiers, PointerButton, Pos2, pos2};
 use egui_kittest::Harness;
 use serde_json::json;
 
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, ArtheffectApp> {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Edit", "width": 2560, "height": 1440, "frameRate": 60, "duration": 4})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).with_step_dt(1.0 / 60.0).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).with_step_dt(1.0 / 60.0).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     h
 }
 
-fn center(h: &Harness<'_, EffectcraftApp>, id: &str) -> Pos2 {
+fn center(h: &Harness<'_, ArtheffectApp>, id: &str) -> Pos2 {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0)
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, id: &str) {
     let p = center(h, id);
     h.input_mut().events.push(Event::PointerMoved(p));
     h.input_mut().events.push(Event::PointerButton { pos: p, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -29,20 +29,20 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
     h.run_steps(3);
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key) {
+fn key(h: &mut Harness<'_, ArtheffectApp>, key: Key) {
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE });
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: false, repeat: false, modifiers: Modifiers::NONE });
     h.run_steps(3);
 }
 
-fn open_settings(h: &mut Harness<'_, EffectcraftApp>) {
+fn open_settings(h: &mut Harness<'_, ArtheffectApp>) {
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "comp.settings", json!({})).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, "comp.settings", json!({})).unwrap();
     h.run_steps(3);
     assert_eq!(h.state().dialog, Some(Dialog::CompSettings));
 }
 
-fn preset_names(h: &Harness<'_, EffectcraftApp>) -> Vec<String> {
+fn preset_names(h: &Harness<'_, ArtheffectApp>) -> Vec<String> {
     h.state().session.prefs.comp_presets.iter().map(|q| q.name.clone()).collect()
 }
 
@@ -93,7 +93,7 @@ fn composition_settings_buttons_stay_put_between_tabs() {
         h.ctx.set_zoom_factor(zoom);
         h.run_steps(3);
         open_settings(&mut h);
-        let rects = |h: &Harness<'_, EffectcraftApp>| {
+        let rects = |h: &Harness<'_, ArtheffectApp>| {
             ["dialog.comp.ok", "dialog.comp.cancel", "dialog.comp.name"].map(|id| h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).rect)
         };
         let basic = rects(&h);
@@ -115,7 +115,7 @@ fn composition_settings_buttons_fit_every_language() {
         s.execute("comp.new", json!({"name": "Edit", "width": 2560, "height": 1440, "frameRate": 60, "duration": 4})).unwrap();
         s.prefs.general.language = language.into();
         let mut h =
-            Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).with_step_dt(1.0 / 60.0).allow_missing_glyphs().build_eframe(|_| EffectcraftApp::new(s));
+            Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).with_step_dt(1.0 / 60.0).allow_missing_glyphs().build_eframe(|_| ArtheffectApp::new(s));
         h.run_steps(3);
         open_settings(&mut h);
         let mut oks = vec![];
@@ -137,7 +137,7 @@ fn composition_settings_buttons_fit_every_language() {
     }
 }
 
-fn rect_of(h: &Harness<'_, EffectcraftApp>, id: &str) -> egui::Rect {
+fn rect_of(h: &Harness<'_, ArtheffectApp>, id: &str) -> egui::Rect {
     let r = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).rect;
     egui::Rect::from_min_size(pos2(r[0], r[1]), egui::vec2(r[2], r[3]))
 }
@@ -148,7 +148,7 @@ fn rect_of(h: &Harness<'_, EffectcraftApp>, id: &str) -> egui::Rect {
 fn composition_settings_view_stays_put_when_it_scrolls() {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Edit", "width": 2560, "height": 1440, "frameRate": 60, "duration": 4})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 520.0)).with_step_dt(1.0 / 60.0).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 520.0)).with_step_dt(1.0 / 60.0).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     open_settings(&mut h);
     let (view, ok) = (rect_of(&h, "dialog.comp.view"), rect_of(&h, "dialog.comp.ok"));
@@ -181,7 +181,7 @@ fn composition_settings_refits_when_the_language_changes() {
         .with_max_steps(30)
         // `run` checks accessibility after settling; that is not what this test is about.
         .with_accessibility_check(false)
-        .build_eframe(|_| EffectcraftApp::new(s));
+        .build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     open_settings(&mut h);
     click(&mut h, "dialog.comp.tab.advanced");

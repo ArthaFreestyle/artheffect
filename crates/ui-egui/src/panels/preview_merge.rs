@@ -12,10 +12,10 @@
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use effectcraft_engine::commands::text_edit::active_editor_snapshot;
-use effectcraft_engine::project::{Comp, Item, ItemId, ItemKind, Layer, LayerId, Project};
+use artheffect_engine::commands::text_edit::active_editor_snapshot;
+use artheffect_engine::project::{Comp, Item, ItemId, ItemKind, Layer, LayerId, Project};
 
-use crate::EffectcraftApp;
+use crate::ArtheffectApp;
 use crate::panels::layer_styles_dialog::{Checkpoint, restore};
 
 /// The project right after a preview was applied, and the undo depth then.
@@ -32,13 +32,13 @@ impl std::fmt::Debug for Applied {
 }
 
 /// Note the project as the preview that has just been applied left it.
-pub(crate) fn applied(app: &EffectcraftApp) -> Applied {
+pub(crate) fn applied(app: &ArtheffectApp) -> Applied {
     Applied { project: app.session.project.clone(), undo_len: app.session.history.undo.len() }
 }
 
 /// Put the project back as `checkpoint` has it, minus nothing but the preview: when the project is
 /// still what the preview made (or nothing says what that was) the checkpoint is simply restored.
-pub(crate) fn rollback(app: &mut EffectcraftApp, checkpoint: Checkpoint, applied: Option<&Applied>) {
+pub(crate) fn rollback(app: &mut ArtheffectApp, checkpoint: Checkpoint, applied: Option<&Applied>) {
     let Some(applied) = applied.filter(|a| !Arc::ptr_eq(&a.project, &app.session.project)) else {
         restore(app, checkpoint);
         return;
@@ -133,21 +133,21 @@ mod tests {
     use super::*;
     use crate::Dialog;
     use crate::panels::live_preview;
-    use effectcraft_engine::Session;
+    use artheffect_engine::Session;
     use serde_json::json;
 
-    fn app_with_light() -> (EffectcraftApp, u64) {
+    fn app_with_light() -> (ArtheffectApp, u64) {
         let mut s = Session::default();
         s.execute("comp.new", json!({"name": "Scene", "width": 320, "height": 180, "duration": 1})).unwrap();
         let light = s.execute("layer.newLight", json!({"kind": "Point"})).unwrap()["layer"].as_u64().unwrap();
-        (EffectcraftApp::new(s), light)
+        (ArtheffectApp::new(s), light)
     }
 
-    fn name_of(app: &EffectcraftApp, layer: u64) -> String {
+    fn name_of(app: &ArtheffectApp, layer: u64) -> String {
         app.session.active_comp().unwrap().layer(LayerId(layer)).unwrap().name.clone()
     }
 
-    fn layer_count(app: &EffectcraftApp) -> usize {
+    fn layer_count(app: &ArtheffectApp) -> usize {
         app.session.active_comp().unwrap().layers.len()
     }
 

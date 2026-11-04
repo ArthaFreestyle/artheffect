@@ -1,5 +1,5 @@
 //! HEVC (MP4 `hvc1`) and AV1 (MP4 `av01`, WebM `V_AV1`) export, decoded back through
-//! EffectCraft's own import path (FilmCraft's demuxers and HEVC / AV1 decoders) and — when
+//! Artheffect's own import path (FilmCraft's demuxers and HEVC / AV1 decoders) and — when
 //! installed — ffprobe / ffmpeg as external oracles (skipped otherwise).
 //!
 //! The comp: 64×48 @ 10 fps, 1.2 s (12 frames), dark-blue background, a red solid of 32×48
@@ -8,16 +8,16 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use effectcraft_color::Label;
-use effectcraft_export::render_queue::{
+use artheffect_color::Label;
+use artheffect_export::render_queue::{
     AudioOutput, CodecProfile, OpusApplication, OutputFormat, OutputModule, RateControlMode, RenderSettings, TimeSpan, WebmVideoCodec,
 };
-use effectcraft_export::{Job, Progress, export};
-use effectcraft_media::MediaPool;
-use effectcraft_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid, build};
-use effectcraft_raster::Image;
-use effectcraft_render::{FootageSource, NoFootage};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_export::{Job, Progress, export};
+use artheffect_media::MediaPool;
+use artheffect_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid, build};
+use artheffect_raster::Image;
+use artheffect_render::{FootageSource, NoFootage};
+use artheffect_time::{FrameRate, Tick};
 
 const W: u32 = 64;
 const H: u32 = 48;
@@ -40,7 +40,7 @@ fn project(audio: Option<&Path>) -> (Project, ItemId) {
     l.in_point = comp.frame_rate.tick_of(5);
     comp.layers.push(l);
     if let Some(path) = audio {
-        let f = effectcraft_media::probe(path).expect("probe wav");
+        let f = artheffect_media::probe(path).expect("probe wav");
         let fid = p.add_item("tone.wav", Label::SeaFoam, None, ItemKind::Footage(f));
         let l = build::layer(&mut p, &comp, "tone", LayerSource::Footage { item: fid }, (0, 0), None);
         comp.layers.push(l);
@@ -49,7 +49,7 @@ fn project(audio: Option<&Path>) -> (Project, ItemId) {
     (p, cid)
 }
 
-fn run(p: &Project, cid: ItemId, footage: &dyn FootageSource, om: &OutputModule, path: &Path) -> effectcraft_export::Report {
+fn run(p: &Project, cid: ItemId, footage: &dyn FootageSource, om: &OutputModule, path: &Path) -> artheffect_export::Report {
     let s = RenderSettings { time_span: TimeSpan::LengthOfComp, ..Default::default() };
     let path = path.to_string_lossy().to_string();
     let job = Job {
@@ -92,8 +92,8 @@ fn check_frame(img: &Image, k: u64, tol: f32) {
 }
 
 /// Import our file through the media layer and check every frame.
-fn decode_movie(path: &Path, tol: f32) -> effectcraft_project::Footage {
-    let f = effectcraft_media::probe(path).expect("probe our output");
+fn decode_movie(path: &Path, tol: f32) -> artheffect_project::Footage {
+    let f = artheffect_media::probe(path).expect("probe our output");
     assert_eq!((f.width, f.height), (W, H));
     assert!(f.has_video);
     let n = f.frame_rate.frame_at(f.duration - Tick(1)) + 1;
@@ -283,7 +283,7 @@ fn webm_low_bitrate_opus_modes() {
         om.opus_application = app;
         let path = d.join(name);
         assert!(run(&p, cid, &pool, &om, &path).audio);
-        let f = effectcraft_media::probe(&path).expect("probe");
+        let f = artheffect_media::probe(&path).expect("probe");
         let s = MediaPool::new().audio_samples(&f, Tick::from_seconds_f64(0.3), 24_000, 48_000);
         let l = rms(s.iter().step_by(2).copied());
         assert!((l - 0.3536).abs() < 0.08, "{name}: left RMS {l}");

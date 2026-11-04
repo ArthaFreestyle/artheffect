@@ -325,7 +325,7 @@ fn half_resolution_matches_scaled_geometry() {
     params.values.insert("base".into(), pt(20.0, 40.0));
     let ctx = EffectCtx { params: &params, time: 0.0, layer_size: [40.0, 40.0], seed: 1, adjustment: false, env: Default::default() };
     let full = crate::apply(s, &ctx, Buf { img: img(40, 40), offset: [0.0; 2], scale: 1.0 });
-    let half = crate::apply(s, &ctx, Buf { img: effectcraft_raster::resample(&img(40, 40), 20, 20), offset: [0.0; 2], scale: 0.5 });
+    let half = crate::apply(s, &ctx, Buf { img: artheffect_raster::resample(&img(40, 40), 20, 20), offset: [0.0; 2], scale: 0.5 });
     let a = full.img.sample_bilinear(20.0, 4.0)[3];
     let b = half.img.sample_bilinear(10.0, 2.0)[3];
     assert!((a - b).abs() < 0.3);

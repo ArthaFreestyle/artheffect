@@ -1,6 +1,6 @@
 //! Read-only queries for agents (not journaled).
 
-use effectcraft_project::{GroupKind, ItemKind, Layer, Node, PropGroup};
+use artheffect_project::{GroupKind, ItemKind, Layer, Node, PropGroup};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, b_p, comp_id, layer_p, str_p};
@@ -90,7 +90,7 @@ fn comp_info(s: &mut Session, p: &Value) -> Result<Value> {
     }))
 }
 
-/// The path segment that addresses child `i` of `g` (see `effectcraft_project::parse_path`): the match
+/// The path segment that addresses child `i` of `g` (see `artheffect_project::parse_path`): the match
 /// id (with `#n` when it is not the first sibling matching it), or `#index` when the match id is not
 /// path-safe (effects and other ids containing `.`).
 fn segment(g: &PropGroup, i: usize) -> String {
@@ -103,7 +103,7 @@ fn segment(g: &PropGroup, i: usize) -> String {
     if n == 1 { m.to_string() } else { format!("{m}#{n}") }
 }
 
-fn group_json(g: &PropGroup, path: &str, l: &Layer, t: effectcraft_time::Tick, depth: usize, max_depth: usize) -> Value {
+fn group_json(g: &PropGroup, path: &str, l: &Layer, t: artheffect_time::Tick, depth: usize, max_depth: usize) -> Value {
     let children: Vec<Value> = if depth >= max_depth {
         vec![]
     } else {
@@ -160,7 +160,7 @@ fn layer_tree(s: &mut Session, p: &Value) -> Result<Value> {
     let idx = c.index_of(lid).unwrap_or(0);
     let l = c.layer(lid).ok_or(EngineError::NoComp)?;
     let depth = p.get("depth").and_then(Value::as_u64).unwrap_or(16) as usize;
-    let t = p.get("time").and_then(Value::as_f64).map(effectcraft_time::Tick::from_seconds_f64).unwrap_or_else(|| s.time());
+    let t = p.get("time").and_then(Value::as_f64).map(artheffect_time::Tick::from_seconds_f64).unwrap_or_else(|| s.time());
     let mut o = layer_json(l, idx);
     o["time"] = json!(t.seconds());
     o["properties"] = group_json(&l.props, "", l, t, 0, depth);
@@ -180,7 +180,7 @@ fn describe(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// What this build can do: counts agents use to orient themselves, and the parity summary.
 fn capabilities(s: &mut Session, _: &Value) -> Result<Value> {
-    let fx = effectcraft_effects::registry();
+    let fx = artheffect_effects::registry();
     let formats: Vec<Value> = s.exporter.as_ref().map(|e| e.formats().iter().map(|f| json!(format!("{f:?}"))).collect()).unwrap_or_default();
     Ok(json!({
         "version": env!("CARGO_PKG_VERSION"),

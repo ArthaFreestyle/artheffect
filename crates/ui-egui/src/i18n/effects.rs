@@ -1,7 +1,7 @@
 //! Effect names in the interface language, keyed by effect id (#821).
 //!
 //! The generated Effect menu, Effect Controls, the Timeline and Effects & Presets draw an
-//! effect's name. The registry (`effectcraft_effects`) keeps the English name: scripts,
+//! effect's name. The registry (`artheffect_effects`) keeps the English name: scripts,
 //! expressions, MCP and the control channel match on it, and the property tree stores it as the
 //! effect group's name. Only the *drawing* goes through this catalog, so a project file stays
 //! identical whichever interface language opens it.
@@ -27,7 +27,7 @@
 //! The Simplified Chinese names come from the installed After Effects 2026 (26.5.0.89)
 //! Simplified Chinese interface, its 21 category folder names included; `Cryptomatte`,
 //! `EXtractoR`, `IDentifier`, `Key Light` and `Unmult` stay in English as brand names, and
-//! `Face Measurements` / `Face Track Points` are EffectCraft's own effects, so their wording is
+//! `Face Measurements` / `Face Track Points` are Artheffect's own effects, so their wording is
 //! ours.
 //!
 //! The Traditional Chinese names for Taiwan are written from the meaning of the English ones, with
@@ -157,8 +157,8 @@ pub(crate) fn matches(id: &str, english: &str, query: &str) -> bool {
 #[cfg(test)]
 pub(super) fn missing(language: &str) -> Vec<String> {
     let table = catalog(language);
-    let effects = effectcraft_engine::effects::registry().iter().filter(|spec| table.and_then(|c| c.row(spec.id)).is_none()).map(|spec| spec.name.to_string());
-    let categories = effectcraft_engine::effects::categories()
+    let effects = artheffect_engine::effects::registry().iter().filter(|spec| table.and_then(|c| c.row(spec.id)).is_none()).map(|spec| spec.name.to_string());
+    let categories = artheffect_engine::effects::categories()
         .into_iter()
         .filter(|source| table.and_then(|c| c.category(source)).is_none())
         .map(|source| format!("{source} (category)"));
@@ -800,7 +800,7 @@ const TRADITIONAL_CHINESE: &[Row] = &[
 /// `CC` series, `Cryptomatte`, `EXtractoR`, `IDentifier` and `Key Light`) repeat that English name
 /// here rather than being left out; the `VR` and `OCIO` sets take a Japanese tail instead, and
 /// `Unmult` keeps its English name in both catalogs. An effect with no row draws its English name
-/// anyway, which is what `Twirl (Legacy)` and the two EffectCraft-only effects would do without
+/// anyway, which is what `Twirl (Legacy)` and the two Artheffect-only effects would do without
 /// their rows.
 ///
 /// The rows below come from AE 2026's Japanese interface where it was read directly (its Effect menu
@@ -2224,7 +2224,7 @@ const SWEDISH_CATEGORIES: &[(&str, &str)] = &[
 mod tests {
     use super::*;
     use crate::i18n::set_current;
-    use effectcraft_engine::effects;
+    use artheffect_engine::effects;
 
     /// Every row names an effect in the registry and still carries its English name, so a rename
     /// or a removal fails here rather than attaching a translation to a different effect.

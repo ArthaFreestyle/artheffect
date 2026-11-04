@@ -1,10 +1,10 @@
 //! GPU stylize and distort family effects vs the CPU effects (the oracle): direct on a buffer at full and half
 //! resolution, as adjustment, and composited at 8 and 32 bpc.
 
-use effectcraft_keyframe::{Keyframe, Value};
-use effectcraft_project::BitDepth;
-use effectcraft_render::RenderOpts;
-use effectcraft_time::Tick;
+use artheffect_keyframe::{Keyframe, Value};
+use artheffect_project::BitDepth;
+use artheffect_render::RenderOpts;
+use artheffect_time::Tick;
 
 use crate::tests::{Scene, allow_llvmpipe_boundary_flips, c, check, compare_at, effect_case, n, opts, set};
 
@@ -52,17 +52,17 @@ fn posterize_thresholds_strobe_vignette() {
 #[test]
 fn posterize_quantized_premultiplied_boundaries() {
     let Some(g) = crate::tests::gpu() else { return };
-    let spec = effectcraft_effects::find("ec.stylize.posterize").unwrap();
+    let spec = artheffect_effects::find("ec.stylize.posterize").unwrap();
     for level in [4.0, 9.0] {
-        let params = effectcraft_effects::Params { values: [("level".into(), n(level))].into() };
+        let params = artheffect_effects::Params { values: [("level".into(), n(level))].into() };
         let ctx =
-            || effectcraft_effects::EffectCtx { params: &params, time: 0.0, layer_size: [70.0, 44.0], seed: 11, adjustment: false, env: Default::default() };
+            || artheffect_effects::EffectCtx { params: &params, time: 0.0, layer_size: [70.0, 44.0], seed: 11, adjustment: false, env: Default::default() };
         for seed in 1..=7 {
             let mut img = crate::tests::pattern(seed, 70, 44);
-            effectcraft_render::color::quantize(&mut img, 255.0);
-            let input = effectcraft_effects::Buf { img, offset: [0.0; 2], scale: 1.0 };
+            artheffect_render::color::quantize(&mut img, 255.0);
+            let input = artheffect_effects::Buf { img, offset: [0.0; 2], scale: 1.0 };
             let cpu = (spec.render)(&ctx(), input.clone());
-            let gpu = effectcraft_render::Accelerator::effects(g, &[effectcraft_render::FxStep { spec, ctx: ctx() }], &input, None).unwrap();
+            let gpu = artheffect_render::Accelerator::effects(g, &[artheffect_render::FxStep { spec, ctx: ctx() }], &input, None).unwrap();
             for (i, (want, got)) in cpu.img.data.iter().zip(&gpu.img.data).enumerate() {
                 for c in 0..4 {
                     assert!((want[c] - got[c]).abs() <= 1e-6, "level {level} seed {seed} pixel {i}: input {:?}, CPU {want:?}, GPU {got:?}", input.img.data[i]);
@@ -77,9 +77,9 @@ fn posterize_quantized_premultiplied_boundaries() {
 #[test]
 fn arbitrary_map_signed_fractional_and_near_zero_wraps() {
     let Some(g) = crate::tests::gpu() else { return };
-    let spec = effectcraft_effects::find("ec.color.psarbitrarymap").unwrap();
+    let spec = artheffect_effects::find("ec.color.psarbitrarymap").unwrap();
     for phase in [-1000.0, -20.5, 0.0, 40.0, 1000.0, 255.99999999999997] {
-        let params = effectcraft_effects::Params {
+        let params = artheffect_effects::Params {
             values: [
                 ("map".into(), Value::Str((0..256).map(|n| n.to_string()).collect::<Vec<_>>().join(","))),
                 ("phase".into(), n(phase)),
@@ -88,16 +88,16 @@ fn arbitrary_map_signed_fractional_and_near_zero_wraps() {
             .into(),
         };
         let ctx =
-            || effectcraft_effects::EffectCtx { params: &params, time: 0.0, layer_size: [1024.0, 1.0], seed: 7, adjustment: false, env: Default::default() };
-        let mut img = effectcraft_raster::Image::new(1024, 1);
+            || artheffect_effects::EffectCtx { params: &params, time: 0.0, layer_size: [1024.0, 1.0], seed: 7, adjustment: false, env: Default::default() };
+        let mut img = artheffect_raster::Image::new(1024, 1);
         for (i, px) in img.data.iter_mut().enumerate() {
             let v = if i < 512 { i as f32 * 1e-18 } else { (i - 512) as f32 / 511.0 };
             let a = [1.0f32, 0.1, 0.3, 6.0 / 255.0][i % 4];
             *px = [v * a, v * a, v * a, a];
         }
-        let input = effectcraft_effects::Buf { img, offset: [0.0; 2], scale: 1.0 };
+        let input = artheffect_effects::Buf { img, offset: [0.0; 2], scale: 1.0 };
         let cpu = (spec.render)(&ctx(), input.clone());
-        let gpu = effectcraft_render::Accelerator::effects(g, &[effectcraft_render::FxStep { spec, ctx: ctx() }], &input, None).unwrap();
+        let gpu = artheffect_render::Accelerator::effects(g, &[artheffect_render::FxStep { spec, ctx: ctx() }], &input, None).unwrap();
         for (i, (want, got)) in cpu.img.data.iter().zip(&gpu.img.data).enumerate() {
             for c in 0..4 {
                 assert!((want[c] - got[c]).abs() <= 1e-6, "phase {phase}, pixel {i}: CPU {want:?}, GPU {got:?}");
@@ -294,24 +294,24 @@ fn transform_motion_blur() {
 #[test]
 fn posterize_matches_the_cpu_on_every_8bpc_pair() {
     let Some(g) = crate::tests::gpu() else { return };
-    let spec = effectcraft_effects::find("ec.stylize.posterize").unwrap();
+    let spec = artheffect_effects::find("ec.stylize.posterize").unwrap();
     let size = [256.0, 255.0];
     let mut params =
-        effectcraft_effects::Params { values: spec.params.iter().map(|ps| (ps.id.to_string(), effectcraft_effects::default_value(ps, size))).collect() };
+        artheffect_effects::Params { values: spec.params.iter().map(|ps| (ps.id.to_string(), artheffect_effects::default_value(ps, size))).collect() };
     for level in [4.0, 7.0, 9.0] {
         params.values.insert("level".into(), n(level));
         // Pixel (x, a - 1): premultiplied colour min(x, a)/255 on alpha a/255.
-        let mut img = effectcraft_raster::Image::new(256, 255);
+        let mut img = artheffect_raster::Image::new(256, 255);
         for a in 1..=255u32 {
             for x in 0..256u32 {
                 let v = x.min(a) as f32 / 255.0;
                 img.data[((a - 1) * 256 + x) as usize] = [v, v, v, a as f32 / 255.0];
             }
         }
-        let buf = effectcraft_effects::Buf { img, offset: [0.0, 0.0], scale: 1.0 };
-        let ctx = || effectcraft_effects::EffectCtx { params: &params, time: 0.0, layer_size: size, seed: 1, adjustment: false, env: Default::default() };
+        let buf = artheffect_effects::Buf { img, offset: [0.0, 0.0], scale: 1.0 };
+        let ctx = || artheffect_effects::EffectCtx { params: &params, time: 0.0, layer_size: size, seed: 1, adjustment: false, env: Default::default() };
         let cpu = (spec.render)(&ctx(), buf.clone());
-        let out = effectcraft_render::Accelerator::effects(g, &[effectcraft_render::FxStep { spec, ctx: ctx() }], &buf, None).expect("the GPU runs the effect");
+        let out = artheffect_render::Accelerator::effects(g, &[artheffect_render::FxStep { spec, ctx: ctx() }], &buf, None).expect("the GPU runs the effect");
         let bad: Vec<(usize, usize)> =
             cpu.img.data.iter().zip(&out.img.data).enumerate().filter(|(_, (c, o))| c != o).map(|(i, _)| ((i % 256).min(i / 256 + 1), i / 256 + 1)).collect();
         assert!(bad.is_empty(), "level {level}: {} (x, a) pairs differ from the CPU, first {:?}", bad.len(), &bad[..bad.len().min(8)]);

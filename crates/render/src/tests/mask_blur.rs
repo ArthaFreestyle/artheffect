@@ -1,11 +1,11 @@
 //! Mask motion blur follows the renderer's motion blur gate: the render options (Render
 //! Settings ▸ Motion Blur, previews), the comp's switch and the precomp layers above.
 
-use effectcraft_color::Label;
-use effectcraft_keyframe::{Keyframe, ShapePath, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{Comp, GroupKind, ItemId, ItemKind, LayerSource, MaskMode, MaskMotionBlur, Node, Project, Solid};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_keyframe::{Keyframe, ShapePath, Value};
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{Comp, GroupKind, ItemId, ItemKind, LayerSource, MaskMode, MaskMotionBlur, Node, Project, Solid};
+use artheffect_time::{FrameRate, Tick};
 
 use crate::{NoFootage, RenderOpts, Renderer};
 

@@ -41,7 +41,7 @@ fn every_ui_shortcut_parses() {
             assert!(parse_shortcut(sc).is_some() || sc == "Num*", "{sc}");
         }
     }
-    for (_, e) in effectcraft_engine::menus::entries() {
+    for (_, e) in artheffect_engine::menus::entries() {
         if let Some(sc) = &e.shortcut {
             assert!(parse_shortcut(sc).is_some() || sc == "Num*", "{} ({sc})", e.label);
         }
@@ -50,7 +50,7 @@ fn every_ui_shortcut_parses() {
 
 #[test]
 fn full_screen_default_is_platform_specific() {
-    let app = EffectcraftApp::new(effectcraft_engine::Session::default());
+    let app = ArtheffectApp::new(artheffect_engine::Session::default());
     let full_screen = app.session.shortcuts().shortcut_of("view.fullScreen", &Value::Null);
     if cfg!(target_os = "macos") {
         assert_eq!(full_screen, Some("Ctrl+Cmd+F"));
@@ -62,7 +62,7 @@ fn full_screen_default_is_platform_specific() {
 
 #[test]
 fn ui_and_menu_shortcuts_do_not_collide() {
-    let app = EffectcraftApp::new(effectcraft_engine::Session::default());
+    let app = ArtheffectApp::new(artheffect_engine::Session::default());
     let mut seen: std::collections::BTreeMap<(String, String), (String, String)> = Default::default();
     for (m, k, id, params) in bindings(&app.session) {
         let key = (format!("{m:?}"), format!("{k:?}"));
@@ -79,12 +79,12 @@ fn ui_and_menu_shortcuts_do_not_collide() {
 /// it, as in After Effects.
 #[test]
 fn ctrl_backslash_maximizes_or_restores_the_window() {
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
     let (m, k) = parse_shortcut("Cmd+\\").unwrap();
     assert!(m.command && k == egui::Key::Backslash, "{m:?} {k:?}");
     assert!(bindings(&app.session).iter().any(|b| (b.0, b.1) == (m, k) && b.2 == "window.maximizeApp"));
     let ctx = egui::Context::default();
-    let run = |app: &mut EffectcraftApp, maximized: bool| {
+    let run = |app: &mut ArtheffectApp, maximized: bool| {
         let input = egui::RawInput {
             viewports: std::iter::once((egui::ViewportId::ROOT, egui::ViewportInfo { maximized: Some(maximized), ..Default::default() })).collect(),
             ..Default::default()
@@ -106,7 +106,7 @@ fn ctrl_backslash_maximizes_or_restores_the_window() {
 /// The default keys of the keyboard-only commands parse and reach them.
 #[test]
 fn keyboard_only_commands_are_bound() {
-    let app = EffectcraftApp::new(effectcraft_engine::Session::default());
+    let app = ArtheffectApp::new(artheffect_engine::Session::default());
     for (id, keys) in [
         ("time.workAreaStart", "Shift+Home"),
         ("time.workAreaEnd", "Shift+End"),
@@ -144,8 +144,8 @@ fn keyboard_only_commands_are_bound() {
 #[test]
 fn timeline_keys_scroll_and_toggle_the_parent_column() {
     let ctx = egui::Context::default();
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
-    let run = |app: &mut EffectcraftApp, id: &str| invoke(app, &ctx, id, json!({})).unwrap();
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
+    let run = |app: &mut ArtheffectApp, id: &str| invoke(app, &ctx, id, json!({})).unwrap();
     // D and X leave a scroll for the Timeline to do when it is drawn.
     run(&mut app, "timeline.scrollToTime");
     assert_eq!(app.ui.timeline.scroll_to, Some(crate::state::ScrollTo::Time));
@@ -162,10 +162,10 @@ fn timeline_keys_scroll_and_toggle_the_parent_column() {
 #[test]
 fn viewer_keys_fit_and_step_through_open_comps() {
     let ctx = egui::Context::default();
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
-    let run = |app: &mut EffectcraftApp, id: &str| invoke(app, &ctx, id, json!({})).unwrap();
-    let new = |app: &mut EffectcraftApp, name: &str| app.session.execute("comp.new", json!({"name": name, "duration": 4})).unwrap()["comp"].as_u64();
-    let active = |app: &EffectcraftApp| app.session.state.active_comp.map(|c| c.0);
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
+    let run = |app: &mut ArtheffectApp, id: &str| invoke(app, &ctx, id, json!({})).unwrap();
+    let new = |app: &mut ArtheffectApp, name: &str| app.session.execute("comp.new", json!({"name": name, "duration": 4})).unwrap()["comp"].as_u64();
+    let active = |app: &ArtheffectApp| app.session.state.active_comp.map(|c| c.0);
     // With one composition open there is nothing to step to.
     let a = new(&mut app, "A");
     run(&mut app, "view.nextItem");
@@ -188,8 +188,8 @@ fn viewer_keys_fit_and_step_through_open_comps() {
 #[test]
 fn panel_keys_switch_cycle_and_close() {
     let ctx = egui::Context::default();
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
-    let run = |app: &mut EffectcraftApp, id: &str| invoke(app, &ctx, id, json!({})).unwrap();
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
+    let run = |app: &mut ArtheffectApp, id: &str| invoke(app, &ctx, id, json!({})).unwrap();
     for name in ["A", "B"] {
         app.session.execute("comp.new", json!({"name": name, "duration": 4})).unwrap();
     }
@@ -218,7 +218,7 @@ fn panel_keys_switch_cycle_and_close() {
 #[test]
 fn c_cycles_the_camera_tools() {
     let ctx = egui::Context::default();
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
     app.ui.tool = Tool::Selection;
     let mut seen = vec![];
     for _ in 0..4 {
@@ -230,8 +230,8 @@ fn c_cycles_the_camera_tools() {
 
 #[test]
 fn dispatch_uses_the_active_custom_preset() {
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
-    let find = |app: &EffectcraftApp, id: &str| bindings(&app.session).into_iter().filter(|b| b.2 == id).map(|b| (b.0, b.1)).collect::<Vec<_>>();
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
+    let find = |app: &ArtheffectApp, id: &str| bindings(&app.session).into_iter().filter(|b| b.2 == id).map(|b| (b.0, b.1)).collect::<Vec<_>>();
     let (m, k) = parse_shortcut("Cmd+Alt+Shift+Y").unwrap();
     assert!(find(&app, "layer.newNull").contains(&(m, k)));
     // A UI command rebound in a custom preset.
@@ -245,13 +245,13 @@ fn dispatch_uses_the_active_custom_preset() {
     let item = menu_items(&app).into_iter().find(|i| i.id == "layer.newNull").unwrap();
     assert_eq!(item.shortcut.as_deref(), Some("F6"));
     // Back to the default preset.
-    app.session.execute("shortcuts.preset", json!({"op": "select", "name": effectcraft_engine::shortcuts::DEFAULT_PRESET})).unwrap();
+    app.session.execute("shortcuts.preset", json!({"op": "select", "name": artheffect_engine::shortcuts::DEFAULT_PRESET})).unwrap();
     assert!(find(&app, "layer.newNull").contains(&(m, k)));
 }
 
 #[test]
 fn renamed_label_shows_in_the_label_menu() {
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
     app.set_pref("labels.1.name", json!("Sunflower")).unwrap();
     let labels: Vec<String> = menu_items(&app).into_iter().filter(|i| i.id == "edit.label").map(|i| i.label).collect();
     assert!(labels.contains(&"Sunflower".to_string()), "{labels:?}");
@@ -265,7 +265,7 @@ fn renamed_label_shows_in_the_label_menu() {
 fn save_dialogs_offer_the_file_extension() {
     use std::cell::RefCell;
     use std::rc::Rc;
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
     app.session.execute("comp.new", json!({"name": "A", "width": 64, "height": 36, "frameRate": 30, "duration": 1})).unwrap();
     let ctx = egui::Context::default();
     let asked: Rc<RefCell<Vec<String>>> = Rc::default();
@@ -306,7 +306,7 @@ fn save_as_dialogs_start_from_the_open_project() {
     use std::cell::RefCell;
     use std::rc::Rc;
     use std::sync::{Arc, Mutex};
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
     app.session.execute("comp.new", json!({"name": "A", "width": 64, "height": 36, "frameRate": 30, "duration": 1})).unwrap();
     let ctx = egui::Context::default();
     let dir = std::env::temp_dir().join(format!("ec-save-as-name-{}", std::process::id()));
@@ -347,7 +347,7 @@ fn save_as_dialogs_start_from_the_open_project() {
 /// File ▸ Scripts ▸ Recent Script Files and its key run a script again without a file dialog.
 #[test]
 fn recent_script_files_run_without_a_dialog() {
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
     let ctx = egui::Context::default();
     let dir = std::env::temp_dir().join(format!("ec-recent-script-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
@@ -369,7 +369,7 @@ fn recent_script_files_run_without_a_dialog() {
 #[test]
 fn file_dialogs_can_answer_on_a_later_frame() {
     use std::sync::{Arc, Mutex};
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
     app.session.execute("comp.new", json!({"name": "A", "width": 64, "height": 36, "frameRate": 30, "duration": 1})).unwrap();
     let ctx = egui::Context::default();
     app.hooks.pick_save = Some(Box::new(|_: &str| panic!("the blocking dialog is not used")));
@@ -406,12 +406,12 @@ fn file_dialogs_can_answer_on_a_later_frame() {
 #[test]
 fn file_dialogs_block_floating_windows_only_while_up() {
     use std::sync::{Arc, Mutex};
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
     let ctx = egui::Context::default();
     let pending: Arc<Mutex<Vec<crate::DialogDone>>> = Arc::default();
     let queue = pending.clone();
     app.hooks.file_dialog_async = Some(Box::new(move |_dialog, done| queue.lock().unwrap().push(done)));
-    let blocked = |app: &mut EffectcraftApp, focused: bool, time: f64| {
+    let blocked = |app: &mut ArtheffectApp, focused: bool, time: f64| {
         let input = egui::RawInput { focused, time: Some(time), ..Default::default() };
         let mut out = false;
         ctx.run_ui(input, |ui| out = app.floats_blocked(ui.ctx())).textures_delta.clear();
@@ -451,7 +451,7 @@ fn file_dialogs_block_floating_windows_only_while_up() {
 #[test]
 fn tga_is_available_in_import_replace_and_proxy_dialogs() {
     use std::sync::{Arc, Mutex};
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
     let ctx = egui::Context::default();
     let pending = Arc::new(Mutex::new(Vec::new()));
     let queue = pending.clone();
@@ -468,7 +468,7 @@ fn tga_is_available_in_import_replace_and_proxy_dialogs() {
 #[test]
 fn cmd_w_in_the_render_queue_closes_the_queue_not_the_comp() {
     let ctx = egui::Context::default();
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
     let a = app.session.execute("comp.new", json!({"name": "A", "duration": 4})).unwrap()["comp"].as_u64();
     app.show_panel(PanelKind::RenderQueue);
     assert_eq!(app.ui.focused, PanelKind::RenderQueue);
@@ -486,7 +486,7 @@ fn cmd_w_in_the_render_queue_closes_the_queue_not_the_comp() {
 fn file_close_is_available_for_an_empty_render_queue_without_a_comp() {
     for params in [Value::Null, json!({})] {
         let ctx = egui::Context::default();
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
         assert!(app.session.active_comp().is_none());
         app.show_panel(PanelKind::RenderQueue);
         assert!(menu_items(&app).iter().find(|item| item.id == "file.close").unwrap().enabled);
@@ -499,7 +499,7 @@ fn file_close_is_available_for_an_empty_render_queue_without_a_comp() {
 fn closing_the_render_queue_reveals_the_panel_receiving_focus() {
     for maximized in [false, true] {
         let ctx = egui::Context::default();
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
         app.close_panel(PanelKind::Timeline);
         app.close_panel(PanelKind::Composition);
         app.show_panel(PanelKind::EffectControls);
@@ -521,9 +521,9 @@ fn closing_the_render_queue_reveals_the_panel_receiving_focus() {
 /// Closing a floating queue must focus the viewer that is actually shown, retaining maximization.
 #[test]
 fn closing_a_floating_queue_preserves_the_maximized_composition() {
-    let mut session = effectcraft_engine::Session::default();
+    let mut session = artheffect_engine::Session::default();
     session.execute("comp.new", json!({"name": "A", "width": 32, "height": 32, "duration": 2})).unwrap();
-    let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_| EffectcraftApp::new(session));
+    let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_| ArtheffectApp::new(session));
     h.run_steps(3);
     let ctx = h.ctx.clone();
     let app = h.state_mut();
@@ -545,7 +545,7 @@ fn closing_a_floating_queue_preserves_the_maximized_composition() {
 #[test]
 fn queue_close_preserves_state_when_workspace_is_locked() {
     let ctx = egui::Context::default();
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
     app.session.execute("comp.new", json!({"name": "A", "duration": 2})).unwrap();
     app.show_panel(PanelKind::RenderQueue);
     app.ui.dock.locked = true;
@@ -566,7 +566,7 @@ fn queue_close_preserves_state_when_workspace_is_locked() {
 #[test]
 fn queue_close_preserves_viewer_command_target() {
     let ctx = egui::Context::default();
-    let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+    let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
     let a = app.session.execute("comp.new", json!({"name": "A", "duration": 2})).unwrap()["comp"].as_u64().unwrap();
     let b = app.session.execute("comp.new", json!({"name": "B", "duration": 2})).unwrap()["comp"].as_u64().unwrap();
     app.show_panel(PanelKind::Viewer(1));
@@ -594,10 +594,10 @@ fn queue_close_preserves_viewer_command_target() {
 
 #[test]
 fn queue_close_keeps_passive_viewer_focus_across_frames() {
-    let mut session = effectcraft_engine::Session::default();
+    let mut session = artheffect_engine::Session::default();
     let a = session.execute("comp.new", json!({"name": "A", "width": 32, "height": 32, "duration": 2})).unwrap()["comp"].as_u64().unwrap();
     let b = session.execute("comp.new", json!({"name": "B", "width": 32, "height": 32, "duration": 2})).unwrap()["comp"].as_u64().unwrap();
-    let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_| EffectcraftApp::new(session));
+    let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_| ArtheffectApp::new(session));
     h.run_steps(3);
     let ctx = h.ctx.clone();
     let app = h.state_mut();
@@ -635,5 +635,5 @@ fn queue_close_keeps_passive_viewer_focus_across_frames() {
 #[test]
 fn menu_items_cover_the_tree() {
     assert_eq!(menus().last(), Some(&"Help"));
-    assert!(effectcraft_engine::menus::entries().len() > 500);
+    assert!(artheffect_engine::menus::entries().len() > 500);
 }

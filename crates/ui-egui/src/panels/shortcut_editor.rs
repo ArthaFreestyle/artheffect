@@ -1,6 +1,6 @@
 //! Edit ▸ Keyboard Shortcuts: After Effects' visual shortcut editor.
 //!
-//! Top: the preset menu (EffectCraft Default = After Effects' defaults, read-only; custom presets
+//! Top: the preset menu (Artheffect Default = After Effects' defaults, read-only; custom presets
 //! can be duplicated, renamed, deleted, imported and exported) and the search field. Middle: an
 //! on-screen keyboard for the toggled (or held) modifiers, keys coloured by what they run in
 //! that combination: purple for application-wide commands, green for panel-specific ones, both
@@ -17,12 +17,12 @@
 //! `shortcuts.resetPreset`, `shortcuts.close`.
 
 use crate::i18n::{tr, tr_args};
-use effectcraft_engine::shortcuts::{APP_SCOPE, Bindable, DEFAULT_PRESET, normalize, scope_label};
+use artheffect_engine::shortcuts::{APP_SCOPE, Bindable, DEFAULT_PRESET, normalize, scope_label};
 use egui::{Align2, Color32, Rect, RichText, Sense, Stroke, StrokeKind, pos2, vec2};
 use serde_json::{Value, json};
 
 use crate::theme::Tokens;
-use crate::{Dialog, EffectcraftApp};
+use crate::{ArtheffectApp, Dialog};
 
 /// Editor state (in `DialogState`).
 #[derive(Clone, Debug, Default)]
@@ -47,7 +47,7 @@ pub struct EditorState {
 const APP_COLOR: Color32 = Color32::from_rgb(0x8e, 0x6c, 0xe8);
 const PANEL_COLOR: Color32 = Color32::from_rgb(0x3f, 0xa8, 0x6c);
 
-pub fn open(app: &mut EffectcraftApp) {
+pub fn open(app: &mut ArtheffectApp) {
     app.dialog_state.shortcuts = EditorState::default();
     // Scripts copied into the Scripts folder since the table was built are listed too.
     app.session.scripts_changed();
@@ -55,12 +55,12 @@ pub fn open(app: &mut EffectcraftApp) {
 }
 
 /// `true` while the editor records keys (the dispatcher must not close the dialog on Escape).
-pub fn recording(app: &EffectcraftApp) -> bool {
+pub fn recording(app: &ArtheffectApp) -> bool {
     app.dialog == Some(Dialog::Shortcuts) && app.dialog_state.shortcuts.recording
 }
 
 /// `true` while Delete Preset asks over the editor (Escape answers it, not the editor).
-pub fn confirming(app: &EffectcraftApp) -> bool {
+pub fn confirming(app: &ArtheffectApp) -> bool {
     app.dialog == Some(Dialog::Shortcuts) && app.dialog_state.shortcuts.confirm_delete.is_some()
 }
 
@@ -208,7 +208,7 @@ const SIDE_KEYS: &[(&str, &str, f32, f32)] = &[
 /// remove, assign and reset bindings, warning about conflicts. Enter is OK unless a rename field, a
 /// preset menu or the delete confirmation is open. The collected `shortcuts.*` commands are run
 /// with the session when the frame ends; OK closes the dialog.
-pub fn show(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn show(app: &mut ArtheffectApp, ctx: &egui::Context, t: &Tokens) {
     let mut st = std::mem::take(&mut app.dialog_state.shortcuts);
     let mut run: Vec<(String, Value)> = vec![];
     let mut close = false;
@@ -348,7 +348,7 @@ pub fn show(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
         let gap = 3.0;
         let (area, _) = ui.allocate_exact_size(vec2(ui.available_width(), unit * 6.0 + gap * 6.0 + 4.0), Sense::hover());
         let p = ui.painter_at(area);
-        let draw_key = |app: &mut EffectcraftApp, r: Rect, label: &str, name: &str, st: &mut EditorState| {
+        let draw_key = |app: &mut ArtheffectApp, r: Rect, label: &str, name: &str, st: &mut EditorState| {
             let mod_idx = match name {
                 "#ctrl" => Some(0),
                 "#cmd" => Some(1),
@@ -665,7 +665,7 @@ mod tests {
         assert_eq!(split("F9"), ([false; 4], "F9".into()));
     }
 
-    fn frame(app: &mut EffectcraftApp, ctx: &egui::Context, events: Vec<egui::Event>) {
+    fn frame(app: &mut ArtheffectApp, ctx: &egui::Context, events: Vec<egui::Event>) {
         app.auto.begin_frame();
         let mut out = ctx.run_ui(egui::RawInput { events, ..Default::default() }, |ui| crate::panels::dialogs::show(app, ui.ctx()));
         out.textures_delta.clear();
@@ -673,7 +673,7 @@ mod tests {
 
     #[test]
     fn the_ok_button_stays_inside_the_dialog_in_a_small_window() {
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         open(&mut app);
@@ -693,7 +693,7 @@ mod tests {
     #[test]
     fn enter_is_ok_except_while_recording_or_renaming() {
         let enter = || egui::Event::Key { key: egui::Key::Enter, physical_key: None, pressed: true, repeat: false, modifiers: Default::default() };
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         // Recording: Enter is the recorded key.
@@ -715,7 +715,7 @@ mod tests {
 
     #[test]
     fn deleting_a_preset_asks_first() {
-        fn click(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str) {
+        fn click(app: &mut ArtheffectApp, ctx: &egui::Context, id: &str) {
             let [x, y, w, h] = app.auto.find(id).unwrap_or_else(|| panic!("{id} is not on screen")).rect;
             let pos = pos2(x + w / 2.0, y + h / 2.0);
             let button = |pressed| egui::Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed, modifiers: Default::default() };
@@ -726,12 +726,12 @@ mod tests {
             frame(app, ctx, vec![]);
             frame(app, ctx, vec![]);
         }
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         app.session.execute("shortcuts.preset", json!({"op": "duplicate", "from": DEFAULT_PRESET, "name": "Mine"})).unwrap();
         app.session.execute("shortcuts.preset", json!({"op": "select", "name": "Mine"})).unwrap();
-        let has = |app: &EffectcraftApp| app.session.keymaps.names().iter().any(|n| n == "Mine");
+        let has = |app: &ArtheffectApp| app.session.keymaps.names().iter().any(|n| n == "Mine");
         open(&mut app);
         for _ in 0..3 {
             frame(&mut app, &ctx, vec![]);
@@ -758,7 +758,7 @@ mod tests {
 
     #[test]
     fn recording_a_shortcut_does_not_also_type_the_key_into_the_field() {
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = ArtheffectApp::new(artheffect_engine::Session::default());
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         open(&mut app);

@@ -1,4 +1,4 @@
-# EffectCraft app icon
+# Artheffect app icon
 
 **Creature:** a unicorn, as an engraved head-and-shoulders bust looking out of the tile.
 
@@ -11,7 +11,7 @@ full-bleed colour field, tight head-and-shoulders crop, the body running off the
 
 | Colour | Hex | Used for |
 |---|---|---|
-| App colour (EffectCraft pink) | `#e0368f` | the full-bleed field |
+| App colour (Artheffect pink) | `#e0368f` | the full-bleed field |
 | Paper | `#efe9dc` | the figure |
 | Ink | `#0b0b0c` | line work and contour |
 
@@ -23,18 +23,18 @@ Licence: see [LICENSE.txt](LICENSE.txt) (MIT OR Apache-2.0, like the repo).
 
 | File | What |
 |---|---|
-| `effectcraft.svg` | master vector, traced at 2048 px (canonical) |
-| `effectcraft-small.svg` | lighter vector (~350 KB), traced at 1024 px; also the web favicon |
-| `effectcraft-1024.png` | 1024 px render |
-| `effectcraft-macos-512.png` | runtime Dock icon on macOS, on Apple's 824/1024 grid |
-| `effectcraft.icns` | macOS icon (Apple grid) |
-| `effectcraft.ico` | Windows icon, 16–256 px; embedded in `effectcraft.exe` by `apps/effectcraft/build.rs` |
-| `hicolor/<n>x<n>/apps/ai.storyteller.effectcraft.png` | Linux icon theme, 16–512 px; the 256 px one is the runtime icon on Windows and Linux |
-| `hicolor/scalable/apps/ai.storyteller.effectcraft.svg` | Linux scalable icon |
+| `artheffect.svg` | master vector, traced at 2048 px (canonical) |
+| `artheffect-small.svg` | lighter vector (~350 KB), traced at 1024 px; also the web favicon |
+| `artheffect-1024.png` | 1024 px render |
+| `artheffect-macos-512.png` | runtime Dock icon on macOS, on Apple's 824/1024 grid |
+| `artheffect.icns` | macOS icon (Apple grid) |
+| `artheffect.ico` | Windows icon, 16–256 px; embedded in `artheffect.exe` by `apps/artheffect/build.rs` |
+| `hicolor/<n>x<n>/apps/ai.storyteller.artheffect.png` | Linux icon theme, 16–512 px; the 256 px one is the runtime icon on Windows and Linux |
+| `hicolor/scalable/apps/ai.storyteller.artheffect.svg` | Linux scalable icon |
 
-App ID: `ai.storyteller.effectcraft` (Wayland app ID, `packaging/linux/ai.storyteller.effectcraft.desktop`).
+App ID: `ai.storyteller.artheffect` (Wayland app ID, `packaging/linux/ai.storyteller.artheffect.desktop`).
 
 ## Regenerate
 
-After replacing `effectcraft.svg` / `effectcraft-small.svg`, run `packaging/icons.sh` (needs `resvg`; `iconutil`
-on macOS for the `.icns`). Copy `effectcraft-small.svg` to `apps/effectcraft-web/web/favicon.svg` too.
+After replacing `artheffect.svg` / `artheffect-small.svg`, run `packaging/icons.sh` (needs `resvg`; `iconutil`
+on macOS for the `.icns`). Copy `artheffect-small.svg` to `apps/artheffect-web/web/favicon.svg` too.

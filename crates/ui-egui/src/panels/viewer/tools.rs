@@ -1,6 +1,6 @@
 use super::geometry::{cam_state, l2c, parent_inverse};
 use super::gesture::{Gesture, pen_id};
-use super::{CameraState, Color32, EffectcraftApp, EvalCtx, Layer, LayerId, Mat3, Pos2, Rect, Stroke, Tool, ViewerMap, gv2, json, ov, three_d, vec2, vt};
+use super::{ArtheffectApp, CameraState, Color32, EvalCtx, Layer, LayerId, Mat3, Pos2, Rect, Stroke, Tool, ViewerMap, gv2, json, ov, three_d, vec2, vt};
 
 /// The position change per comp pixel of drag (x, y) that moves a layer by `dir` when the
 /// pointer covers the axis' on-screen vector `s` (comp px); drag across the axis is ignored.
@@ -20,10 +20,10 @@ pub(super) fn axis_at(hits: &[(LayerId, [Pos2; 2], [f64; 3], [f64; 3])], p: Pos2
 }
 
 /// World to parent space for a 3D layer (identity without a parent).
-pub(super) fn parent_world_inverse(ctx: &EvalCtx, l: &Layer) -> effectcraft_engine::geom::Mat4 {
+pub(super) fn parent_world_inverse(ctx: &EvalCtx, l: &Layer) -> artheffect_engine::geom::Mat4 {
     match l.parent.and_then(|p| ctx.comp.layer(p)) {
         Some(p) => ctx.world_matrix(p).inverse().unwrap_or_default(),
-        None => effectcraft_engine::geom::Mat4::IDENTITY,
+        None => artheffect_engine::geom::Mat4::IDENTITY,
     }
 }
 
@@ -54,7 +54,7 @@ pub(super) fn drag_axes(ctx: &EvalCtx, l: &Layer) -> ([f64; 3], [f64; 3]) {
 /// (`viewer.view.<view>.camera.<id>`).
 #[allow(clippy::too_many_arguments)]
 pub(super) fn draw_rigs(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     painter: &egui::Painter,
     map: &ViewerMap,
     ectx: &EvalCtx,
@@ -63,8 +63,8 @@ pub(super) fn draw_rigs(
     through_active: bool,
     pane: Option<&str>,
 ) {
-    use effectcraft_engine::geom::Vec3;
-    use effectcraft_engine::project::{LayerSource, LightKind};
+    use artheffect_engine::geom::Vec3;
+    use artheffect_engine::project::{LayerSource, LightKind};
     let (w, h) = (ectx.comp.width as f64, ectx.comp.height as f64);
     let active = ectx.comp.active_camera(ectx.time).map(|c| c.id);
     let prefix = pane.map(|v| format!("viewer.view.{v}.")).unwrap_or_else(|| "viewer.".to_string());
@@ -136,7 +136,7 @@ pub(super) fn draw_rigs(
 /// Mask), a shape path (Shape n group with the Tools bar's Fill and Stroke) on the selected shape
 /// layer, or a new shape layer when nothing is selected. The placed point snaps.
 /// Add a Position keyframe at a motion path's frame, keeping the path where it is.
-pub(super) fn add_motion_key(app: &mut EffectcraftApp, f: ov::PathFrame) {
+pub(super) fn add_motion_key(app: &mut ArtheffectApp, f: ov::PathFrame) {
     // Separated dimensions: the key goes on X and Y Position.
     for prop in f.axes.map_or_else(|| vec![f.prop], Vec::from) {
         if let Err(e) = app.session.execute("prop.addKey", json!({"layer": f.layer.0, "prop": prop, "time": f.time.seconds()})) {
@@ -147,7 +147,7 @@ pub(super) fn add_motion_key(app: &mut EffectcraftApp, f: ov::PathFrame) {
 
 /// Select only the motion path's keyframe `k` (what the vertex tools act on; with separated
 /// dimensions, the X and Y Position keys at its time).
-pub(super) fn select_motion_key(app: &mut EffectcraftApp, k: &ov::KeyHit) -> bool {
+pub(super) fn select_motion_key(app: &mut ArtheffectApp, k: &ov::KeyHit) -> bool {
     app.session.execute("keys.select", json!({"keys": k.select_entries()})).is_ok()
 }
 
@@ -188,7 +188,7 @@ pub(super) fn pen_cursor(ctx: &egui::Context, at: Pos2, icon: crate::icons::Icon
 /// path id and tangent gesture in context data for the drag that follows.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn pen_press(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     ectx: &EvalCtx,
     map: &ViewerMap,
@@ -197,7 +197,7 @@ pub(super) fn pen_press(
     pos: Pos2,
     mods: egui::Modifiers,
 ) {
-    use effectcraft_engine::project::LayerSource;
+    use artheffect_engine::project::LayerSource;
     let gid = egui::Id::unique("viewer-gesture");
     let current: Option<(LayerId, u64)> = ui.data(|d| d.get_temp(pen_id()));
     let c0 = map.to_comp(pos);

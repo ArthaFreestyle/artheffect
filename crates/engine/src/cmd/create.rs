@@ -2,10 +2,10 @@
 //! Create Masks from Text, Create Shapes from Vector Layer (SVG footage) and Create 3D Layer
 //! Instance (a 2D copy of a 3D model layer that 2D effects can be applied to).
 
-use effectcraft_color::Label;
-use effectcraft_keyframe::Value as KV;
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{ItemKind, LayerSource, Solid};
+use artheffect_color::Label;
+use artheffect_keyframe::Value as KV;
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{ItemKind, LayerSource, Solid};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, has_layers, layers_p, str_p};
@@ -57,8 +57,8 @@ fn create(s: &mut Session, p: &Value) -> Result<Value> {
                     l.switches.solo = src.switches.solo;
                     // A 3D Layer Instance effect referencing the 3D layer: the solid shows its
                     // render (the 2D copy).
-                    let fx = effectcraft_effects::find("ec.3d.instance3d").ok_or_else(|| bad("layer.create", "the 3D Layer Instance effect is missing"))?;
-                    let mut g = effectcraft_effects::instantiate(fx, &mut Ids(&mut proj.next_id), fx.name, [comp.width as f64, comp.height as f64]);
+                    let fx = artheffect_effects::find("ec.3d.instance3d").ok_or_else(|| bad("layer.create", "the 3D Layer Instance effect is missing"))?;
+                    let mut g = artheffect_effects::instantiate(fx, &mut Ids(&mut proj.next_id), fx.name, [comp.width as f64, comp.height as f64]);
                     if let Some(pr) = g.get_mut("layer") {
                         pr.value = KV::Layer(Some(lid.0));
                     }
@@ -204,7 +204,7 @@ fn create(s: &mut Session, p: &Value) -> Result<Value> {
                     continue;
                 };
                 let bytes = s.services.read_file(&f.path).map_err(|e| EngineError::Other(format!("cannot read {}: {e}", f.path)))?;
-                let psd = effectcraft_psd::Psd::parse(bytes).map_err(|e| EngineError::Other(e.to_string()))?;
+                let psd = artheffect_psd::Psd::parse(bytes).map_err(|e| EngineError::Other(e.to_string()))?;
                 let id = s.edit("Convert to Editable Text", None, |proj, st| {
                     let l = crate::psd_import::editable_text(proj, &comp, &src, &psd, sl.index as usize)
                         .ok_or_else(|| bad("layer.create", format!("{}: the Photoshop layer has no text", src.name)))?;
@@ -228,7 +228,7 @@ fn create(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// An image of a vector file written as `<file> Image <n>.png` next to it and imported: the
 /// footage item.
-fn image_footage(s: &mut Session, source: &str, n: usize, img: &crate::vector::VectorImage) -> Result<effectcraft_project::ItemId> {
+fn image_footage(s: &mut Session, source: &str, n: usize, img: &crate::vector::VectorImage) -> Result<artheffect_project::ItemId> {
     let src = std::path::Path::new(source);
     let stem = src.file_stem().map(|x| x.to_string_lossy().into_owned()).unwrap_or_else(|| "Vector".into());
     let name = format!("{stem} Image {n}.png");
@@ -242,16 +242,16 @@ fn image_footage(s: &mut Session, source: &str, n: usize, img: &crate::vector::V
     if let Some(e) = r["errors"].as_array().and_then(|e| e.first()) {
         return Err(EngineError::Other(e.as_str().unwrap_or("import failed").to_string()));
     }
-    r["items"].get(0).and_then(Value::as_u64).map(effectcraft_project::ItemId).ok_or_else(|| EngineError::Other(format!("{path} was not imported")))
+    r["items"].get(0).and_then(Value::as_u64).map(artheffect_project::ItemId).ok_or_else(|| EngineError::Other(format!("{path} was not imported")))
 }
 
 /// Insert `l` directly above layer `below`; optionally switch the source's video off (as After
 /// Effects does after converting).
 fn insert_above(
-    proj: &mut effectcraft_project::Project,
-    cid: effectcraft_project::ItemId,
-    below: effectcraft_project::LayerId,
-    l: effectcraft_project::Layer,
+    proj: &mut artheffect_project::Project,
+    cid: artheffect_project::ItemId,
+    below: artheffect_project::LayerId,
+    l: artheffect_project::Layer,
     hide_source: bool,
 ) -> Result<()> {
     let c = proj.comp_mut(cid).ok_or(EngineError::NoComp)?;

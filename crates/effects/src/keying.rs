@@ -2,10 +2,10 @@
 //! matte clean-up. Written from public behaviour descriptions and the standard colour-difference /
 //! blue-screen matting literature (Vlahos; Smith & Blinn, "Blue Screen Matting").
 
-use effectcraft_color::{rgb_to_hsl, srgb_to_linear};
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
-use effectcraft_raster::{Image, gaussian_blur};
+use artheffect_color::{rgb_to_hsl, srgb_to_linear};
+use artheffect_keyframe::Value;
+use artheffect_project::ParamUi;
+use artheffect_raster::{Image, gaussian_blur};
 use rayon::prelude::*;
 
 use crate::color_fx::luma_601;
@@ -478,13 +478,13 @@ fn advanced_spill(ctx: &EffectCtx, mut b: Buf) -> Buf {
     // colour out of suppressed pixels; Spill Color Correction puts the removed spill back as
     // neutral light (so suppressed areas keep their brightness without the cast).
     let key = ctx.params.color("ultraSettings/keyColor");
-    let key_hue = effectcraft_color::rgb_to_hsl(key[0], key[1], key[2]).0;
+    let key_hue = artheffect_color::rgb_to_hsl(key[0], key[1], key[2]).0;
     let tol = if ultra { ctx.params.get("ultraSettings/tolerance").map(Value::as_f64).unwrap_or(100.0) as f32 / 100.0 } else { 1.0 };
     let desat = if ultra { ctx.params.f("ultraSettings/desaturate") as f32 / 100.0 } else { 0.0 };
     let neutral = if ultra { ctx.params.f("ultraSettings/spillColorCorrection") as f32 / 100.0 } else { 0.0 };
     b.img.map_straight(|mut c| {
         let w = if tol < 1.0 {
-            let h = effectcraft_color::rgb_to_hsl(c[0], c[1], c[2]).0;
+            let h = artheffect_color::rgb_to_hsl(c[0], c[1], c[2]).0;
             let d = (h - key_hue).abs();
             let d = d.min(1.0 - d);
             (1.0 - d / (tol * 0.5).max(1e-4)).clamp(0.0, 1.0)
@@ -499,7 +499,7 @@ fn advanced_spill(ctx: &EffectCtx, mut b: Buf) -> Buf {
         let back = spill * LUMA_W[pi] * luma + spill * neutral / 3.0;
         let mut c = c.map(|v| v + back);
         if desat > 0.0 && spill > 0.0 {
-            let l = effectcraft_color::luminance(c[0], c[1], c[2]);
+            let l = artheffect_color::luminance(c[0], c[1], c[2]);
             let k = (desat * (spill * 4.0).min(1.0)).min(1.0);
             c = c.map(|v| v + (l - v) * k);
         }
@@ -781,7 +781,7 @@ mod tests {
     }
 
     /// After Effects 2026 (cases 812-814): Luma Key on a vertical black-to-white ramp (row y
-    /// has level (y + 0.5) / 1080 × 255), Threshold 140, Tolerance 20. EffectCraft ramped the
+    /// has level (y + 0.5) / 1080 × 255), Threshold 140, Tolerance 20. Artheffect ramped the
     /// matte over the tolerance (case 719: a 50 % grey kept 80 % of its alpha where AE keys it
     /// out).
     #[test]
@@ -800,7 +800,7 @@ mod tests {
             let o = run("ec.key.luma", &set, ramp());
             (0..1080).map(|y| o.get(0, y)[3]).collect::<Vec<f32>>()
         };
-        // Key Out Darker (AE 2 = EffectCraft 1): keyed up to row 592, kept from 593.
+        // Key Out Darker (AE 2 = Artheffect 1): keyed up to row 592, kept from 593.
         let d = key(1, 0.0, 0.0);
         assert!(d[..593].iter().all(|a| *a == 0.0) && d[593..].iter().all(|a| *a == 1.0), "{:?}", &d[588..598]);
         // Key Out Similar: AE keys rows 509..=677 (levels 120.3..160.0) and keeps the rest; the

@@ -4,10 +4,10 @@
 
 use std::sync::Arc;
 
-use effectcraft_keyframe::Value as KV;
-use effectcraft_project::{Footage, FootageKind, GroupKind, ItemId, Layer, LayerId, Project};
-use effectcraft_render::{FootageSource, RenderOpts};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_keyframe::Value as KV;
+use artheffect_project::{Footage, FootageKind, GroupKind, ItemId, Layer, LayerId, Project};
+use artheffect_render::{FootageSource, RenderOpts};
+use artheffect_time::{FrameRate, Tick};
 use serde_json::json;
 
 use crate::{Importer, Session};
@@ -26,23 +26,23 @@ fn layer_in(s: &Session, comp: ItemId, id: u64) -> Layer {
     s.project.comp(comp).unwrap().layer(LayerId(id)).unwrap().clone()
 }
 
-fn px(img: &effectcraft_raster::Image, x: u32, y: u32) -> [f32; 4] {
+fn px(img: &artheffect_raster::Image, x: u32, y: u32) -> [f32; 4] {
     img.data[(y * img.width + x) as usize]
 }
 
-fn close(a: &effectcraft_raster::Image, b: &effectcraft_raster::Image, tol: f32) -> bool {
+fn close(a: &artheffect_raster::Image, b: &artheffect_raster::Image, tol: f32) -> bool {
     a.data.iter().zip(b.data.iter()).all(|(p, q)| p.iter().zip(q.iter()).all(|(x, y)| (x - y).abs() <= tol))
 }
 
 struct DiskModels;
 
 impl FootageSource for DiskModels {
-    fn frame(&self, _: ItemId, _: &Footage, _: Tick) -> Option<Arc<effectcraft_raster::Image>> {
+    fn frame(&self, _: ItemId, _: &Footage, _: Tick) -> Option<Arc<artheffect_raster::Image>> {
         None
     }
-    fn model(&self, _: ItemId, f: &Footage) -> Option<Arc<effectcraft_model::Model>> {
+    fn model(&self, _: ItemId, f: &Footage) -> Option<Arc<artheffect_model::Model>> {
         let bytes = std::fs::read(&f.path).ok()?;
-        effectcraft_model::load(&f.path, &bytes, &|_| None).ok().map(Arc::new)
+        artheffect_model::load(&f.path, &bytes, &|_| None).ok().map(Arc::new)
     }
 }
 
@@ -50,7 +50,7 @@ struct ModelImporter;
 
 impl Importer for ModelImporter {
     fn probe(&self, path: &str) -> Result<Footage, String> {
-        effectcraft_model::format_of(path).ok_or("not a model")?;
+        artheffect_model::format_of(path).ok_or("not a model")?;
         Ok(Footage { path: path.into(), kind: FootageKind::Model, frame_rate: FrameRate::FPS_30, codec: "glTF".into(), ..Default::default() })
     }
 }

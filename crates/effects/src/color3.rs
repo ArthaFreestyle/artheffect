@@ -2,9 +2,9 @@
 //! PS Arbitrary Map and Lumetri Color (Basic Correction, Creative, Curves, Color Wheels,
 //! Vignette).
 
-use effectcraft_color::{hsl_to_rgb, luminance, rgb_to_hsl};
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
+use artheffect_color::{hsl_to_rgb, luminance, rgb_to_hsl};
+use artheffect_keyframe::Value;
+use artheffect_project::ParamUi;
 use rayon::prelude::*;
 
 use crate::util::{Plane, gauss_plane, layer_rect, lerp, premul, smoothstep, unpremul};
@@ -863,7 +863,7 @@ pub fn specs() -> Vec<EffectSpec> {
 mod tests {
     use super::*;
     use crate::{EffectEnv, run_fx};
-    use effectcraft_raster::Image;
+    use artheffect_raster::Image;
 
     fn ramp() -> Image {
         let mut img = Image::new(16, 8);

@@ -4,12 +4,12 @@
 
 use std::sync::Arc;
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::{Footage, FootageKind, ItemId, ItemKind, Proxy};
-use effectcraft_engine::render::FootageSource;
-use effectcraft_render::Image;
-use effectcraft_time::Tick;
-use effectcraft_ui_egui::EffectcraftApp;
+use artheffect_engine::Session;
+use artheffect_engine::project::{Footage, FootageKind, ItemId, ItemKind, Proxy};
+use artheffect_engine::render::FootageSource;
+use artheffect_render::Image;
+use artheffect_time::Tick;
+use artheffect_ui_egui::ArtheffectApp;
 use egui_kittest::Harness;
 use serde_json::json;
 
@@ -27,7 +27,7 @@ impl FootageSource for Stub {
     }
 }
 
-fn harness(broken: fn(&Footage) -> bool, proxy: Option<Footage>) -> (Harness<'static, EffectcraftApp>, ItemId) {
+fn harness(broken: fn(&Footage) -> bool, proxy: Option<Footage>) -> (Harness<'static, ArtheffectApp>, ItemId) {
     let mut s = Session { footage: Arc::new(Stub(broken)), ..Default::default() };
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 4})).unwrap();
     let footage = Footage {
@@ -48,9 +48,9 @@ fn harness(broken: fn(&Footage) -> bool, proxy: Option<Footage>) -> (Harness<'st
     (open(s), clip)
 }
 
-fn open(mut s: Session) -> Harness<'static, EffectcraftApp> {
+fn open(mut s: Session) -> Harness<'static, ArtheffectApp> {
     s.execute("project.select", json!({"items": []})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(4);
     h
 }

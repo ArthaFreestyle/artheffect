@@ -1,17 +1,17 @@
 //! Synthetic camera interchange: projection, timing, DOF and hostile inputs. Optional public
-//! Blender-API oracle: EFFECTCRAFT_BLENDER=/path/to/blender cargo test -p effectcraft-engine tests::blender -- --nocapture.
+//! Blender-API oracle: ARTHEFFECT_BLENDER=/path/to/blender cargo test -p artheffect-engine tests::blender -- --nocapture.
 
-use effectcraft_effects::camera_tracker as ct;
-use effectcraft_keyframe::Value as KV;
-use effectcraft_project::{Footage, FootageKind, ItemKind, LayerId, LayerSource, build};
-use effectcraft_time::{FrameRate, Tick};
-use effectcraft_track::camtrack::{CameraSolve, Distortion, Ground, ShotType, SolveMethod, SolvedFrame, SolvedPoint};
+use artheffect_effects::camera_tracker as ct;
+use artheffect_keyframe::Value as KV;
+use artheffect_project::{Footage, FootageKind, ItemKind, LayerId, LayerSource, build};
+use artheffect_time::{FrameRate, Tick};
+use artheffect_track::camtrack::{CameraSolve, Distortion, Ground, ShotType, SolveMethod, SolvedFrame, SolvedPoint};
 use serde_json::{Value, json};
 
 use crate::Session;
 
 fn path(name: &str) -> String {
-    let dir = std::env::temp_dir().join(format!("effectcraft-blender-tests-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("artheffect-blender-tests-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     dir.join(name).to_string_lossy().into_owned()
 }
@@ -29,7 +29,7 @@ fn fixture(ground: bool) -> (Session, LayerId, u64) {
                 Default::default(),
                 None,
                 ItemKind::Footage(Footage {
-                    path: std::env::var("EFFECTCRAFT_BLENDER_PLATE").unwrap_or_else(|_| path("plate '\\ — vídeo.mp4")),
+                    path: std::env::var("ARTHEFFECT_BLENDER_PLATE").unwrap_or_else(|_| path("plate '\\ — vídeo.mp4")),
                     width: 640,
                     height: 360,
                     frame_rate: FrameRate::FPS_30,
@@ -123,7 +123,7 @@ fn blender_export_bakes_projection_focus_and_retimed_background() {
     assert_eq!(d["points"][0]["location"][2], 0.0, "ground point lies on Blender XY plane");
 
     // Execute the actual exported artifact in a separately installed Blender, when requested.
-    if let Ok(blender) = std::env::var("EFFECTCRAFT_BLENDER") {
+    if let Ok(blender) = std::env::var("ARTHEFFECT_BLENDER") {
         let oracle = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/blender_scene_oracle.py");
         let output = std::process::Command::new(blender)
             .args(["--background", "--factory-startup", "--python-exit-code", "1", "--python"])
@@ -133,7 +133,7 @@ fn blender_export_bakes_projection_focus_and_retimed_background() {
             .output()
             .unwrap();
         assert!(output.status.success(), "Blender oracle failed:\n{}\n{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
-        assert!(String::from_utf8_lossy(&output.stdout).contains("EFFECTCRAFT_BLENDER_ORACLE_OK"));
+        assert!(String::from_utf8_lossy(&output.stdout).contains("ARTHEFFECT_BLENDER_ORACLE_OK"));
     }
 }
 
@@ -145,8 +145,8 @@ fn blender_export_bakes_reverse_time_remap_and_footage_loops() {
     s.edit("retimed fixture", None, |p, _| {
         let layer = p.comp(cid).unwrap().layer(lid).unwrap();
         let item = layer.source.item().unwrap();
-        let keys = [(60, 8.0), (61, 6.0), (62, -1.0)]
-            .map(|(frame, time)| effectcraft_keyframe::Keyframe::new(layer.layer_time(rate.tick_of(frame)), KV::Scalar(time)));
+        let keys =
+            [(60, 8.0), (61, 6.0), (62, -1.0)].map(|(frame, time)| artheffect_keyframe::Keyframe::new(layer.layer_time(rate.tick_of(frame)), KV::Scalar(time)));
         let mut remap = build::Ids(&mut p.next_id).prop("timeRemap", "Time Remap", KV::Scalar(8.0));
         remap.keys = keys.to_vec();
         p.comp_mut(cid).unwrap().layer_mut(lid).unwrap().props.children.push(remap.into());

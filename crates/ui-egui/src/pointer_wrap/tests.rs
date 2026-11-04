@@ -268,13 +268,13 @@ fn monitor_rect_can_extend_beyond_the_app_and_have_a_negative_origin() {
 
 #[test]
 fn real_properties_and_angle_drags_keep_each_gesture_in_one_undo_step() {
-    use crate::{EffectcraftApp, dock::PanelKind};
-    use effectcraft_engine::project::LayerId;
+    use crate::{ArtheffectApp, dock::PanelKind};
+    use artheffect_engine::project::LayerId;
     use eframe::App;
     use serde_json::json;
 
     for angle in [false, true] {
-        let mut session = effectcraft_host::session();
+        let mut session = artheffect_host::session();
         session.execute("comp.new", json!({"width": 32, "height": 16})).unwrap();
         let lid = session.execute("layer.newSolid", json!({"width": 8, "height": 8})).unwrap()["layer"].as_u64().unwrap();
         let path = if angle { "transform/rotation" } else { "transform/position" };
@@ -284,14 +284,14 @@ fn real_properties_and_angle_drags_keep_each_gesture_in_one_undo_step() {
         let undo = session.history.undo.len();
         let panel = PanelKind::Properties;
         let id = if angle { format!("properties.prop.{uid}.value") } else { format!("properties.prop.{uid}.value.0") };
-        let mut app = EffectcraftApp::new(session);
+        let mut app = ArtheffectApp::new(session);
         app.show_panel(panel);
         app.toggle_maximize(panel);
         let ctx = Context::default();
         let bounds = Rect::from_min_size(Pos2::ZERO, vec2(1600.0, 1000.0));
         let mut frame = eframe::Frame::_new_kittest();
         let mut time = 0.0;
-        let mut step = |app: &mut EffectcraftApp, events| {
+        let mut step = |app: &mut ArtheffectApp, events| {
             time += 1.0 / 60.0;
             let mut raw = RawInput { screen_rect: Some(bounds), time: Some(time), events, ..Default::default() };
             app.raw_input_hook(&ctx, &mut raw);

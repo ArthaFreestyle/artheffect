@@ -5,10 +5,10 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use effectcraft_color::Label;
-use effectcraft_project::render_queue::{OutputFormat, RenderStatus, sequence_path};
-use effectcraft_project::{Footage, FootageKind, ItemId, ItemKind};
-use effectcraft_time::Tick;
+use artheffect_color::Label;
+use artheffect_project::render_queue::{OutputFormat, RenderStatus, sequence_path};
+use artheffect_project::{Footage, FootageKind, ItemId, ItemKind};
+use artheffect_time::Tick;
 use serde_json::{Value, json};
 
 use crate::{ExportJob, ExportResult, Exporter, Session};
@@ -28,7 +28,7 @@ impl Exporter for Writer {
     fn formats(&self) -> Vec<OutputFormat> {
         OutputFormat::ALL.to_vec()
     }
-    fn supports_skip_existing(&self, _: &effectcraft_project::render_queue::RenderSettings) -> bool {
+    fn supports_skip_existing(&self, _: &artheffect_project::render_queue::RenderSettings) -> bool {
         true
     }
     fn export(&self, job: &ExportJob, _: &mut dyn FnMut(u64, u64) -> bool) -> Result<ExportResult, String> {
@@ -63,7 +63,7 @@ pub(crate) struct Fixture {
 
 impl Fixture {
     pub(crate) fn new(name: &str) -> Fixture {
-        let dir = std::env::temp_dir().join("effectcraft-render-overwrite").join(format!("{}-{name}", std::process::id()));
+        let dir = std::env::temp_dir().join("artheffect-render-overwrite").join(format!("{}-{name}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let mut s = Session::default();
@@ -267,7 +267,7 @@ fn a_proxy_is_not_an_output_either() {
     f.comp("Main");
     let proxy = Footage { path: f.text("proxy.mov"), kind: FootageKind::Video, has_video: true, ..Default::default() };
     let comp = f.s.active_comp_id().unwrap();
-    Arc::make_mut(&mut f.s.project).item_mut(comp).unwrap().proxy = Some(Box::new(effectcraft_project::Proxy { footage: proxy, enabled: true }));
+    Arc::make_mut(&mut f.s.project).item_mut(comp).unwrap().proxy = Some(Box::new(artheffect_project::Proxy { footage: proxy, enabled: true }));
     let target = f.text("proxy.mov");
     f.s.execute("renderQueue.add", json!({"format": "prores", "output": target})).unwrap();
     let e = f.render(json!({"overwrite": true})).unwrap_err().to_string();
@@ -666,7 +666,7 @@ fn span(pattern: &str, start: f64, end: f64) -> Value {
 
 fn with_overflow(f: &mut Fixture) {
     struct Room;
-    impl effectcraft_project::render_queue::StorageQuota for Room {
+    impl artheffect_project::render_queue::StorageQuota for Room {
         fn has_room(&self, _: &str, _: u64) -> bool {
             true
         }

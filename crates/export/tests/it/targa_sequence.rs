@@ -1,6 +1,6 @@
 //! Targa sequence output: every file is an uncompressed TGA (Truevision TGA 2.0 specification:
 //! an 18-byte header, BGR(A) pixels, top-left origin, the alpha bits in the image descriptor)
-//! holding exactly the pixels the lossless PNG sequence of the same job writes, and EffectCraft's
+//! holding exactly the pixels the lossless PNG sequence of the same job writes, and Artheffect's
 //! own Targa import (#745) reads the frames back as the same picture.
 //!
 //! The comp is 7×4 @ 10 fps, 3 frames: frame 0 is the background alone, frames 1 and 2 add a
@@ -10,14 +10,14 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use effectcraft_color::Label;
-use effectcraft_export::render_queue::{AlphaMode, Channels, OutputFormat, OutputModule, RenderSettings, TimeSpan, sequence_path};
-use effectcraft_export::{Job, export};
-use effectcraft_keyframe::Value;
-use effectcraft_media::MediaPool;
-use effectcraft_project::{Comp, Footage, FootageKind, ItemId, ItemKind, LayerSource, Project, Solid, build};
-use effectcraft_render::NoFootage;
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_export::render_queue::{AlphaMode, Channels, OutputFormat, OutputModule, RenderSettings, TimeSpan, sequence_path};
+use artheffect_export::{Job, export};
+use artheffect_keyframe::Value;
+use artheffect_media::MediaPool;
+use artheffect_project::{Comp, Footage, FootageKind, ItemId, ItemKind, LayerSource, Project, Solid, build};
+use artheffect_render::NoFootage;
+use artheffect_time::{FrameRate, Tick};
 
 const W: u32 = 7;
 const H: u32 = 4;
@@ -169,7 +169,7 @@ fn targa_sequence_writes_the_png_sequence_pixels() {
 fn import_sequence(paths: &[String]) -> (Footage, MediaPool) {
     let pool = MediaPool::new();
     pool.set_read_ahead(false);
-    let first = effectcraft_media::probe(&paths[0]).expect("probe our output");
+    let first = artheffect_media::probe(&paths[0]).expect("probe our output");
     assert_eq!((first.kind, first.width, first.height), (FootageKind::Still, W, H));
     for p in paths {
         let bytes: Arc<[u8]> = std::fs::read(p).expect("read").into();
@@ -197,9 +197,9 @@ fn targa_sequence_round_trips_through_targa_import() {
         assert_eq!(tga.sequence_frames(), FRAMES as i64);
         // Targa doesn't label its alpha: import guesses straight, and Interpret Footage sets
         // premultiplied for a premultiplied render.
-        assert_eq!(tga.alpha, effectcraft_project::AlphaMode::Straight);
+        assert_eq!(tga.alpha, artheffect_project::AlphaMode::Straight);
         if alpha_mode == AlphaMode::Premultiplied {
-            tga.alpha = effectcraft_project::AlphaMode::Premultiplied;
+            tga.alpha = artheffect_project::AlphaMode::Premultiplied;
         }
         // Premultiplying to 8 bits rounds partially transparent colour.
         let tol = if alpha_mode == AlphaMode::Straight { 0.0 } else { 1.0 / 255.0 };

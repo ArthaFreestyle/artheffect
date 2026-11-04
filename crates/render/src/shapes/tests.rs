@@ -1,11 +1,11 @@
 //! Render-level tests for shape-layer path operators and paint items.
 
-use effectcraft_color::Label;
-use effectcraft_keyframe::{Gradient, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{Comp, ItemId, ItemKind, LayerSource, Project, PropGroup};
-use effectcraft_raster::Image;
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_keyframe::{Gradient, Value};
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{Comp, ItemId, ItemKind, LayerSource, Project, PropGroup};
+use artheffect_raster::Image;
+use artheffect_time::{FrameRate, Tick};
 
 use crate::render_frame;
 
@@ -152,7 +152,7 @@ fn operators_below_repeater_act_on_copies() {
 
 /// After Effects 2026 (case 709): a 400 × 200 rectangle with Fill, then a Repeater of 3 copies
 /// (Position 150, 60, Rotation 10, Scale 90 / 80, End Opacity 40) gives the copies 100 %, 80 %
-/// and 60 % opacity (EffectCraft gave 70 % and 40 %). The points are comp pixels where AE shows
+/// and 60 % opacity (Artheffect gave 70 % and 40 %). The points are comp pixels where AE shows
 /// only the last copy, only the middle one, and both.
 #[test]
 fn repeater_copy_opacity_matches_after_effects() {
@@ -246,11 +246,7 @@ fn gradient_stroke_paints_gradient_along_stroke() {
 fn fill_blend_mode_multiply() {
     let (p, cid) = shape_comp(|ids| {
         let mut top = build::shape_fill(ids, [0.5, 0.5, 0.5, 1.0]);
-        set(
-            &mut top,
-            "blend",
-            Value::Enum(effectcraft_color::BlendMode::ALL.iter().position(|m| *m == effectcraft_color::BlendMode::Multiply).unwrap() as u32),
-        );
+        set(&mut top, "blend", Value::Enum(artheffect_color::BlendMode::ALL.iter().position(|m| *m == artheffect_color::BlendMode::Multiply).unwrap() as u32));
         vec![build::shape_rect(ids, [40.0, 40.0], [0.0, 0.0], 0.0), top, build::shape_fill(ids, [1.0, 0.0, 0.0, 1.0])]
     });
     let c = frame(&p, cid).get(100, 50);
@@ -545,7 +541,7 @@ fn repeater_draws_match_per_copy_bounds() {
 }
 
 /// Performance probe: 60-copy repeater of a small rounded rect at 1920×1080.
-/// Run with `cargo test -p effectcraft-render --release -- --ignored --nocapture shape_perf`.
+/// Run with `cargo test -p artheffect-render --release -- --ignored --nocapture shape_perf`.
 #[test]
 #[ignore]
 fn shape_perf_repeater_60_copies_1080p() {
@@ -596,7 +592,7 @@ fn shape_perf_repeater_60_copies_1080p() {
 }
 
 fn line_path(ids: &mut Ids, from: [f64; 2], to: [f64; 2]) -> PropGroup {
-    let sp = effectcraft_keyframe::ShapePath {
+    let sp = artheffect_keyframe::ShapePath {
         vertices: vec![from, to],
         in_tangents: vec![[0.0; 2]; 2],
         out_tangents: vec![[0.0; 2]; 2],
@@ -680,7 +676,7 @@ fn radial_gradient_highlight_moves_the_focal_point() {
 }
 
 /// The layer-space buffer `super::render` draws the comp's only shape layer into.
-fn shape_buf(p: &Project, cid: ItemId) -> effectcraft_effects::Buf {
+fn shape_buf(p: &Project, cid: ItemId) -> artheffect_effects::Buf {
     let comp = p.comp(cid).unwrap();
     let ctx = crate::eval::EvalCtx::new(p, cid, comp, Tick::ZERO);
     let layer = &comp.layers[0];
@@ -700,7 +696,7 @@ fn straight_stroke_buffer_is_not_padded_by_the_miter_limit() {
 fn miter_corner_still_fits_its_buffer() {
     // A sharp V with a 20 px miter-joined stroke: the miter tip reaches well past half the width.
     let (p, cid) = shape_comp(|ids| {
-        let sp = effectcraft_keyframe::ShapePath {
+        let sp = artheffect_keyframe::ShapePath {
             vertices: vec![[-40.0, -30.0], [0.0, 20.0], [40.0, -30.0]],
             in_tangents: vec![[0.0; 2]; 3],
             out_tangents: vec![[0.0; 2]; 3],

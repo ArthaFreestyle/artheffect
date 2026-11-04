@@ -44,7 +44,7 @@ fn local(s: &Session, comp: ItemId, t: Tick, opts: RenderOpts) -> Vec<u8> {
 /// worker's mid-render lookups find them and the pixels match.
 #[test]
 fn layer_buffers_go_through_the_disk_store() {
-    use effectcraft_render::disk_cache::{DiskIndex, Kind, LayerPrefetch};
+    use artheffect_render::disk_cache::{DiskIndex, Kind, LayerPrefetch};
     let mut s = Session::default();
     s.execute("file.openDemoProject", json!({})).unwrap();
     let comp = s.active_comp_id().unwrap();
@@ -194,7 +194,7 @@ struct Deferred {
     chains: std::sync::atomic::AtomicUsize,
     begins: std::sync::atomic::AtomicUsize,
     ends: std::sync::atomic::AtomicUsize,
-    auto: effectcraft_render::AutoPick,
+    auto: artheffect_render::AutoPick,
 }
 
 impl Deferred {
@@ -212,9 +212,9 @@ impl Accelerator for Deferred {
         None
     }
     fn supports_effect(&self, id: &str) -> bool {
-        effectcraft_effects::GPU_EFFECTS.contains(&id)
+        artheffect_effects::GPU_EFFECTS.contains(&id)
     }
-    fn effects(&self, chain: &[effectcraft_render::FxStep], buf: &effectcraft_effects::Buf, levels: Option<f32>) -> Option<effectcraft_effects::Buf> {
+    fn effects(&self, chain: &[artheffect_render::FxStep], buf: &artheffect_effects::Buf, levels: Option<f32>) -> Option<artheffect_effects::Buf> {
         use std::hash::{Hash, Hasher};
         let mut h = std::collections::hash_map::DefaultHasher::new();
         for s in chain {
@@ -236,14 +236,14 @@ impl Accelerator for Deferred {
         self.chains.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let mut b = buf.clone();
         for s in chain {
-            b = effectcraft_effects::apply(s.spec, &s.ctx, b);
+            b = artheffect_effects::apply(s.spec, &s.ctx, b);
             if let Some(l) = levels {
-                effectcraft_render::color::quantize(&mut b.img, l);
+                artheffect_render::color::quantize(&mut b.img, l);
             }
         }
         Some(b)
     }
-    fn auto_pick(&self) -> Option<&effectcraft_render::AutoPick> {
+    fn auto_pick(&self) -> Option<&artheffect_render::AutoPick> {
         Some(&self.auto)
     }
     fn frame_begin(&self) {
@@ -319,7 +319,7 @@ fn deferred_readbacks_render_in_passes() {
         }
         assert_eq!(out[0].1.as_deref(), Some(&px[..]), "frame {id}");
     }
-    let st = acc.auto.stats(effectcraft_render::AutoKey::new(comp, opts.scale, false)).unwrap();
+    let st = acc.auto.stats(artheffect_render::AutoKey::new(comp, opts.scale, false)).unwrap();
     assert!(st.cpu_frames > 0 && st.gpu_frames > 0, "{st:?}");
 }
 

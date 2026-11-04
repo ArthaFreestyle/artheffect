@@ -25,7 +25,7 @@ use std::sync::mpsc::Sender;
 
 use serde_json::{Value, json};
 
-use crate::EffectcraftApp;
+use crate::ArtheffectApp;
 use crate::dock::PanelKind;
 use crate::state::{Resolution, Tool};
 
@@ -84,7 +84,7 @@ fn waits(command: &str, params: &Value) -> bool {
 /// Run an engine command. A waiting command (`wait: true`) whose job the session offloads
 /// runs with `wait: false` instead, and the reply waits for the job ([`Outcome::AwaitJobs`]),
 /// so the browser's UI keeps drawing while it runs.
-fn execute_engine(app: &mut EffectcraftApp, id: &str, params: Value) -> Result<Outcome, String> {
+fn execute_engine(app: &mut ArtheffectApp, id: &str, params: Value) -> Result<Outcome, String> {
     if !app.session.offloads() || !waits(id, &params) {
         return app.session.execute_checked(id, params).map(ok).map_err(|e| e.to_string());
     }
@@ -102,13 +102,13 @@ fn execute_engine(app: &mut EffectcraftApp, id: &str, params: Value) -> Result<O
 
 impl JobWaiter {
     /// Whether its jobs are still running.
-    pub fn pending(&self, app: &EffectcraftApp) -> bool {
+    pub fn pending(&self, app: &ArtheffectApp) -> bool {
         app.session.jobs().iter().any(|j| self.jobs.contains(&j.id))
     }
 
     /// The reply: what the blocking command would have returned (`running: false`, the final
     /// progress, render items and analysis status), or the job's error.
-    pub fn finish(self, app: &mut EffectcraftApp) -> Value {
+    pub fn finish(self, app: &mut ArtheffectApp) -> Value {
         let s = &mut app.session;
         s.poll_render();
         let error = s
@@ -160,7 +160,7 @@ fn modifiers(p: &Value) -> egui::Modifiers {
 }
 
 /// Resolve a point from `{id}` (element centre) or `{x, y}`.
-fn point(app: &EffectcraftApp, p: &Value) -> Result<egui::Pos2, String> {
+fn point(app: &ArtheffectApp, p: &Value) -> Result<egui::Pos2, String> {
     if let Some(id) = p.get("id").and_then(Value::as_str) {
         let e = app.auto.find(id).ok_or_else(|| format!("{RETRY}no element `{id}` (see ui.elements)"))?;
         let fx = p.get("fx").and_then(Value::as_f64).unwrap_or(0.5) as f32;
@@ -176,7 +176,7 @@ fn point(app: &EffectcraftApp, p: &Value) -> Result<egui::Pos2, String> {
 /// or `{"ok": false, "error": …}`; an unknown method is an error. Some methods answer with
 /// [`Outcome::Retry`], [`Outcome::AfterInput`], [`Outcome::Screenshot`] or
 /// [`Outcome::AwaitJobs`] instead of replying in this call.
-pub fn handle(app: &mut EffectcraftApp, ctx: &egui::Context, req: &ControlRequest, now: f64) -> Outcome {
+pub fn handle(app: &mut ArtheffectApp, ctx: &egui::Context, req: &ControlRequest, now: f64) -> Outcome {
     let p = &req.params;
     match req.method.as_str() {
         "engine.execute" | "ui.menu.invoke" => execute_command(app, ctx, &req.method, p),
@@ -208,14 +208,14 @@ pub fn handle(app: &mut EffectcraftApp, ctx: &egui::Context, req: &ControlReques
 /// goes through [`execute_engine`] (so a `wait: true` job can be offloaded); every other id,
 /// and every `ui.menu.invoke`, goes through the menu dispatcher. A failure is copied to the
 /// status line.
-fn execute_command(app: &mut EffectcraftApp, ctx: &egui::Context, method: &str, p: &Value) -> Outcome {
+fn execute_command(app: &mut ArtheffectApp, ctx: &egui::Context, method: &str, p: &Value) -> Outcome {
     let s = |k: &str| p.get(k).and_then(Value::as_str);
     let Some(id) = s("command").or(s("id")) else { return err("missing `command`") };
     let params = p.get("params").cloned().filter(|v| !v.is_null()).unwrap_or(json!({}));
     // `engine.execute` runs engine commands exactly as headless (never opens a dialog, e.g.
     // `comp.new {}` creates a default comp); UI-only ids (`tool.*`, `view.*`, `window.*`,
     // `playback.*` …) and `ui.menu.invoke` go through the menu dispatcher like a click.
-    let r = if method == "engine.execute" && effectcraft_engine::find_command(id).is_some() {
+    let r = if method == "engine.execute" && artheffect_engine::find_command(id).is_some() {
         execute_engine(app, id, params)
     } else {
         crate::menus::invoke(app, ctx, id, params).map(ok)
@@ -230,7 +230,7 @@ fn execute_command(app: &mut EffectcraftApp, ctx: &egui::Context, method: &str, 
 }
 
 /// Replies with `command.list`'s result, forwarding `filter` and `enabledOnly`.
-fn engine_commands(app: &mut EffectcraftApp, p: &Value) -> Outcome {
+fn engine_commands(app: &mut ArtheffectApp, p: &Value) -> Outcome {
     match app.session.execute("command.list", json!({"filter": p.get("filter"), "enabledOnly": p.get("enabledOnly")})) {
         Ok(v) => ok(v),
         Err(e) => err(e),
@@ -239,7 +239,7 @@ fn engine_commands(app: &mut EffectcraftApp, p: &Value) -> Outcome {
 
 /// Replies with the automation elements whose id starts with `prefix` (all when empty), as
 /// `{id, label, rect}` records.
-fn elements(app: &EffectcraftApp, p: &Value) -> Outcome {
+fn elements(app: &ArtheffectApp, p: &Value) -> Outcome {
     let prefix = p.get("prefix").and_then(Value::as_str).unwrap_or("");
     ok(serde_json::to_value(app.auto.query(prefix)).unwrap_or_default())
 }
@@ -253,7 +253,7 @@ fn focus(ctx: &egui::Context) -> Outcome {
 /// Applies `ui.set` in order: tool, workspace, theme, focused panel, viewer settings, then the
 /// layout fields ([`set_ui_layout`]). An unknown tool, workspace or theme name, or an invalid
 /// viewer value, replies with an error after the earlier fields were already applied.
-fn set_ui(app: &mut EffectcraftApp, ctx: &egui::Context, p: &Value) -> Outcome {
+fn set_ui(app: &mut ArtheffectApp, ctx: &egui::Context, p: &Value) -> Outcome {
     let s = |k: &str| p.get(k).and_then(Value::as_str);
     if let Some(t) = s("tool") {
         match Tool::from_name(t) {
@@ -285,7 +285,7 @@ fn set_ui(app: &mut EffectcraftApp, ctx: &egui::Context, p: &Value) -> Outcome {
 }
 
 /// The remaining `ui.set` fields, applied in the same order after the viewer settings.
-fn set_ui_layout(app: &mut EffectcraftApp, p: &Value) -> Outcome {
+fn set_ui_layout(app: &mut ArtheffectApp, p: &Value) -> Outcome {
     if let Some(tl) = p.get("timeline") {
         apply_timeline(app, tl);
     }
@@ -316,7 +316,7 @@ fn set_ui_layout(app: &mut EffectcraftApp, p: &Value) -> Outcome {
 /// Applies viewer `zoom`, the active comp's `res` (stored in the project), `pan` and the
 /// `grid`, `rulers`, `safeMargins` and `transparencyGrid` toggles. An unknown resolution name
 /// is an error; a resolution change without an active comp is ignored.
-fn apply_viewer(app: &mut EffectcraftApp, v: &Value) -> Result<(), String> {
+fn apply_viewer(app: &mut ArtheffectApp, v: &Value) -> Result<(), String> {
     if let Some(z) = v.get("zoom") {
         app.ui.viewer.zoom = z.as_f64().map(|z| z as f32);
     }
@@ -349,7 +349,7 @@ fn apply_viewer(app: &mut EffectcraftApp, v: &Value) -> Result<(), String> {
 
 /// Applies timeline `pps`, `start`, `graphEditor`, `showModes`, `openLayers` and `openGroups`
 /// to the UI state, leaving absent fields unchanged.
-fn apply_timeline(app: &mut EffectcraftApp, tl: &Value) {
+fn apply_timeline(app: &mut ArtheffectApp, tl: &Value) {
     if let Some(v) = tl.get("pps") {
         app.ui.timeline.pps = v.as_f64();
     }
@@ -372,7 +372,7 @@ fn apply_timeline(app: &mut EffectcraftApp, tl: &Value) {
 
 /// Replaces the Project panel's optional columns with the names in `a`, in the canonical
 /// `COLUMNS` order; unknown names are kept, sorted after the known ones.
-fn apply_project_columns(app: &mut EffectcraftApp, a: &[Value]) {
+fn apply_project_columns(app: &mut ArtheffectApp, a: &[Value]) {
     let mut cols = vec![];
     for k in a.iter().filter_map(Value::as_str) {
         crate::panels::project::set_column(&mut cols, k, true);
@@ -382,7 +382,7 @@ fn apply_project_columns(app: &mut EffectcraftApp, a: &[Value]) {
 
 /// Merges `m` over the current Wiggler/Smoother/Motion Sketch settings by round-tripping them
 /// through JSON. A value of the wrong type is an error and leaves the settings unchanged.
-fn apply_anim_tools(app: &mut EffectcraftApp, m: &serde_json::Map<String, Value>) -> Result<(), String> {
+fn apply_anim_tools(app: &mut ArtheffectApp, m: &serde_json::Map<String, Value>) -> Result<(), String> {
     let mut cur = serde_json::to_value(&app.ui.anim_tools).unwrap_or_default();
     for (k, v) in m {
         cur[k] = v.clone();
@@ -398,7 +398,7 @@ fn apply_anim_tools(app: &mut EffectcraftApp, m: &serde_json::Map<String, Value>
 
 /// Shows (`ui.panel.show`) or closes (`ui.panel.close`) the named panel; an unknown panel name
 /// is an error.
-fn panel(app: &mut EffectcraftApp, method: &str, p: &Value) -> Outcome {
+fn panel(app: &mut ArtheffectApp, method: &str, p: &Value) -> Outcome {
     let s = |k: &str| p.get(k).and_then(Value::as_str);
     let Some(panel) = s("panel").and_then(PanelKind::from_name) else { return err("unknown `panel`") };
     if method == "ui.panel.show" {
@@ -427,7 +427,7 @@ fn click_gesture_events(method: &str, p: &Value) -> Result<usize, String> {
 /// or at `{x, y}`, holding the request's modifiers across the whole gesture. An element that is
 /// not on screen returns [`Outcome::Retry`]; the gesture is size-checked against the 4096-event
 /// queue limit before anything is pushed. Replies [`Outcome::AfterInput`].
-fn click_or_move(app: &mut EffectcraftApp, method: &str, p: &Value) -> Outcome {
+fn click_or_move(app: &mut ArtheffectApp, method: &str, p: &Value) -> Outcome {
     let s = |k: &str| p.get(k).and_then(Value::as_str);
     let pos = match point(app, p) {
         Ok(p) => p,
@@ -470,7 +470,7 @@ fn click_or_move(app: &mut EffectcraftApp, method: &str, p: &Value) -> Outcome {
 /// 12, at least 2, at most 2048), with the request's modifiers. Both endpoints are resolved
 /// first (an unseen element returns [`Outcome::Retry`]) and the event count is checked against
 /// the 4096-event queue limit. Replies [`Outcome::AfterInput`].
-fn drag(app: &mut EffectcraftApp, p: &Value) -> Outcome {
+fn drag(app: &mut ArtheffectApp, p: &Value) -> Outcome {
     let (Some(from), Some(to)) = (p.get("from"), p.get("to")) else { return err("need `from` and `to`") };
     let (a, b) = match (point(app, from), point(app, to)) {
         (Ok(a), Ok(b)) => (a, b),
@@ -503,7 +503,7 @@ fn drag(app: &mut EffectcraftApp, p: &Value) -> Outcome {
 /// Queues a move to the target point, a wheel event of `dx`, `dy` (`unit`: points or lines) with
 /// the request's modifiers, a pinch's zoom factor, and a released Extra1 button. Replies
 /// [`Outcome::AfterInput`].
-fn scroll(app: &mut EffectcraftApp, p: &Value) -> Outcome {
+fn scroll(app: &mut ArtheffectApp, p: &Value) -> Outcome {
     let pos = match point(app, p) {
         Ok(p) => p,
         Err(e) => return err(e),
@@ -539,7 +539,7 @@ fn scroll(app: &mut EffectcraftApp, p: &Value) -> Outcome {
 /// Queues a press and release of `key`, whose name may carry a shortcut (`Cmd+Shift+Z`); the
 /// separate `modifiers` flags are added. A `Physical+` prefix makes the key positional. An
 /// unknown key name is an error.
-fn key(app: &mut EffectcraftApp, p: &Value) -> Outcome {
+fn key(app: &mut ArtheffectApp, p: &Value) -> Outcome {
     let s = |k: &str| p.get(k).and_then(Value::as_str);
     let Some(name) = s("key") else { return err("missing `key`") };
     let Some((mut m, key)) = crate::menus::parse_shortcut(name) else { return err(format!("unknown key `{name}`")) };
@@ -553,7 +553,7 @@ fn key(app: &mut EffectcraftApp, p: &Value) -> Outcome {
 
 /// Queues a text event with `text`, followed by a released F35 key. Missing `text` is an
 /// error.
-fn type_text(app: &mut EffectcraftApp, p: &Value) -> Outcome {
+fn type_text(app: &mut ArtheffectApp, p: &Value) -> Outcome {
     let Some(text) = p.get("text").and_then(Value::as_str) else { return err("missing `text`") };
     app.synthetic.push(egui::Event::Text(text.to_string()));
     app.synthetic.push(egui::Event::Key { key: egui::Key::F35, physical_key: None, pressed: false, repeat: false, modifiers: Default::default() });
@@ -574,7 +574,7 @@ fn viewer_locate(ctx: &egui::Context, p: &Value) -> Outcome {
 
 /// Converts a point (`{id}`, or `{x, y}`) to comp pixels; replies with an error when the
 /// viewer is not visible.
-fn viewer_hit(app: &mut EffectcraftApp, ctx: &egui::Context, p: &Value) -> Outcome {
+fn viewer_hit(app: &mut ArtheffectApp, ctx: &egui::Context, p: &Value) -> Outcome {
     let pos = match point(app, p) {
         Ok(p) => p,
         Err(e) => return err(e),
@@ -588,7 +588,7 @@ fn viewer_hit(app: &mut EffectcraftApp, ctx: &egui::Context, p: &Value) -> Outco
 /// Returns the screen point at `time` seconds on the ruler row of layer `layer`'s bar;
 /// without a numeric `time`, returns the bar's centre. Returns [`Outcome::Retry`] when the bar
 /// is unavailable, or a numeric `time` is supplied but the ruler is unavailable or malformed.
-fn timeline_locate(app: &EffectcraftApp, p: &Value) -> Outcome {
+fn timeline_locate(app: &ArtheffectApp, p: &Value) -> Outcome {
     let Some(l) = p.get("layer").and_then(Value::as_u64) else { return err("need `layer` (id)") };
     match crate::panels::timeline::locate(app, l, p.get("time").and_then(Value::as_f64)) {
         Some((x, y)) => ok(json!({"x": x, "y": y})),
@@ -599,7 +599,7 @@ fn timeline_locate(app: &EffectcraftApp, p: &Value) -> Outcome {
 /// Applies `action` (`play`, `stop`, `status`, else toggle) at `now` and replies with the
 /// playing state, current time in seconds, whether audio is present and the meter's level and
 /// peak in dB.
-fn playback(app: &mut EffectcraftApp, p: &Value, now: f64) -> Outcome {
+fn playback(app: &mut ArtheffectApp, p: &Value, now: f64) -> Outcome {
     let action = p.get("action").and_then(Value::as_str).unwrap_or("toggle");
     match action {
         "play" => app.play(now),
@@ -617,7 +617,7 @@ fn playback(app: &mut EffectcraftApp, p: &Value, now: f64) -> Outcome {
 /// missing target is never silently captured as the window. Requests a repaint without raising
 /// or focusing the window and returns [`Outcome::Screenshot`]; the target is resolved again
 /// when the capture is issued.
-fn screenshot(app: &mut EffectcraftApp, ctx: &egui::Context, p: &Value) -> Outcome {
+fn screenshot(app: &mut ArtheffectApp, ctx: &egui::Context, p: &Value) -> Outcome {
     let s = |k: &str| p.get(k).and_then(Value::as_str);
     // A file the project reads is never the output.
     if let Some(path) = s("path")
@@ -664,7 +664,7 @@ fn resize(ctx: &egui::Context, p: &Value) -> Outcome {
 
 /// Sends the viewport close request. `force: true` marks the unsaved-changes state as
 /// quitting, so a modified project closes without the save prompt.
-fn quit(app: &mut EffectcraftApp, ctx: &egui::Context, p: &Value) -> Outcome {
+fn quit(app: &mut ArtheffectApp, ctx: &egui::Context, p: &Value) -> Outcome {
     // A modified project asks to save first unless `force: true`.
     if p.get("force").and_then(Value::as_bool).unwrap_or(false) {
         app.dialog_state.unsaved.quitting = true;
@@ -676,7 +676,7 @@ fn quit(app: &mut EffectcraftApp, ctx: &egui::Context, p: &Value) -> Outcome {
 /// `render.frame {comp?, time?, max_side?, path?, base64?, write?}`: render a comp frame through the session
 /// (independent of the viewer zoom/resolution) and return it as PNG, written to `path` (default a
 /// temp file) or inline as base64 when `base64: true`. `write: true` with `base64: true` does both.
-fn render_frame(app: &EffectcraftApp, p: &Value) -> Outcome {
+fn render_frame(app: &ArtheffectApp, p: &Value) -> Outcome {
     let s = &app.session;
     // A file the project reads is never the output (checked before rendering).
     if let Some(path) = p.get("path").and_then(Value::as_str)
@@ -688,7 +688,7 @@ fn render_frame(app: &EffectcraftApp, p: &Value) -> Outcome {
         Ok(c) => c,
         Err(e) => return err(e),
     };
-    let t = p.get("time").or(p.get("seconds")).and_then(Value::as_f64).map(effectcraft_time::Tick::from_seconds_f64).unwrap_or_else(|| s.time());
+    let t = p.get("time").or(p.get("seconds")).and_then(Value::as_f64).map(artheffect_time::Tick::from_seconds_f64).unwrap_or_else(|| s.time());
     let max_side = p.get("max_side").or(p.get("maxSide")).and_then(Value::as_u64).unwrap_or(0) as u32;
     let transparent = p.get("transparent").and_then(Value::as_bool).unwrap_or(false);
     let (w, h, rgba) = match s.render_rgba8_alpha(cid, t, max_side, transparent) {
@@ -710,7 +710,7 @@ fn render_frame(app: &EffectcraftApp, p: &Value) -> Outcome {
         .get("path")
         .and_then(Value::as_str)
         .map(str::to_string)
-        .unwrap_or_else(|| std::env::temp_dir().join(format!("effectcraft-frame-{}.png", std::process::id())).to_string_lossy().to_string());
+        .unwrap_or_else(|| std::env::temp_dir().join(format!("artheffect-frame-{}.png", std::process::id())).to_string_lossy().to_string());
     if inline {
         out["png"] = json!(base64(&png));
     }
@@ -744,7 +744,7 @@ pub fn base64(data: &[u8]) -> String {
 /// active comp's viewer resolution, playback and time, active comp, selected layer/key counts,
 /// registered element count, keyboard focus (egui id, rect, automation ids and rect
 /// candidates), fresh window focus, workspace storage error, open dialog and last frame time.
-pub fn inspect(app: &EffectcraftApp, ctx: &egui::Context) -> Value {
+pub fn inspect(app: &ArtheffectApp, ctx: &egui::Context) -> Value {
     // A logic-only tick refreshes the viewport information but not `InputState`'s screen rect.
     let size = ctx.input(|i| i.viewport().inner_rect).map_or_else(|| ctx.content_rect().size(), |r| r.size());
     let keyboard_focus = ctx.memory(|m| m.focused()).map(|id| {
@@ -830,7 +830,7 @@ pub fn save_screenshot(image: &egui::ColorImage, path: Option<&str>, crop: Optio
             Err(e) => json!({"ok": false, "error": e}),
         };
     }
-    let path = path.map(str::to_string).unwrap_or_else(|| std::env::temp_dir().join("effectcraft-screenshot.png").to_string_lossy().to_string());
+    let path = path.map(str::to_string).unwrap_or_else(|| std::env::temp_dir().join("artheffect-screenshot.png").to_string_lossy().to_string());
     match encode_png(&rgba, cw as u32, ch as u32) {
         Ok(png) => match std::fs::write(&path, png) {
             Ok(()) => json!({"ok": true, "result": {"path": path, "width": cw, "height": ch}}),

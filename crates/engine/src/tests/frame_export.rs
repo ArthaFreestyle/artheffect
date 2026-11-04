@@ -29,7 +29,7 @@ fn photoshop_layers_writes_one_psd_layer_per_comp_layer() {
     let path = dir.join("frame.psd").to_string_lossy().to_string();
     let r = s.execute("comp.saveFrameAsPsd", json!({"path": path})).unwrap();
     assert_eq!(r["layers"], 2);
-    let psd = effectcraft_psd::Psd::parse(std::fs::read(&path).unwrap()).unwrap();
+    let psd = artheffect_psd::Psd::parse(std::fs::read(&path).unwrap()).unwrap();
     assert_eq!((psd.width, psd.height), (32, 32));
     let names: Vec<&str> = psd.layers.iter().map(|l| l.name.as_str()).collect();
     assert_eq!(names, ["Red", "Blue.Box"], "bottom first");
@@ -119,7 +119,7 @@ fn proexr_keeps_values_above_one_in_32_bpc() {
     let src = [1.5, 1.25, 0.75];
     let (comp, layer) = proexr_centre(src, 32);
     for i in 0..3 {
-        let want = effectcraft_color::srgb_to_linear(src[i] as f32);
+        let want = artheffect_color::srgb_to_linear(src[i] as f32);
         for got in [comp[i], layer[i]] {
             assert!((got - want).abs() < 1e-3 * want.max(1.0), "channel {i}: got {got}, want {want} ({comp:?} / {layer:?})");
         }
@@ -200,7 +200,7 @@ fn save_frame_as_queued_respects_frame_default_template() {
     assert_eq!(r["queued"], true);
     let it = s.project.render_queue.last().unwrap();
     assert_eq!(it.output.name, "PNG Sequence");
-    assert_eq!(it.output.channels, effectcraft_project::render_queue::Channels::Rgb);
+    assert_eq!(it.output.channels, artheffect_project::render_queue::Channels::Rgb);
 
     // Test undo and redo of queuing a frame
     s.execute("edit.undo", json!({})).unwrap();
@@ -212,19 +212,19 @@ fn save_frame_as_queued_respects_frame_default_template() {
     // Explicit transparent: false forces Channels::Rgb
     s.execute_checked("comp.saveFrameAs", json!({"queue": true, "transparent": false})).unwrap();
     let it = s.project.render_queue.last().unwrap();
-    assert_eq!(it.output.channels, effectcraft_project::render_queue::Channels::Rgb);
+    assert_eq!(it.output.channels, artheffect_project::render_queue::Channels::Rgb);
 
     // When Frame Default is set to an RGBA template, it is respected
     s.execute_checked("renderQueue.setTemplateDefault", json!({"kind": "outputModule", "slot": "still", "name": "PNG Sequence with Alpha"})).unwrap();
     s.execute_checked("comp.saveFrameAs", json!({"queue": true})).unwrap();
     let it = s.project.render_queue.last().unwrap();
     assert_eq!(it.output.name, "PNG Sequence with Alpha");
-    assert_eq!(it.output.channels, effectcraft_project::render_queue::Channels::Rgba);
+    assert_eq!(it.output.channels, artheffect_project::render_queue::Channels::Rgba);
 
     // Passing transparent: false forces Channels::Rgb even with an RGBA template
     s.execute_checked("comp.saveFrameAs", json!({"queue": true, "transparent": false})).unwrap();
     let it = s.project.render_queue.last().unwrap();
-    assert_eq!(it.output.channels, effectcraft_project::render_queue::Channels::Rgb);
+    assert_eq!(it.output.channels, artheffect_project::render_queue::Channels::Rgb);
 
     // With JPEG Sequence as Frame Default (non-alpha format), queue succeeds without error
     s.execute_checked("renderQueue.setTemplateDefault", json!({"kind": "outputModule", "slot": "still", "name": "JPEG Sequence"})).unwrap();

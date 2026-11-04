@@ -4,11 +4,11 @@
 
 use std::sync::Mutex;
 
-use effectcraft_project::render_queue::{AlphaMode, Channels, CurrentOrOff, EffectsMode, FrameSample, RenderLog, ResizeQuality, SwitchOverride, log_path};
-use effectcraft_project::{BitDepth, Comp, Project};
-use effectcraft_raster::Image;
-use effectcraft_render::{Backend, LayerCache, RenderOpts, Renderer};
-use effectcraft_time::Tick;
+use artheffect_project::render_queue::{AlphaMode, Channels, CurrentOrOff, EffectsMode, FrameSample, RenderLog, ResizeQuality, SwitchOverride, log_path};
+use artheffect_project::{BitDepth, Comp, Project};
+use artheffect_raster::Image;
+use artheffect_render::{Backend, LayerCache, RenderOpts, Renderer};
+use artheffect_time::Tick;
 use web_time::Instant;
 
 use crate::{Job, RenderQuality, out};
@@ -21,9 +21,9 @@ use crate::{Job, RenderQuality, out};
 /// platform, so a portable estimate is not available here.
 pub(crate) const GPU_INFLIGHT_DEFAULT: usize = 1;
 /// Overrides [`GPU_INFLIGHT_DEFAULT`]: a whole number of frames, at least 1.
-pub(crate) const GPU_INFLIGHT_ENV: &str = "EFFECTCRAFT_GPU_INFLIGHT";
+pub(crate) const GPU_INFLIGHT_ENV: &str = "ARTHEFFECT_GPU_INFLIGHT";
 
-/// GPU frames in flight from the `EFFECTCRAFT_GPU_INFLIGHT` value: a positive whole number, or
+/// GPU frames in flight from the `ARTHEFFECT_GPU_INFLIGHT` value: a positive whole number, or
 /// the default (with a warning when a value was given) when it is 0, negative, not a number or
 /// too large.
 pub(crate) fn gpu_inflight(var: Option<&str>) -> usize {
@@ -31,7 +31,7 @@ pub(crate) fn gpu_inflight(var: Option<&str>) -> usize {
     match v.trim().parse::<usize>() {
         Ok(n) if n >= 1 => n,
         _ => {
-            log::warn!(target: "effectcraft_export", "{GPU_INFLIGHT_ENV}={v:?} is not a whole number of frames of at least 1: using {GPU_INFLIGHT_DEFAULT}");
+            log::warn!(target: "artheffect_export", "{GPU_INFLIGHT_ENV}={v:?} is not a whole number of frames of at least 1: using {GPU_INFLIGHT_DEFAULT}");
             GPU_INFLIGHT_DEFAULT
         }
     }
@@ -41,9 +41,9 @@ pub(crate) fn gpu_inflight(var: Option<&str>) -> usize {
 /// keep one frame per thread in flight as before. A heavy comp can need gigabytes of working
 /// memory per frame, so 16 threads at once can get the process OOM-killed; the headless CLI
 /// reads no `memory.*` preferences, so this is how a render there is held to fewer frames.
-pub(crate) const CPU_INFLIGHT_ENV: &str = "EFFECTCRAFT_CPU_INFLIGHT";
+pub(crate) const CPU_INFLIGHT_ENV: &str = "ARTHEFFECT_CPU_INFLIGHT";
 
-/// CPU frames in flight from the `EFFECTCRAFT_CPU_INFLIGHT` value: `None` (no cap) when unset or
+/// CPU frames in flight from the `ARTHEFFECT_CPU_INFLIGHT` value: `None` (no cap) when unset or
 /// blank, a positive whole number, or `None` with a warning when it is 0, negative, not a
 /// number or too large.
 pub(crate) fn cpu_inflight(var: Option<&str>) -> Option<usize> {
@@ -54,7 +54,7 @@ pub(crate) fn cpu_inflight(var: Option<&str>) -> Option<usize> {
     match v.trim().parse::<usize>() {
         Ok(n) if n >= 1 => Some(n),
         _ => {
-            log::warn!(target: "effectcraft_export", "{CPU_INFLIGHT_ENV}={v:?} is not a whole number of frames of at least 1: CPU frames are not capped");
+            log::warn!(target: "artheffect_export", "{CPU_INFLIGHT_ENV}={v:?} is not a whole number of frames of at least 1: CPU frames are not capped");
             None
         }
     }
@@ -262,12 +262,12 @@ impl<'a> Cx<'a> {
 
     async fn render_at(&self, t: Tick) -> Image {
         // With deferred GPU readbacks (a browser worker) the frame renders in passes.
-        effectcraft_render::passes::comp_frame(&self.renderer(), self.job.comp, t).await
+        artheffect_render::passes::comp_frame(&self.renderer(), self.job.comp, t).await
     }
 
     /// Whether frames render in passes (an accelerator with deferred readbacks).
     pub fn deferred(&self) -> bool {
-        effectcraft_render::passes::is_deferred(self.job.accel)
+        artheffect_render::passes::is_deferred(self.job.accel)
     }
 
     /// Output frames `ks`, each mapped by `f` (encoding): rendered in parallel batches, or one
@@ -315,7 +315,7 @@ impl<'a> Cx<'a> {
                 let mut done = None;
                 let frames = pool.in_place_scope(|s| {
                     s.spawn(|_| done = Some(std::panic::catch_unwind(std::panic::AssertUnwindSafe(encode))));
-                    effectcraft_render::passes::block_on(frames)
+                    artheffect_render::passes::block_on(frames)
                 });
                 match done {
                     Some(Ok(a)) => Ok((a, frames)),
@@ -348,7 +348,7 @@ impl<'a> Cx<'a> {
 
     /// Output frame `i`: sampled (fields, pulldown), at the colour depth, cropped and resized.
     pub fn frame(&self, comp: &Comp, i: u64) -> Image {
-        effectcraft_render::passes::block_on(self.frame_async(comp, i))
+        artheffect_render::passes::block_on(self.frame_async(comp, i))
     }
 
     /// [`Cx::frame`] as a future (deferred readbacks: the frame renders in passes).
@@ -369,7 +369,7 @@ impl<'a> Cx<'a> {
     }
 
     /// Output frame `i` as the H.264 export's 4:2:0 planes at `w`×`h`, rendered and converted
-    /// by the accelerator ([`effectcraft_render::Accelerator::comp_frame_yuv420`]). Only for
+    /// by the accelerator ([`artheffect_render::Accelerator::comp_frame_yuv420`]). Only for
     /// frames that need nothing done after the render (progressive, at the project's depth, no
     /// crop or resize, rendered at exactly `w`×`h`). `None`: render it with [`Cx::frame`].
     pub fn yuv420_frame(&self, comp: &Comp, i: u64, w: u32, h: u32) -> Option<Vec<u8>> {
@@ -445,7 +445,7 @@ impl<'a> Cx<'a> {
             return img;
         }
         match om.resize.quality {
-            ResizeQuality::Low => effectcraft_raster::warp::resample(&img, w, h),
+            ResizeQuality::Low => artheffect_raster::warp::resample(&img, w, h),
             ResizeQuality::High => bicubic(&img, w, h),
         }
     }
@@ -535,7 +535,7 @@ impl<'a> Cx<'a> {
         let comp = self.comp();
         let path = log_path(self.job.path);
         let mut s = String::new();
-        s.push_str("EffectCraft Render Log\n");
+        s.push_str("Artheffect Render Log\n");
         s.push_str(&format!("Item: {}\n", if self.job.options.label.is_empty() { "(render)" } else { &self.job.options.label }));
         s.push_str(&format!("Output: {}\n", self.job.path));
         match result {
@@ -611,7 +611,7 @@ pub(crate) fn crop(img: &Image, t: i32, l: i32, b: i32, r: i32) -> Image {
 fn bicubic(src: &Image, w: u32, h: u32) -> Image {
     // Shrinking a lot: bilinear with its box pre-filter first, then bicubic for the last step.
     if src.width > w * 2 && src.height > h * 2 {
-        let mid = effectcraft_raster::warp::resample(src, w * 2, h * 2);
+        let mid = artheffect_raster::warp::resample(src, w * 2, h * 2);
         return bicubic(&mid, w, h);
     }
     let mut out = Image::new(w, h);
@@ -641,7 +641,7 @@ fn premultiplied8(img: &Image, dither: bool) -> Vec<u8> {
         for c in 0..3 {
             let v = p[c].clamp(0.0, a);
             // Dither may round up past the rounded alpha; premultiplied colour never exceeds it.
-            out.push(if dither { effectcraft_raster::dither_u8(v, x, y).min(a8) } else { (v * 255.0 + 0.5) as u8 });
+            out.push(if dither { artheffect_raster::dither_u8(v, x, y).min(a8) } else { (v * 255.0 + 0.5) as u8 });
         }
         out.push(a8);
     }
@@ -797,17 +797,17 @@ mod tests {
 
     /// An accelerator that renders nothing itself (the tests only check whether frames are capped).
     struct NoAccel;
-    impl effectcraft_render::Accelerator for NoAccel {
+    impl artheffect_render::Accelerator for NoAccel {
         fn name(&self) -> String {
             "none".into()
         }
-        fn comp_frame(&self, _r: &Renderer, _comp: effectcraft_project::ItemId, _t: Tick) -> Option<Image> {
+        fn comp_frame(&self, _r: &Renderer, _comp: artheffect_project::ItemId, _t: Tick) -> Option<Image> {
             None
         }
         fn supports_effect(&self, _id: &str) -> bool {
             false
         }
-        fn effects(&self, _chain: &[effectcraft_render::FxStep], _buf: &effectcraft_effects::Buf, _levels: Option<f32>) -> Option<effectcraft_effects::Buf> {
+        fn effects(&self, _chain: &[artheffect_render::FxStep], _buf: &artheffect_effects::Buf, _levels: Option<f32>) -> Option<artheffect_effects::Buf> {
             None
         }
     }
@@ -815,8 +815,8 @@ mod tests {
     #[test]
     fn software_only_projects_are_not_capped() {
         // Review of #879: an accelerator alone capped Software Only projects, which render on the CPU.
-        use effectcraft_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
-        use effectcraft_render::NoFootage;
+        use artheffect_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
+        use artheffect_render::NoFootage;
         let (settings, output) = (RenderSettings::default(), OutputModule::for_format(OutputFormat::PngSequence));
         let accel = NoAccel;
         for (gpu, want) in [(false, None), (true, Some(GPU_INFLIGHT_DEFAULT))] {
@@ -827,7 +827,7 @@ mod tests {
                 footage: &NoFootage,
                 expr: None,
                 accel: Some(&accel),
-                comp: effectcraft_project::ItemId(0),
+                comp: artheffect_project::ItemId(0),
                 settings: &settings,
                 output: &output,
                 path: "/c/f_[#####].png",
@@ -847,7 +847,7 @@ mod tests {
             footage: &NoFootage,
             expr: None,
             accel: None,
-            comp: effectcraft_project::ItemId(0),
+            comp: artheffect_project::ItemId(0),
             settings: &settings,
             output: &output,
             path: "/c/f_[#####].png",
@@ -968,12 +968,12 @@ mod tests {
     #[test]
     fn layers_render_once_per_job() {
         // #413: a job rendered every layer of every frame from scratch (no layer cache).
-        use effectcraft_color::Label;
-        use effectcraft_keyframe::{Keyframe, Value};
-        use effectcraft_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
-        use effectcraft_project::{ItemKind, LayerSource, Solid, build};
-        use effectcraft_render::NoFootage;
-        use effectcraft_time::FrameRate;
+        use artheffect_color::Label;
+        use artheffect_keyframe::{Keyframe, Value};
+        use artheffect_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
+        use artheffect_project::{ItemKind, LayerSource, Solid, build};
+        use artheffect_render::NoFootage;
+        use artheffect_time::FrameRate;
         // A solid animated only in Transform: its pixels render once, then move.
         let mut p = Project::default();
         let mut comp = Comp::new(64, 48, FrameRate::FPS_25, Tick::from_seconds_f64(1.0));
@@ -1017,12 +1017,12 @@ mod tests {
 
     #[test]
     fn frames_render_beside_the_encoder() {
-        use effectcraft_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
-        use effectcraft_render::NoFootage;
-        use effectcraft_time::FrameRate;
+        use artheffect_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
+        use artheffect_render::NoFootage;
+        use artheffect_time::FrameRate;
         let mut p = Project::default();
         let comp = Comp::new(32, 16, FrameRate::FPS_25, Tick::from_seconds_f64(1.0));
-        let cid = p.add_item("Comp", effectcraft_color::Label::Sandstone, None, effectcraft_project::ItemKind::Comp(comp.into()));
+        let cid = p.add_item("Comp", artheffect_color::Label::Sandstone, None, artheffect_project::ItemKind::Comp(comp.into()));
         let (settings, output) = (RenderSettings::default(), OutputModule::for_format(OutputFormat::H264));
         let job = Job {
             project: &p,
@@ -1039,7 +1039,7 @@ mod tests {
         };
         let cx = Cx::new(&job);
         let comp = cx.comp().unwrap();
-        use effectcraft_render::passes::block_on;
+        use artheffect_render::passes::block_on;
         let want = block_on(cx.frames(comp, (0..6).collect(), |k, img| (k, img.width, img.height)));
         // On threads of their own, and taking turns (no threads): the same frames, in order.
         for beside in [Beside::shared(), &Beside(None)] {
@@ -1069,7 +1069,7 @@ mod tests {
     /// Regress the locked-aspect example: cropping 1920x1080 must resize to 1280x1440.
     #[test]
     fn crop_resize_applies_margins_once() {
-        use effectcraft_project::render_queue::{Crop, OutputModule, Resize};
+        use artheffect_project::render_queue::{Crop, OutputModule, Resize};
         let output = OutputModule {
             crop: Crop { enabled: true, left: 480, right: 480, ..Default::default() },
             resize: Resize { enabled: true, width: 1280, lock_aspect: true, quality: ResizeQuality::Low, ..Default::default() },
@@ -1082,16 +1082,16 @@ mod tests {
     }
 
     /// Apply output-module geometry to a synthetic frame without rendering or writing files.
-    fn run_crop_resize(img: Image, output: &effectcraft_project::render_queue::OutputModule, scale: f64) -> Image {
-        use effectcraft_project::render_queue::RenderSettings;
+    fn run_crop_resize(img: Image, output: &artheffect_project::render_queue::OutputModule, scale: f64) -> Image {
+        use artheffect_project::render_queue::RenderSettings;
         let project = Project::default();
         let settings = RenderSettings { resolution: scale, ..Default::default() };
         let job = Job {
             project: &project,
-            footage: &effectcraft_render::NoFootage,
+            footage: &artheffect_render::NoFootage,
             expr: None,
             accel: None,
-            comp: effectcraft_project::ItemId(0),
+            comp: artheffect_project::ItemId(0),
             settings: &settings,
             output,
             path: "unused.png",
@@ -1105,7 +1105,7 @@ mod tests {
     /// Match predicted dimensions across crop, padding, ROI scale, aspect locks and resize qualities.
     #[test]
     fn crop_resize_dimensions_match_the_output_module() {
-        use effectcraft_project::render_queue::{Crop, OutputModule, Resize};
+        use artheffect_project::render_queue::{Crop, OutputModule, Resize};
         let edges = Crop { enabled: true, left: 2, right: 2, ..Default::default() };
         let padding = Crop { enabled: true, left: -2, bottom: -2, ..Default::default() };
         let roi = |rect| Crop { enabled: true, use_roi: true, roi: Some(rect), ..Default::default() };
@@ -1133,7 +1133,7 @@ mod tests {
     /// Exercise zero/empty inputs, collapsed crops and existing caps on extreme single-axis resizes.
     #[test]
     fn crop_resize_zero_and_extreme_sizes_stay_bounded() {
-        use effectcraft_project::render_queue::{Crop, OutputModule, Resize};
+        use artheffect_project::render_queue::{Crop, OutputModule, Resize};
         for quality in [ResizeQuality::Low, ResizeQuality::High] {
             for (size, crop, width, height, expected) in [
                 ((8, 6), Crop::default(), 0, 0, (1, 1)),

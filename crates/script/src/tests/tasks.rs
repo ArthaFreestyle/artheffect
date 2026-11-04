@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 
-use effectcraft_engine::{ScriptRequest, Session};
+use artheffect_engine::{ScriptRequest, Session};
 use serde_json::{Value, json};
 use web_time::{Duration, Instant};
 
@@ -12,9 +12,9 @@ use crate::run_code;
 use crate::tasks::run_tasks_at;
 
 fn session() -> Session {
-    let mut s = Session { expr: Some(Arc::new(effectcraft_expr::Expressions)), ..Default::default() };
+    let mut s = Session { expr: Some(Arc::new(artheffect_expr::Expressions)), ..Default::default() };
     crate::install(&mut s);
-    s.config = Some(Arc::new(effectcraft_engine::config::MemoryConfig::default()));
+    s.config = Some(Arc::new(artheffect_engine::config::MemoryConfig::default()));
     s
 }
 

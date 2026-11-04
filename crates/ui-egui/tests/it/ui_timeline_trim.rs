@@ -1,16 +1,16 @@
 //! Trimming layers in the Timeline as in After Effects: the pointer over either end of a layer
 //! bar (a few points inside it or just outside) shows the trim cursor, and dragging that end
 //! moves the layer's In or Out point.
-use effectcraft_engine::Session;
-use effectcraft_engine::project::LayerId;
-use effectcraft_ui_egui::EffectcraftApp;
+use artheffect_engine::Session;
+use artheffect_engine::project::LayerId;
+use artheffect_ui_egui::ArtheffectApp;
 use egui::{CursorIcon, Event, Modifiers, Pos2, pos2, vec2};
 use egui_kittest::Harness;
 use serde_json::json;
 
 /// A 10 s comp at 30 fps with a solid trimmed to 2–6 s and a 20 s precomp trimmed to 3–7 s (its
 /// source runs past both ends, so the slip zones sit right beside its bar's ends).
-fn harness() -> (Harness<'static, EffectcraftApp>, u64, u64) {
+fn harness() -> (Harness<'static, ArtheffectApp>, u64, u64) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Inner", "width": 320, "height": 180, "frameRate": 30, "duration": 20})).unwrap();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "frameRate": 30, "duration": 10})).unwrap();
@@ -19,32 +19,32 @@ fn harness() -> (Harness<'static, EffectcraftApp>, u64, u64) {
     let pre = s.execute("layer.addItem", json!({"item": "Inner"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("layer.timing", json!({"layers": [pre], "in": 3.0, "out": 7.0})).unwrap();
     s.execute("layer.select", json!({"layers": []})).unwrap();
-    let app = EffectcraftApp::new(s);
+    let app = ArtheffectApp::new(s);
     let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| app);
     h.run_steps(4);
     (h, solid, pre)
 }
 
-fn bar(h: &Harness<'_, EffectcraftApp>, layer: u64) -> egui::Rect {
+fn bar(h: &Harness<'_, ArtheffectApp>, layer: u64) -> egui::Rect {
     let e = h.state().auto.find(&format!("timeline.layer.{layer}.bar")).expect("layer bar").clone();
     egui::Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
 /// The cursor shown with the pointer resting at `p`.
-fn cursor_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) -> CursorIcon {
+fn cursor_at(h: &mut Harness<'_, ArtheffectApp>, p: Pos2) -> CursorIcon {
     h.event(Event::PointerMoved(p));
     h.run_steps(3);
     h.output().platform_output.cursor_icon
 }
 
 /// (in, out, start) of `layer` in seconds.
-fn timing(h: &Harness<'_, EffectcraftApp>, layer: u64) -> (f64, f64, f64) {
+fn timing(h: &Harness<'_, ArtheffectApp>, layer: u64) -> (f64, f64, f64) {
     let comp = h.state().session.active_comp().unwrap();
     let l = comp.layer(LayerId(layer)).unwrap();
     (l.in_point.seconds(), l.out_point.seconds(), l.start_time.seconds())
 }
 
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'_, ArtheffectApp>, from: Pos2, to: Pos2) {
     h.event(Event::PointerMoved(from));
     h.step();
     h.event(Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -59,7 +59,7 @@ fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
 
 /// Both ends of every bar show the trim cursor, just inside and just outside the end; the middle
 /// doesn't. The same holds for a selected layer, a twirled-open layer and a short bar.
-fn assert_trim_cursor_at_ends(h: &mut Harness<'_, EffectcraftApp>, layer: u64, case: &str) {
+fn assert_trim_cursor_at_ends(h: &mut Harness<'_, ArtheffectApp>, layer: u64, case: &str) {
     let b = bar(h, layer);
     let y = b.center().y;
     for (what, x) in [("in, outside", b.min.x - 3.0), ("in, inside", b.min.x + 2.0), ("out, inside", b.max.x - 2.0), ("out, outside", b.max.x + 3.0)] {
@@ -125,11 +125,11 @@ fn dragging_bar_ends_trims_in_and_out() {
 #[test]
 fn duration_column_counts_frames_from_any_frame_count() {
     let (mut h, solid, _) = harness();
-    effectcraft_ui_egui::panels::timeline::set_column(&mut h.state_mut().ui.timeline, "in", true).unwrap();
-    effectcraft_ui_egui::panels::timeline::set_column(&mut h.state_mut().ui.timeline, "duration", true).unwrap();
+    artheffect_ui_egui::panels::timeline::set_column(&mut h.state_mut().ui.timeline, "in", true).unwrap();
+    artheffect_ui_egui::panels::timeline::set_column(&mut h.state_mut().ui.timeline, "duration", true).unwrap();
     h.state_mut().session.execute("file.projectSettings", json!({"timeDisplay": "frames", "frameStart": 1})).unwrap();
     h.run_steps(3);
-    let cell = |h: &Harness<'_, EffectcraftApp>, kind: &str| h.state().auto.find(&format!("timeline.layer.{solid}.{kind}")).expect("cell").label.clone();
+    let cell = |h: &Harness<'_, ArtheffectApp>, kind: &str| h.state().auto.find(&format!("timeline.layer.{solid}.{kind}")).expect("cell").label.clone();
     assert_eq!(cell(&h, "in"), "00061");
     assert_eq!(cell(&h, "duration"), "00120");
 }

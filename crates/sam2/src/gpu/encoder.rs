@@ -1,4 +1,4 @@
-// Original work for EffectCraft; the maths follows the Hugging Face `transformers` SAM 2
+// Original work for Artheffect; the maths follows the Hugging Face `transformers` SAM 2
 // implementation (Apache-2.0, see NOTICE).
 //! The vision encoder on the GPU: patch embedding, the Hiera blocks and the neck, with the decoder's two
 //! skip convolutions. Activations stay on the GPU between the kernels; only the three tensors the rest of

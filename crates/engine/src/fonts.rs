@@ -1,13 +1,13 @@
 use super::prefs;
 
 pub fn text_families() -> Vec<String> {
-    effectcraft_text::families().into_iter().map(|(f, _)| f).collect()
+    artheffect_text::families().into_iter().map(|(f, _)| f).collect()
 }
 
 /// The styles a family offers (its own faces, in weight order), for the style menus. A family
 /// that isn't installed offers the usual styles, which resolve to Inter's.
 pub fn font_styles(family: &str) -> Vec<String> {
-    effectcraft_text::families()
+    artheffect_text::families()
         .into_iter()
         .find(|(f, _)| f.eq_ignore_ascii_case(family))
         .map(|(_, st)| st)
@@ -17,7 +17,7 @@ pub fn font_styles(family: &str) -> Vec<String> {
 
 /// The OpenType feature tags (GSUB / GPOS) of the face a family + style resolves to.
 pub fn font_features(family: &str, style: &str) -> Vec<String> {
-    effectcraft_text::fonts::face(effectcraft_text::resolve(family, style).face).features()
+    artheffect_text::fonts::face(artheffect_text::resolve(family, style).face).features()
 }
 
 /// One row of the Character panel's font menu.
@@ -37,11 +37,11 @@ pub struct FontRow {
 /// the font menu's preview (Settings ▸ Type ▸ Show Font Preview).
 pub fn font_preview(family: &str, size: f64) -> Vec<Vec<[f32; 2]>> {
     use kurbo::PathEl;
-    let st = effectcraft_keyframe::text_doc::CharStyle { font: family.to_string(), size, ..Default::default() };
+    let st = artheffect_keyframe::text_doc::CharStyle { font: family.to_string(), size, ..Default::default() };
     let mut out = vec![];
     let mut x = 0.0;
     for ch in "Sample".chars() {
-        let (path, adv) = effectcraft_text::char_glyph_style(&st, ch);
+        let (path, adv) = artheffect_text::char_glyph_style(&st, ch);
         let mut cur: Vec<[f32; 2]> = vec![];
         let pt = |p: kurbo::Point| [(p.x + x) as f32, p.y as f32];
         kurbo::flatten(&path, 0.2, |el| match el {
@@ -75,8 +75,8 @@ pub fn font_preview(family: &str, size: f64) -> Vec<Vec<[f32; 2]>> {
 /// for the menu's Variable Fonts filter.
 pub fn font_menu(prefs: &prefs::Prefs) -> Vec<FontRow> {
     let all = text_families();
-    let native = if prefs.type_.font_names_in_english { Default::default() } else { effectcraft_text::fonts::native_families() };
-    let variable = effectcraft_text::fonts::variable_families();
+    let native = if prefs.type_.font_names_in_english { Default::default() } else { artheffect_text::fonts::native_families() };
+    let variable = artheffect_text::fonts::variable_families();
     let row = |f: &String, recent: bool| FontRow {
         family: f.clone(),
         display: native.get(f).cloned().unwrap_or_else(|| f.clone()),

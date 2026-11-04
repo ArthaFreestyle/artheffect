@@ -15,7 +15,7 @@ fn run_in_child(variable: &str, test: &str) {
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
 fn cjk_requests_keep_their_language_and_cache_entries() {
-    const CHILD: &str = "EFFECTCRAFT_TEST_ISOLATED_CJK";
+    const CHILD: &str = "ARTHEFFECT_TEST_ISOLATED_CJK";
     if std::env::var_os(CHILD).is_none() {
         run_in_child(CHILD, "fonts::tests::cjk_requests_keep_their_language_and_cache_entries");
         return;
@@ -84,7 +84,7 @@ fn cjk_requests_keep_their_language_and_cache_entries() {
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
 fn zh_hans_han_fallback_puts_the_chinese_family_first() {
-    const CHILD: &str = "EFFECTCRAFT_TEST_ZH_HANS_ORDER";
+    const CHILD: &str = "ARTHEFFECT_TEST_ZH_HANS_ORDER";
     if std::env::var_os(CHILD).is_none() {
         run_in_child(CHILD, "fonts::tests::zh_hans_han_fallback_puts_the_chinese_family_first");
         return;
@@ -233,13 +233,13 @@ fn postscript_and_full_names_resolve() {
 /// font menus list every instance.
 #[test]
 fn variable_named_instances_resolve_and_list() {
-    const FAMILY: &str = "EffectCraft Instance Test";
+    const FAMILY: &str = "Artheffect Instance Test";
     let instances = [
-        ("Light", 300.0, Some("EffectCraftInstanceTest-Light")),
-        ("Regular", 400.0, Some("EffectCraftInstanceTest-Regular")),
-        ("Black", 900.0, Some("EffectCraftInstanceTest-Black")),
+        ("Light", 300.0, Some("ArtheffectInstanceTest-Light")),
+        ("Regular", 400.0, Some("ArtheffectInstanceTest-Regular")),
+        ("Black", 900.0, Some("ArtheffectInstanceTest-Black")),
         ("Extra Bold", 800.0, None),
-        ("Bold Italic", 700.0, Some("EffectCraftInstanceTest-BoldItalic")),
+        ("Bold Italic", 700.0, Some("ArtheffectInstanceTest-BoldItalic")),
     ];
     assert_eq!(add_font_data(crate::sfnt::test_font::variable(FAMILY, &instances, true)).len(), 1);
     let wght = |r: &Resolved| instance_variations(r);
@@ -256,11 +256,11 @@ fn variable_named_instances_resolve_and_list() {
     assert!(!bold.synth_bold, "{bold:?}");
     assert_eq!(wght(&bold), vec![("wght".to_string(), 800.0)]);
     // By PostScript name, the font's own and the derived one, and by full name.
-    let ps = resolve("EffectCraftInstanceTest-Black", "Regular");
+    let ps = resolve("ArtheffectInstanceTest-Black", "Regular");
     assert!(!ps.missing && ps.face == black.face, "{ps:?}");
     assert_eq!(wght(&ps), vec![("wght".to_string(), 900.0)]);
-    assert_eq!(wght(&resolve("EffectCraftInstanceTest-ExtraBold", "")), vec![("wght".to_string(), 800.0)]);
-    assert_eq!(wght(&resolve("effectcraft instance test extra bold", "")), vec![("wght".to_string(), 800.0)]);
+    assert_eq!(wght(&resolve("ArtheffectInstanceTest-ExtraBold", "")), vec![("wght".to_string(), 800.0)]);
+    assert_eq!(wght(&resolve("artheffect instance test extra bold", "")), vec![("wght".to_string(), 800.0)]);
     // A named instance keeps its own index, so layout applies its axis values.
     let bold_italic = resolve(FAMILY, "Bold Italic");
     assert!(!bold_italic.missing && !bold_italic.synth_bold && !bold_italic.synth_italic);

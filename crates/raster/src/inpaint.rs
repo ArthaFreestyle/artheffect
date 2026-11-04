@@ -669,7 +669,7 @@ fn trace(context: &TraceContext<'_>, start: TraceStart) -> Option<([f32; 4], usi
 }
 
 /// A hardware backend for the fill's stages (the GPU compositor implements it; see
-/// `effectcraft_render::Accelerator::inpaint`). Every method has the CPU implementation as its
+/// `artheffect_render::Accelerator::inpaint`). Every method has the CPU implementation as its
 /// default, so a backend that cannot take a stage returns the CPU's work and the fill stays
 /// correct — only slower.
 ///

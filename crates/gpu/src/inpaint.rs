@@ -1,13 +1,13 @@
 //! Content-Aware Fill's per-frame synthesis and flow on the GPU: PatchMatch's multi-scale EM
-//! loop, propagation, random search and vote of `effectcraft_raster::inpaint`, and the block
-//! matching of `effectcraft_raster::flow::block_flow`, as compute kernels following the CPU's
+//! loop, propagation, random search and vote of `artheffect_raster::inpaint`, and the block
+//! matching of `artheffect_raster::flow::block_flow`, as compute kernels following the CPU's
 //! steps (`shaders/inpaint.wgsl`).
 //!
 //! The fill's input frames are composited on the CPU by design (analyses do not use the job
-//! worker's GPU: `effectcraft_engine::background::offload::job_accel`), so this module is about the fill
+//! worker's GPU: `artheffect_engine::background::offload::job_accel`), so this module is about the fill
 //! itself — the part that runs for minutes on a large mask, and whose parallel search is what a
 //! device wins on. The membrane (harmonic) solve, the flow's hole completion, the orchestration
-//! ([`effectcraft_raster::inpaint::fill_sequence_with`]), the flow-guided propagation and the
+//! ([`artheffect_raster::inpaint::fill_sequence_with`]), the flow-guided propagation and the
 //! per-frame flow control stay on the CPU: the membrane is bandwidth-bound (see
 //! [`FillBackend::patch`]), and the propagation's coupling is sequential, needing every frame of
 //! the range resident at once.
@@ -16,9 +16,9 @@
 //! scan-order propagation becomes a two-pass checkerboard, and its in-place relaxation becomes
 //! Jacobi reads. Both solve the same problem to the same quality (`tests/inpaint.rs`).
 
-use effectcraft_raster::Image;
-use effectcraft_raster::flow::{Flow, block_flow};
-use effectcraft_raster::inpaint::{FillBackend, complete_flow, dilate};
+use artheffect_raster::Image;
+use artheffect_raster::flow::{Flow, block_flow};
+use artheffect_raster::inpaint::{FillBackend, complete_flow, dilate};
 
 use crate::Gpu;
 use crate::context::{Enc, GpuContext, GpuImage, KernelImages, Params};
@@ -309,7 +309,7 @@ impl FillBackend for Gpu {
         {
             return out;
         }
-        effectcraft_raster::inpaint::patch_fill(img, hole, init, patch, seed)
+        artheffect_raster::inpaint::patch_fill(img, hole, init, patch, seed)
     }
 
     /// The block matching that the sequence's flow-guided propagation starts from, which is the
@@ -322,7 +322,7 @@ impl FillBackend for Gpu {
     ///
     /// The field is exhaustive, not heuristic: it matches the CPU's to a float rounding, so the
     /// propagation sees the same motion. Both A's block per candidate (hoisted into registers)
-    /// and the CPU's `Plane::luma` (computed here by [`effectcraft_raster::flow::luma_pair`] and
+    /// and the CPU's `Plane::luma` (computed here by [`artheffect_raster::flow::luma_pair`] and
     /// uploaded, because a device may contract `a·b + c` into a multiply-add and round the luma
     /// differently) are why it is that close.
     ///
@@ -344,7 +344,7 @@ impl FillBackend for Gpu {
 
 // ------------------------------------------------------------------ block flow
 
-/// `effectcraft_raster::flow::block_flow(a, b, 8, 6)` on the device: the two frames' luma
+/// `artheffect_raster::flow::block_flow(a, b, 8, 6)` on the device: the two frames' luma
 /// pyramids, the coarse-to-fine search, the sub-pixel fit and the 3×3 median, returning the raw
 /// field ([`complete_flow`] does the hole completion). `None` where the device cannot run it and
 /// the caller falls back to the CPU.
@@ -373,7 +373,7 @@ pub(crate) fn flow_image(g: &GpuContext, a: &Image, b: &Image) -> Option<Flow> {
     }
     // The luma is the CPU's (`luma_pair`), so the field matches `block_flow`'s bit for bit; the
     // halves below are exact additions and a multiply by a power of two.
-    let pair = g.upload_image(&effectcraft_raster::flow::luma_pair(a, b))?;
+    let pair = g.upload_image(&artheffect_raster::flow::luma_pair(a, b))?;
     let mut luma: Vec<GpuImage> = Vec::with_capacity(dims.len());
     luma.push(pair);
     for k in 1..dims.len() {

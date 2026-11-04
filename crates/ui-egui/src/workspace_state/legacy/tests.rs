@@ -18,7 +18,7 @@ fn stacked_frames_respect_the_remaining_tree_depth() {
 
 #[test]
 fn oversized_legacy_stack_load_does_not_abort() {
-    const CHILD: &str = "EFFECTCRAFT_TEST_LEGACY_STACK_CHILD";
+    const CHILD: &str = "ARTHEFFECT_TEST_LEGACY_STACK_CHILD";
     if std::env::var_os(CHILD).is_some() {
         let entry = serde_json::json!({"panel": "Info", "open": true});
         let value = serde_json::json!({"workspaces": {"Oversized": {"Stack": {"entries": vec![entry; 20_000]}}}});

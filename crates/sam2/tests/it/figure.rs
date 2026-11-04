@@ -1,6 +1,6 @@
-use effectcraft_sam2::model::ImageModel;
-use effectcraft_sam2::prompt::Prompt;
-use effectcraft_sam2::weights::Weights;
+use artheffect_sam2::model::ImageModel;
+use artheffect_sam2::prompt::Prompt;
+use artheffect_sam2::weights::Weights;
 
 fn figure(w: usize, h: usize) -> (Vec<[f32; 3]>, Vec<bool>) {
     let mut rgb = vec![[0f32; 3]; w * h];
@@ -53,7 +53,7 @@ fn iou(p: &[f32], gt: &[bool]) -> f64 {
 #[test]
 fn a_box_makes_sam2_cover_every_part_of_the_object() {
     let wf = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../sam2-tiny/model.safetensors");
-    let wf = std::env::var_os("EFFECTCRAFT_SAM2_DIR").map_or(wf, |d| std::path::PathBuf::from(d).join("model.safetensors"));
+    let wf = std::env::var_os("ARTHEFFECT_SAM2_DIR").map_or(wf, |d| std::path::PathBuf::from(d).join("model.safetensors"));
     if !wf.exists() {
         eprintln!("skipped: no SAM 2 weights");
         return;
@@ -61,7 +61,7 @@ fn a_box_makes_sam2_cover_every_part_of_the_object() {
     let model = ImageModel::load(&Weights::open(&wf).unwrap()).unwrap();
     let (w, h) = (256usize, 256usize);
     let (rgb, gt) = figure(w, h);
-    let enc = model.encode(&effectcraft_sam2::mask::preprocess(&rgb, w, h).unwrap()).unwrap();
+    let enc = model.encode(&artheffect_sam2::mask::preprocess(&rgb, w, h).unwrap()).unwrap();
     let s = 4.0f32;
     let clicks = vec![([128.0 * s, 75.0 * s], true), ([128.0 * s, 100.0 * s], true), ([128.0 * s, 125.0 * s], true), ([20.0 * s, 20.0 * s], false)];
     let mask = |p: &Prompt| -> (f64, f32) {

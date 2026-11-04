@@ -4,19 +4,19 @@
 //! 3D views (Active Camera / Front / … / Custom View 3), camera tools (orbit, pan, dolly) and
 //! camera/light wireframes.
 
-use effectcraft_engine::commands::shape_tool::PaintKind;
-use effectcraft_engine::effects::puppet::PinKind;
-use effectcraft_engine::geom::{Mat3, vec2 as gv2};
-use effectcraft_engine::project::{Comp, Layer, LayerId, LayerSource};
-use effectcraft_engine::render::EvalCtx;
-use effectcraft_engine::render::three_d::{self, CameraState, View3D};
-use effectcraft_engine::time::Tick;
+use artheffect_engine::commands::shape_tool::PaintKind;
+use artheffect_engine::effects::puppet::PinKind;
+use artheffect_engine::geom::{Mat3, vec2 as gv2};
+use artheffect_engine::project::{Comp, Layer, LayerId, LayerSource};
+use artheffect_engine::render::EvalCtx;
+use artheffect_engine::render::three_d::{self, CameraState, View3D};
+use artheffect_engine::time::Tick;
 use egui::{Align2, Color32, Pos2, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
 use serde_json::json;
 
 use crate::state::Tool;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{ArtheffectApp, widgets};
 
 /// A 3D view's name in the interface's language: the View menu's row for its `view.3d.*` command,
 /// else the panel catalog, else the English source. The menu's rows carry After Effects' words —
@@ -100,7 +100,7 @@ thread_local! {
 /// What the passes of one viewer frame share (see [`show`]).
 struct Vw<'a> {
     t: Tokens,
-    cid: effectcraft_engine::project::ItemId,
+    cid: artheffect_engine::project::ItemId,
     nav: Rect,
     bar: Rect,
     err_bar: Rect,
@@ -120,14 +120,14 @@ struct Vw<'a> {
     space_pan: bool,
     text_owns: bool,
     gid: egui::Id,
-    track_cur: Option<(LayerId, effectcraft_engine::project::Uid)>,
+    track_cur: Option<(LayerId, artheffect_engine::project::Uid)>,
     has_3d: bool,
     ctx: egui::Context,
     comp_name: String,
     p: egui::Painter,
     painter: egui::Painter,
     selected: Vec<LayerId>,
-    sel_vertices: Vec<effectcraft_engine::VertexRef>,
+    sel_vertices: Vec<artheffect_engine::VertexRef>,
     ft: Option<ov::FtBox>,
     comp: &'a Comp,
     gesture: Option<Gesture>,
@@ -143,14 +143,14 @@ struct Vw<'a> {
     puppet_layers: Vec<(&'a Layer, super::puppet_tool::Overlay)>,
 }
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let Some(cid) = app.session.active_comp_id() else {
         empty_state(app, ui, rect);
         return;
     };
-    let comp = app.session.project.comp_arc(cid).unwrap_or_else(|| effectcraft_engine::project::Comp::new(1920, 1080, Default::default(), Tick::ZERO).into());
+    let comp = app.session.project.comp_arc(cid).unwrap_or_else(|| artheffect_engine::project::Comp::new(1920, 1080, Default::default(), Tick::ZERO).into());
     let comp_name = app.session.project.item(cid).map(|i| i.name.clone()).unwrap_or_default();
     let p = ui.painter().clone();
     VIEW_CAM.with(|c| c.set(app.session.view_camera(cid)));
@@ -230,7 +230,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     phase_tail(app, ui, &ectx, &mut v);
 }
 
-fn phase_nav(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect, v: &mut Vw<'_>) {
+fn phase_nav(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect, v: &mut Vw<'_>) {
     let t = v.t;
     let cid = v.cid;
     let p = v.p.clone();
@@ -269,7 +269,7 @@ fn phase_nav(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect, v: &mut Vw
     v.nav = nav;
 }
 
-fn phase_layout(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect, v: &mut Vw<'_>) {
+fn phase_layout(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect, v: &mut Vw<'_>) {
     let t = v.t;
     let cid = v.cid;
     let nav = v.nav;
@@ -326,7 +326,7 @@ fn phase_layout(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect, v: &mut
     v.painter = painter;
 }
 
-fn phase_frame(app: &mut EffectcraftApp, v: &mut Vw<'_>) {
+fn phase_frame(app: &mut ArtheffectApp, v: &mut Vw<'_>) {
     let cid = v.cid;
     let comp_rect = v.comp_rect;
     let zoom = v.zoom;
@@ -369,7 +369,7 @@ fn phase_frame(app: &mut EffectcraftApp, v: &mut Vw<'_>) {
     v.time = time;
 }
 
-fn phase_guides(app: &mut EffectcraftApp, ectx: &EvalCtx, v: &mut Vw<'_>) {
+fn phase_guides(app: &mut ArtheffectApp, ectx: &EvalCtx, v: &mut Vw<'_>) {
     let cid = v.cid;
     let area = v.area;
     let comp_rect = v.comp_rect;
@@ -469,7 +469,7 @@ fn phase_guides(app: &mut EffectcraftApp, ectx: &EvalCtx, v: &mut Vw<'_>) {
     v.overlays = overlays;
 }
 
-fn phase_layers(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, v: &mut Vw<'_>) {
+fn phase_layers(app: &mut ArtheffectApp, ui: &mut egui::Ui, ectx: &EvalCtx, v: &mut Vw<'_>) {
     let t = v.t;
     let zoom = v.zoom;
     let cw = v.cw;
@@ -537,7 +537,7 @@ fn phase_layers(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, v: 
             // selected collapsed precomp.
             if app.session.prefs.previews.show_internal_wireframes
                 && l.switches.collapse
-                && let effectcraft_engine::project::LayerSource::Comp { item } = &l.source
+                && let artheffect_engine::project::LayerSource::Comp { item } = &l.source
                 && let Some(nc) = app.session.project.comp(*item)
             {
                 let (outer, _) = l2c(ectx, l);
@@ -601,13 +601,13 @@ fn phase_layers(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, v: 
                 if l.is_3d() {
                     let w = ectx.world_matrix(l);
                     let pc = cam_state(ectx).projection(cw as f64, ch as f64) * w;
-                    let a3 = effectcraft_engine::geom::vec3(a[0], a[1], a[2]);
+                    let a3 = artheffect_engine::geom::vec3(a[0], a[1], a[2]);
                     let len = 60.0 / zoom as f64;
                     let pinv = parent_world_inverse(ectx, l);
                     for (axis, col, name) in [
-                        (effectcraft_engine::geom::vec3(len, 0.0, 0.0), Color32::from_rgb(0xe0, 0x50, 0x50), "x"),
-                        (effectcraft_engine::geom::vec3(0.0, len, 0.0), Color32::from_rgb(0x60, 0xd0, 0x60), "y"),
-                        (effectcraft_engine::geom::vec3(0.0, 0.0, len), Color32::from_rgb(0x50, 0x8c, 0xf0), "z"),
+                        (artheffect_engine::geom::vec3(len, 0.0, 0.0), Color32::from_rgb(0xe0, 0x50, 0x50), "x"),
+                        (artheffect_engine::geom::vec3(0.0, len, 0.0), Color32::from_rgb(0x60, 0xd0, 0x60), "y"),
+                        (artheffect_engine::geom::vec3(0.0, 0.0, len), Color32::from_rgb(0x50, 0x8c, 0xf0), "z"),
                     ] {
                         // (clipped at the camera's near plane, #572)
                         let Some([o, e]) = project_segment(&pc, a3, a3 + axis) else { continue };
@@ -643,7 +643,7 @@ fn phase_layers(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, v: 
     v.sel_vertices = sel_vertices;
 }
 
-fn phase_scene(app: &mut EffectcraftApp, ectx: &EvalCtx, v: &mut Vw<'_>) {
+fn phase_scene(app: &mut ArtheffectApp, ectx: &EvalCtx, v: &mut Vw<'_>) {
     let t = v.t;
     let cid = v.cid;
     let area = v.area;
@@ -677,13 +677,13 @@ fn phase_scene(app: &mut EffectcraftApp, ectx: &EvalCtx, v: &mut Vw<'_>) {
     }
     if has_3d && app.session.prefs.three_d.show_reference_axes {
         let pc = cam_state(ectx).projection(cw as f64, ch as f64);
-        let o3 = effectcraft_engine::geom::vec3(cw as f64 / 2.0, ch as f64 / 2.0, 0.0);
+        let o3 = artheffect_engine::geom::vec3(cw as f64 / 2.0, ch as f64 / 2.0, 0.0);
         let o = pc.apply(o3);
         let corner = pos2(area.min.x + 34.0, area.max.y - 34.0);
         for (axis, col, name) in [
-            (effectcraft_engine::geom::vec3(1.0, 0.0, 0.0), Color32::from_rgb(0xe0, 0x50, 0x50), "X"),
-            (effectcraft_engine::geom::vec3(0.0, 1.0, 0.0), Color32::from_rgb(0x60, 0xd0, 0x60), "Y"),
-            (effectcraft_engine::geom::vec3(0.0, 0.0, 1.0), Color32::from_rgb(0x50, 0x8c, 0xf0), "Z"),
+            (artheffect_engine::geom::vec3(1.0, 0.0, 0.0), Color32::from_rgb(0xe0, 0x50, 0x50), "X"),
+            (artheffect_engine::geom::vec3(0.0, 1.0, 0.0), Color32::from_rgb(0x60, 0xd0, 0x60), "Y"),
+            (artheffect_engine::geom::vec3(0.0, 0.0, 1.0), Color32::from_rgb(0x50, 0x8c, 0xf0), "Z"),
         ] {
             let e = pc.apply(o3 + axis * 10.0);
             let d = vec2((e.x - o.x) as f32, (e.y - o.y) as f32);
@@ -715,8 +715,8 @@ fn phase_scene(app: &mut EffectcraftApp, ectx: &EvalCtx, v: &mut Vw<'_>) {
         && layer.is_active_at(time)
     {
         let (m, _) = l2c(ectx, layer);
-        let (w, h) = effectcraft_engine::render::source_size(&app.session.project, layer);
-        let c = m.apply(effectcraft_engine::geom::vec2(w as f64 / 2.0, h as f64 / 2.0));
+        let (w, h) = artheffect_engine::render::source_size(&app.session.project, layer);
+        let c = m.apply(artheffect_engine::geom::vec2(w as f64 / 2.0, h as f64 / 2.0));
         let at = map.to_screen([c.x, c.y]);
         let text = pr.banner();
         let galley = painter.layout_no_wrap(text.clone(), Tokens::medium(13.0), Color32::WHITE);
@@ -730,8 +730,8 @@ fn phase_scene(app: &mut EffectcraftApp, ectx: &EvalCtx, v: &mut Vw<'_>) {
     // for its codec / profile): say why on the layer instead of leaving a black picture.
     for (notices, (layer, why)) in footage_problems(app, ectx, comp, time).into_iter().enumerate() {
         let (m, _) = l2c(ectx, layer);
-        let (w, h) = effectcraft_engine::render::source_size(&app.session.project, layer);
-        let c = m.apply(effectcraft_engine::geom::vec2(w as f64 / 2.0, h as f64 / 2.0));
+        let (w, h) = artheffect_engine::render::source_size(&app.session.project, layer);
+        let c = m.apply(artheffect_engine::geom::vec2(w as f64 / 2.0, h as f64 / 2.0));
         let at = map.to_screen([c.x, c.y]);
         let text = format!("{}: {}", layer.name, why);
         let galley = painter.layout(text.clone(), Tokens::medium(12.0), Color32::WHITE, (map.area.width() - 40.0).clamp(80.0, 420.0));
@@ -749,7 +749,7 @@ fn phase_scene(app: &mut EffectcraftApp, ectx: &EvalCtx, v: &mut Vw<'_>) {
 
 /// Up to three layers active at `time` whose footage, or the proxy in use for footage or a
 /// precomp, can't be decoded, each with the reason.
-fn footage_problems<'c>(app: &EffectcraftApp, ectx: &EvalCtx, comp: &'c Comp, time: Tick) -> Vec<(&'c Layer, String)> {
+fn footage_problems<'c>(app: &ArtheffectApp, ectx: &EvalCtx, comp: &'c Comp, time: Tick) -> Vec<(&'c Layer, String)> {
     comp.layers
         .iter()
         .filter(|l| l.is_active_at(time) && l.switches.video)
@@ -761,7 +761,7 @@ fn footage_problems<'c>(app: &EffectcraftApp, ectx: &EvalCtx, comp: &'c Comp, ti
         .collect()
 }
 
-fn phase_rigs(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, v: &mut Vw<'_>) {
+fn phase_rigs(app: &mut ArtheffectApp, ui: &mut egui::Ui, ectx: &EvalCtx, v: &mut Vw<'_>) {
     let t = v.t;
     let cid = v.cid;
     let area = v.area;
@@ -819,7 +819,7 @@ fn phase_rigs(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, v: &m
     v.ft = ft;
 }
 
-fn phase_menu(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, v: &mut Vw<'_>) -> egui::Response {
+fn phase_menu(app: &mut ArtheffectApp, ui: &mut egui::Ui, ectx: &EvalCtx, v: &mut Vw<'_>) -> egui::Response {
     let cid = v.cid;
     let area = v.area;
     let map = v.map;
@@ -866,7 +866,7 @@ fn phase_menu(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, v: &m
         if context_layers.is_empty() {
             ui.label(crate::i18n::tr("No unlocked layer selected"));
         } else {
-            let caps = context_layers.iter().filter_map(|id| comp.layer(effectcraft_engine::project::LayerId(*id))).fold(
+            let caps = context_layers.iter().filter_map(|id| comp.layer(artheffect_engine::project::LayerId(*id))).fold(
                 super::timeline::LayerMenuCaps::default(),
                 |mut caps, layer| {
                     let c = super::timeline::LayerMenuCaps::of(&app.session.project, layer);
@@ -917,7 +917,7 @@ fn wheel_scrub_frames(ctx: &egui::Context, pref: bool, scroll: &super::ViewerScr
     scrub.then_some((scroll.wheel_lines.round() as i64).clamp(-30, 30))
 }
 
-fn phase_hover(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, resp: &egui::Response, v: &mut Vw<'_>) {
+fn phase_hover(app: &mut ArtheffectApp, ui: &mut egui::Ui, ectx: &EvalCtx, resp: &egui::Response, v: &mut Vw<'_>) {
     let area = v.area;
     let zoom = v.zoom;
     let cw = v.cw;
@@ -1035,7 +1035,7 @@ fn phase_hover(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, resp
     v.gid = gid;
 }
 
-fn phase_press(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, resp: &egui::Response, v: &mut Vw<'_>) {
+fn phase_press(app: &mut ArtheffectApp, ui: &mut egui::Ui, ectx: &EvalCtx, resp: &egui::Response, v: &mut Vw<'_>) {
     let map = v.map;
     let ctx = v.ctx.clone();
     let painter = v.painter.clone();
@@ -1074,7 +1074,7 @@ fn phase_press(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, resp
 
 /// A middle-drag pans with any tool and doesn't enter the gesture phases, so nothing else can
 /// happen under it (#2854). A left-button gesture already running keeps going until it ends.
-fn middle_pan(app: &mut EffectcraftApp, ui: &egui::Ui, resp: &egui::Response, v: &Vw<'_>) -> bool {
+fn middle_pan(app: &mut ArtheffectApp, ui: &egui::Ui, resp: &egui::Response, v: &Vw<'_>) -> bool {
     let (middle, primary) = ui.input(|i| (i.pointer.middle_down(), i.pointer.primary_down() || i.pointer.primary_released()));
     if !middle || !resp.is_pointer_button_down_on() || (primary && ui.data(|d| d.get_temp::<Gesture>(v.gid)).is_some()) {
         return false;
@@ -1090,7 +1090,7 @@ fn middle_pan(app: &mut EffectcraftApp, ui: &egui::Ui, resp: &egui::Response, v:
     true
 }
 
-fn phase_dragstart(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, resp: &egui::Response, v: &mut Vw<'_>) {
+fn phase_dragstart(app: &mut ArtheffectApp, ui: &mut egui::Ui, ectx: &EvalCtx, resp: &egui::Response, v: &mut Vw<'_>) {
     let comp_rect = v.comp_rect;
     let zoom = v.zoom;
     let map = v.map;
@@ -1114,7 +1114,7 @@ fn phase_dragstart(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, 
         let reach = vertex_grab_radius(pos, handle_hits.iter().map(|(_, _, h, _)| *h));
         vertex_hits.iter().rev().filter(|h| h.tangent.is_some() == tangents).find(|h| h.pos.distance(pos) < reach).copied()
     };
-    let puppet_layer = |app: &mut EffectcraftApp, cpt: [f64; 2]| -> Option<LayerId> {
+    let puppet_layer = |app: &mut ArtheffectApp, cpt: [f64; 2]| -> Option<LayerId> {
         if puppet_layers.is_empty() {
             return pick(app, ectx, cpt, false);
         }
@@ -1179,7 +1179,7 @@ fn phase_dragstart(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, 
                     start: map.to_comp(press),
                     inv: l2c.inverse().unwrap_or(Mat3::IDENTITY),
                     l2p,
-                    own: effectcraft_engine::viewer::layer_targets(ectx, layer, false, app.session.state.snap_features),
+                    own: artheffect_engine::viewer::layer_targets(ectx, layer, false, app.session.state.snap_features),
                     anchor_only: mods.alt,
                 })
             }),
@@ -1270,7 +1270,7 @@ fn phase_dragstart(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, 
                         let inv = l2c.inverse()?;
                         let a = ectx.v3(&layer, tr, "anchor", [0.0; 3]);
                         let lp = inv.apply(gv2(cpt[0], cpt[1]));
-                        let hp = handle_point(effectcraft_engine::render::content_bounds(ectx, &layer)?, hi);
+                        let hp = handle_point(artheffect_engine::render::content_bounds(ectx, &layer)?, hi);
                         Some(Gesture::Scale {
                             layer: lid,
                             start_scale: ectx.v3(&layer, tr, "scale", [100.0; 3]),
@@ -1301,7 +1301,7 @@ fn phase_dragstart(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, 
                         })
                         .collect();
                     // Snap the grabbed layer's feature nearest the pointer (AE's snap handle).
-                    let snap_src = comp.layer(l).map(|layer| effectcraft_engine::viewer::layer_features(ectx, layer)).and_then(|f| {
+                    let snap_src = comp.layer(l).map(|layer| artheffect_engine::viewer::layer_features(ectx, layer)).and_then(|f| {
                         let c = map.to_comp(press);
                         f.into_iter().min_by(|a, b| {
                             let da = (a[0] - c[0]).powi(2) + (a[1] - c[1]).powi(2);
@@ -1344,7 +1344,7 @@ fn phase_dragstart(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, 
 /// Auto-pan (#999): a mask vertex, tangent or Pen drag held at (or past) the edge of the view
 /// pans it, as in After Effects, so the point moves on past what was visible. Returns the map
 /// of the panned view.
-fn edge_pan(app: &mut EffectcraftApp, ctx: &egui::Context, g: &Gesture, map: ViewerMap, pos: Pos2) -> ViewerMap {
+fn edge_pan(app: &mut ArtheffectApp, ctx: &egui::Context, g: &Gesture, map: ViewerMap, pos: Pos2) -> ViewerMap {
     if !matches!(g, Gesture::Vertices { .. } | Gesture::Tangent { .. } | Gesture::Pen { .. }) {
         return map;
     }
@@ -1374,7 +1374,7 @@ fn edge_pan_speed(area: Rect, pos: Pos2) -> egui::Vec2 {
     vec2(axis(pos.x, area.min.x, area.max.x), axis(pos.y, area.min.y, area.max.y))
 }
 
-fn phase_drag(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, resp: &egui::Response, v: &mut Vw<'_>) {
+fn phase_drag(app: &mut ArtheffectApp, ui: &mut egui::Ui, ectx: &EvalCtx, resp: &egui::Response, v: &mut Vw<'_>) {
     let t = v.t;
     let zoom = v.zoom;
     let map = v.map;
@@ -1497,7 +1497,7 @@ fn phase_drag(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, resp:
                     painter.rect_stroke(r, 0.0, Stroke::new(1.0, Color32::WHITE), StrokeKind::Middle);
                 }
                 d => {
-                    let mut snapper = |a: &EffectcraftApp, p: [f64; 2], l: LayerId| vt::snap(a, &ctx, ectx, &map, &[l], &[p], mods);
+                    let mut snapper = |a: &ArtheffectApp, p: [f64; 2], l: LayerId| vt::snap(a, &ctx, ectx, &map, &[l], &[p], mods);
                     if let Some(nd) = ov::update(app, &d, cpt, pos, mods, &merge, zoom, &mut snapper) {
                         ui.data_mut(|dd| dd.insert_temp(gid, Gesture::Overlay(nd)));
                     }
@@ -1581,7 +1581,7 @@ fn phase_drag(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, resp:
     v.gesture = gesture;
 }
 
-fn phase_stopped(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, resp: &egui::Response, v: &mut Vw<'_>) {
+fn phase_stopped(app: &mut ArtheffectApp, ui: &mut egui::Ui, ectx: &EvalCtx, resp: &egui::Response, v: &mut Vw<'_>) {
     let area = v.area;
     let comp_rect = v.comp_rect;
     let map = v.map;
@@ -1677,7 +1677,7 @@ fn phase_stopped(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, re
     v.pin_hits = pin_hits;
 }
 
-fn phase_clicked(app: &mut EffectcraftApp, ectx: &EvalCtx, resp: &egui::Response, v: &mut Vw<'_>) {
+fn phase_clicked(app: &mut ArtheffectApp, ectx: &EvalCtx, resp: &egui::Response, v: &mut Vw<'_>) {
     let area = v.area;
     let zoom = v.zoom;
     let cw = v.cw;
@@ -1699,7 +1699,7 @@ fn phase_clicked(app: &mut EffectcraftApp, ectx: &EvalCtx, resp: &egui::Response
         let reach = vertex_grab_radius(pos, handle_hits.iter().map(|(_, _, h, _)| *h));
         vertex_hits.iter().rev().filter(|h| h.tangent.is_some() == tangents).find(|h| h.pos.distance(pos) < reach).copied()
     };
-    let puppet_layer = |app: &mut EffectcraftApp, cpt: [f64; 2]| -> Option<LayerId> {
+    let puppet_layer = |app: &mut ArtheffectApp, cpt: [f64; 2]| -> Option<LayerId> {
         if puppet_layers.is_empty() {
             return pick(app, ectx, cpt, false);
         }
@@ -1817,7 +1817,7 @@ fn phase_clicked(app: &mut EffectcraftApp, ectx: &EvalCtx, resp: &egui::Response
     v.puppet_layers = puppet_layers;
 }
 
-fn phase_dblclick(app: &mut EffectcraftApp, ectx: &EvalCtx, resp: &egui::Response, v: &mut Vw<'_>) {
+fn phase_dblclick(app: &mut ArtheffectApp, ectx: &EvalCtx, resp: &egui::Response, v: &mut Vw<'_>) {
     let map = v.map;
     let text_owns = v.text_owns;
     let ctx = v.ctx.clone();
@@ -1852,7 +1852,7 @@ fn phase_dblclick(app: &mut EffectcraftApp, ectx: &EvalCtx, resp: &egui::Respons
         let roto = app.ui.tool.roto_kind(false).is_some();
         if let Some(l) = pick(app, ectx, cpt, false).and_then(|l| comp.layer(l)) {
             match &l.source {
-                effectcraft_engine::project::LayerSource::Comp { item } => app.session.open_comp(*item),
+                artheffect_engine::project::LayerSource::Comp { item } => app.session.open_comp(*item),
                 // With a Roto Brush tool, double-clicking a layer opens it in the Layer panel,
                 // where the brush works (After Effects).
                 _ if roto => {
@@ -1871,7 +1871,7 @@ fn phase_dblclick(app: &mut EffectcraftApp, ectx: &EvalCtx, resp: &egui::Respons
     v.paths = paths;
 }
 
-fn phase_tail(app: &mut EffectcraftApp, ui: &mut egui::Ui, ectx: &EvalCtx, v: &mut Vw<'_>) {
+fn phase_tail(app: &mut ArtheffectApp, ui: &mut egui::Ui, ectx: &EvalCtx, v: &mut Vw<'_>) {
     let t = v.t;
     let cid = v.cid;
     let bar = v.bar;

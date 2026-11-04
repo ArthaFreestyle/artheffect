@@ -1,8 +1,8 @@
-# Where EffectCraft falls short
+# Where Artheffect falls short
 
 > **Last reviewed:** 2026-10-12 · **Last updated:** 2026-10-30 · **Change:** minor (gap 4 closed: every pull request and push to `main` runs `cargo xtask ci` in CI, #2204; earlier change: gap 25: an AccessKit audit test and a theme contrast test, Effects & Presets, Settings and Render Queue named and keyboard-operable, #1335; earlier change: path-editing layer bounds, #1220; issue, PR and catalog references gap 21: percentage guides and effect colour labels in; earlier change: re-audited against `upstream/main` 470ea7a3; ranked gap list from the 10 October re-measure otherwise unchanged) · **Target:** Adobe After Effects 2026 (26.5.0.89)
 
-An honest assessment of how far EffectCraft is from being a real replacement for After Effects,
+An honest assessment of how far Artheffect is from being a real replacement for After Effects,
 and the work that closes the gap. This document is meant for contributors and agents choosing
 what to work on. [target-app-parity.md](target-app-parity.md) holds the numbers and how they were
 measured; the [ROADMAP](../ROADMAP.md) summarises both. Estimates marked "≈" are judgements from
@@ -21,7 +21,7 @@ Substance materials, ACES 2.0, Proportional Scrubbing, paste SVG/AI as shapes…
 animation presets, project and template formats, and hardware encoding.
 
 **Ready for real work ≈ 45%** answers *can someone who uses After Effects for a living do real
-work in EffectCraft?* It is still estimated, not measured. Four things hold it back: projects we
+work in Artheffect?* It is still estimated, not measured. Four things hold it back: projects we
 can't open (`.aep`), behaviour nobody has checked against After Effects (one live comparison so
 far: scalar ease, 168 samples), reliability outside macOS, and the third-party plug-ins and
 presets professional projects depend on. It sits higher than the 5 October estimate (30–50%)
@@ -96,7 +96,7 @@ The most important missing piece: it turns every other estimate here into a meas
   blend modes, track mattes, each effect at default and at non-default settings, text animators,
   expressions, 3D, motion blur, time remapping.
 - Drive After Effects through ExtendScript (see CLAUDE.md) to record property values at sampled
-  times and render reference frames; render the same projects in EffectCraft headless.
+  times and render reference frames; render the same projects in Artheffect headless.
 - Compare values exactly and frames with a perceptual metric; publish a per-feature fidelity
   score and a fidelity column in target-app-parity.md.
 - Clean room: After Effects output stays local in `plan/aftereffects/ref/` (gitignored). Commit
@@ -196,7 +196,7 @@ The most important missing piece: it turns every other estimate here into a meas
 - Regression evidence for the reports of 8 October, checked headlessly on Windows:
   `a_short_project_panel_draws` (#231), `viewer_press_prefers_a_selected_layer_under_the_pointer`
   (#230), `match_system_uses_the_system_language_where_there_is_a_catalog` (#229) and
-  `apps/effectcraft-web/tests/page.mjs` (#226, #225); the #225, #226 and #231 reproductions also
+  `apps/artheffect-web/tests/page.mjs` (#226, #225); the #225, #226 and #231 reproductions also
   pass in the dev web build in headless Chrome 154 (device pixel ratio 2, a rejected file read,
   `GPUDevice.destroy()`).
 - Regression evidence for the Turbulent Displace, Wave Warp and Bulge pinning of #227:
@@ -244,9 +244,9 @@ Issues #41–#47 (all from the Linux AppImage 0.1.1, 5 October): panning the vie
 - Fuzz the inputs we don't control: project files, imported media and documents, expressions,
   scripts, control-channel and MCP requests. Every crash found becomes a regression test
   (AGENTS.md "Never crash"). Project files are fuzzed (#779): a seeded, dependency-free mutation
-  fuzzer runs in `cargo test -p effectcraft-engine` (`fuzz_file_open_never_crashes`, `.ecproj`
+  fuzzer runs in `cargo test -p artheffect-engine` (`fuzz_file_open_never_crashes`, `.ecproj`
   JSON and `.ecprojx` XML through File ▸ Open, the first queries and a thumbnail render; longer
-  runs via `EFFECTCRAFT_FUZZ_ITERS` / `EFFECTCRAFT_FUZZ_SECS`). It found one crash, deeply nested
+  runs via `ARTHEFFECT_FUZZ_ITERS` / `ARTHEFFECT_FUZZ_SECS`). It found one crash, deeply nested
   XML overflowing the stack, now refused. Imported media and documents, expressions, scripts and
   control-channel / MCP requests are still to do.
 - Keep the CI gate (gap 4, #2204) the same as `cargo xtask ci`: it runs on every pull request and push to `main`.
@@ -291,7 +291,7 @@ Issues #41–#47 (all from the Linux AppImage 0.1.1, 5 October): panning the vie
 
 - Decided on 5 October 2026 for Roto Brush: licensed weights with pure-Rust inference, if the
   impact on the system is low, in a composable, swappable module. Done in M13.35: the
-  `effectcraft-segment` crate (a `MaskModel` interface, a registry that only accepts
+  `artheffect-segment` crate (a `MaskModel` interface, a registry that only accepts
   open-source licences, MobileSAM under Apache-2.0), weights downloaded on demand and verified,
   Settings ▸ Roto Brush to choose. Next: measure it against After Effects (G1); faster encoders
   (GPU) for long shots.
@@ -303,10 +303,10 @@ Issues #41–#47 (all from the Linux AppImage 0.1.1, 5 October): panning the vie
 
 ### G8. Plug-in ecosystem
 
-- After Effects SDK plug-ins cannot run in EffectCraft. Our own WebAssembly plug-in API exists
+- After Effects SDK plug-ins cannot run in Artheffect. Our own WebAssembly plug-in API exists
   ([plugins.md](plugins.md)). Grow it: documentation, examples, and original effects that cover
   what the most common third-party plug-ins are used for (particles, glows, 3D objects, sabers).
-- Features that come from third parties in After Effects are extensions in EffectCraft too, built
+- Features that come from third parties in After Effects are extensions in Artheffect too, built
   on the same extension points as After Effects: scripts, ScriptUI panels and effect plug-ins
   ([plugins.md](plugins.md#extension-points-compared-with-after-effects) compares them). ScriptUI
   panels in the user's ScriptUI Panels folder are listed in the Window menu, dock like any panel

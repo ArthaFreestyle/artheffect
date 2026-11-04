@@ -61,7 +61,7 @@ pub fn edit_selection(sel: &str, token: &str, hash: u32, mode: PickMode, manifes
 #[cfg(test)]
 mod tests {
     use super::*;
-    use effectcraft_raster::channels3d::crypto_hash;
+    use artheffect_raster::channels3d::crypto_hash;
 
     fn manifest() -> Vec<(String, u32)> {
         ["bunny", "Green, Glossy", r#"say "hi""#, r"back\slash", "  pad ", "star*", "<0000abcd>", "twin"]

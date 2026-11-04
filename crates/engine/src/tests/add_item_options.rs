@@ -1,8 +1,8 @@
 //! `layer.addItem {in, out, anchor}` (#2026): place a layer's In / Out points and Anchor Point in
 //! the same call, so one command does what addItem + layer.timing + prop.set did.
 
-use effectcraft_project::{Layer, LayerId, LayerSource};
-use effectcraft_time::Tick;
+use artheffect_project::{Layer, LayerId, LayerSource};
+use artheffect_time::Tick;
 use serde_json::{Value, json};
 
 use crate::Session;

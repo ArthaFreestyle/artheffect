@@ -2,10 +2,10 @@
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use effectcraft_color::Label;
-use effectcraft_project::build;
-use effectcraft_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_project::build;
+use artheffect_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid};
+use artheffect_time::{FrameRate, Tick};
 
 use crate::{Accelerator, AutoKey, AutoPick, Backend, NoFootage, RenderOpts, Renderer};
 

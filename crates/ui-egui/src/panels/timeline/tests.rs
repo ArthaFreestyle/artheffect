@@ -4,9 +4,9 @@ use super::*;
 /// footage and solids, never folders, data files or 3D models.
 #[test]
 fn replace_source_takes_visual_items_only() {
-    use effectcraft_engine::color::Label;
-    use effectcraft_engine::project::{Comp, Footage, Project, Solid};
-    use effectcraft_engine::time::{FrameRate, Tick};
+    use artheffect_engine::color::Label;
+    use artheffect_engine::project::{Comp, Footage, Project, Solid};
+    use artheffect_engine::time::{FrameRate, Tick};
     let mut p = Project::default();
     let l = Label::None;
     let comp = p.add_item("C", l, None, ItemKind::Comp(Comp::new(10, 10, FrameRate::FPS_30, Tick::from_seconds_f64(1.0)).into()));
@@ -39,7 +39,7 @@ fn the_waveform_row_twirls_with_its_tree() {
 /// CTI, from Start Numbering Frames At); otherwise seconds:frames.
 #[test]
 fn ruler_labels_follow_the_time_display_style() {
-    use effectcraft_engine::project::{ProjectSettings, TimeDisplayStyle};
+    use artheffect_engine::project::{ProjectSettings, TimeDisplayStyle};
     let mut st = ProjectSettings { time_display: TimeDisplayStyle::Timecode, frame_start: 0, ..ProjectSettings::default() };
     assert_eq!(ruler_label(15, 30, &st), "00:15f");
     assert_eq!(ruler_label(45, 30, &st), "01:15f");
@@ -70,15 +70,15 @@ fn the_view_pages_to_the_cti() {
 /// it used to close the menu and change nothing.
 #[test]
 fn a_track_matte_mode_without_a_matte_takes_the_layer_above() {
-    let mut s = effectcraft_engine::Session::default();
+    let mut s = artheffect_engine::Session::default();
     s.execute("comp.new", json!({"name": "T", "width": 64, "height": 64, "duration": 1})).unwrap();
     for name in ["Chain Bottom", "Matte", "Chain Top"] {
         s.execute("layer.newSolid", json!({"name": name, "color": "#ffffff", "width": 64, "height": 64})).unwrap();
     }
-    let find = |s: &effectcraft_engine::Session, n: &str| s.active_comp().unwrap().layers.iter().find(|l| l.name == n).unwrap().clone();
+    let find = |s: &artheffect_engine::Session, n: &str| s.active_comp().unwrap().layers.iter().find(|l| l.name == n).unwrap().clone();
     let (bottom, matte, top) = (find(&s, "Chain Bottom"), find(&s, "Matte"), find(&s, "Chain Top"));
     let candidates = [top.id, matte.id];
-    let pick = |s: &mut effectcraft_engine::Session, name: &str, i: usize, choice: &str| {
+    let pick = |s: &mut artheffect_engine::Session, name: &str, i: usize, choice: &str| {
         let (id, params) = track_matte_pick(&[find(s, name).id.0], &candidates, i, choice).expect("a menu item is an action");
         s.execute(&id, params)
     };
@@ -103,14 +103,14 @@ fn a_track_matte_mode_without_a_matte_takes_the_layer_above() {
 /// #957: vector footage gets the Continuously Rasterize switch; raster footage does not.
 #[test]
 fn collapse_switch_shows_for_vector_footage_only() {
-    use effectcraft_engine::color::Label;
-    use effectcraft_engine::project::{Footage, ItemKind, Project};
+    use artheffect_engine::color::Label;
+    use artheffect_engine::project::{Footage, ItemKind, Project};
     let mut p = Project::default();
     let mut layer_for = |name: &str, codec: &str| {
         let footage = Footage { path: name.into(), codec: codec.into(), ..Default::default() };
         let item = p.add_item(name, Label::SeaFoam, None, ItemKind::Footage(footage));
-        let comp = Comp::new(64, 36, effectcraft_engine::time::FrameRate::new(30, 1), Tick::from_seconds_f64(1.0));
-        effectcraft_engine::project::build::layer(&mut p, &comp, name, LayerSource::Footage { item }, (0, 0), None)
+        let comp = Comp::new(64, 36, artheffect_engine::time::FrameRate::new(30, 1), Tick::from_seconds_f64(1.0));
+        artheffect_engine::project::build::layer(&mut p, &comp, name, LayerSource::Footage { item }, (0, 0), None)
     };
     let svg = layer_for("logo.svg", "SVG");
     let png = layer_for("photo.png", "PNG");
@@ -119,8 +119,8 @@ fn collapse_switch_shows_for_vector_footage_only() {
 }
 
 /// A comp with two solids; "Box" has an animated Position and a Gaussian Blur.
-fn app() -> EffectcraftApp {
-    let mut s = effectcraft_engine::Session::default();
+fn app() -> ArtheffectApp {
+    let mut s = artheffect_engine::Session::default();
     s.execute("comp.new", json!({"name": "T", "width": 320, "height": 180, "duration": 4})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080", "width": 320, "height": 180})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Box", "color": "#e04020", "width": 40, "height": 40})).unwrap();
@@ -130,10 +130,10 @@ fn app() -> EffectcraftApp {
     s.execute("effect.apply", json!({"effect": "ec.blur.gaussian"})).unwrap();
     let pos = s.active_comp().unwrap().layer(LayerId(bx)).unwrap().transform().unwrap().get("position").unwrap().uid;
     s.execute("prop.toggleAnimation", json!({"layer": bx, "prop": pos})).unwrap();
-    EffectcraftApp::new(s)
+    ArtheffectApp::new(s)
 }
 
-fn labels(app: &EffectcraftApp) -> Vec<String> {
+fn labels(app: &ArtheffectApp) -> Vec<String> {
     let comp = app.session.active_comp().unwrap().clone();
     build_rows(app, &comp)
         .into_iter()
@@ -180,10 +180,10 @@ fn search_filters_layers_and_reveals_matching_properties() {
 /// listing directly under the group, and the only "Contents" row the layer's own.
 #[test]
 fn shape_group_inner_contents_is_elided() {
-    let mut s = effectcraft_engine::Session::default();
+    let mut s = artheffect_engine::Session::default();
     s.execute("comp.new", json!({"name": "T", "width": 320, "height": 180, "duration": 4})).unwrap();
     s.execute("layer.newShape", json!({"kind": "rect"})).unwrap();
-    let mut app = EffectcraftApp::new(s);
+    let mut app = ArtheffectApp::new(s);
     app.ui.timeline.search = "rect".into();
     assert_eq!(
         labels(&app),
@@ -302,7 +302,7 @@ fn reveal_shortcuts_leave_unselected_layers_alone() {
     let comp = app.session.active_comp().unwrap().clone();
     let id = |n: &str| comp.layers.iter().find(|l| l.name == n).unwrap().id.0;
     let (plate, bx) = (id("Plate"), id("Box"));
-    let select = |app: &mut EffectcraftApp, l: u64| app.session.execute("layer.select", json!({"layers": [l]})).unwrap();
+    let select = |app: &mut ArtheffectApp, l: u64| app.session.execute("layer.select", json!({"layers": [l]})).unwrap();
     // Plate shows Scale (S); then U on Box.
     select(&mut app, plate);
     crate::menus::invoke(&mut app, &ctx, "timeline.reveal.scale", json!({})).unwrap();
@@ -355,11 +355,11 @@ fn reveal_shortcuts_leave_unselected_layers_alone() {
 /// U and UU show Time Remap on a layer with time remapping enabled.
 #[test]
 fn u_and_uu_reveal_time_remap() {
-    let mut s = effectcraft_engine::Session::default();
+    let mut s = artheffect_engine::Session::default();
     let inner = s.execute("comp.new", json!({"name": "Inner", "width": 32, "height": 32, "duration": 2})).unwrap()["comp"].as_u64().unwrap();
     s.execute("comp.new", json!({"name": "Main", "width": 64, "height": 64, "duration": 4})).unwrap();
     let nested = s.execute("layer.addItem", json!({"item": inner})).unwrap()["layer"].as_u64().unwrap();
-    let mut app = EffectcraftApp::new(s);
+    let mut app = ArtheffectApp::new(s);
     let ctx = egui::Context::default();
     crate::menus::invoke(&mut app, &ctx, "layer.enableTimeRemap", json!({"layers": [nested]})).unwrap();
     app.session.execute("layer.select", json!({"layers": [nested]})).unwrap();
@@ -378,11 +378,11 @@ fn u_and_uu_reveal_time_remap() {
 /// enabling remapping is itself the modification.
 #[test]
 fn u_reveals_keyless_time_remap() {
-    let mut s = effectcraft_engine::Session::default();
+    let mut s = artheffect_engine::Session::default();
     let inner = s.execute("comp.new", json!({"name": "Inner", "width": 32, "height": 32, "duration": 2})).unwrap()["comp"].as_u64().unwrap();
     s.execute("comp.new", json!({"name": "Main", "width": 64, "height": 64, "duration": 4})).unwrap();
     let nested = s.execute("layer.addItem", json!({"item": inner})).unwrap()["layer"].as_u64().unwrap();
-    let mut app = EffectcraftApp::new(s);
+    let mut app = ArtheffectApp::new(s);
     let ctx = egui::Context::default();
     crate::menus::invoke(&mut app, &ctx, "layer.enableTimeRemap", json!({"layers": [nested]})).unwrap();
     let uid = app.session.active_comp().unwrap().layer(LayerId(nested)).unwrap().props.prop("timeRemap").unwrap().uid;
@@ -404,12 +404,12 @@ fn u_reveals_keyless_time_remap() {
 /// nothing.
 #[test]
 fn enabling_time_remapping_reveals_time_remap() {
-    let mut s = effectcraft_engine::Session::default();
+    let mut s = artheffect_engine::Session::default();
     let inner = s.execute("comp.new", json!({"name": "Inner", "width": 32, "height": 32, "duration": 2})).unwrap()["comp"].as_u64().unwrap();
     s.execute("comp.new", json!({"name": "Main", "width": 64, "height": 64, "duration": 4})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Other"})).unwrap();
     let nested = s.execute("layer.addItem", json!({"item": inner})).unwrap()["layer"].as_u64().unwrap();
-    let mut app = EffectcraftApp::new(s);
+    let mut app = ArtheffectApp::new(s);
     let ctx = egui::Context::default();
     crate::menus::invoke(&mut app, &ctx, "layer.enableTimeRemap", json!({"layers": [nested]})).unwrap();
     assert_eq!(app.ui.timeline.layer_reveal.get(&nested), Some(&vec!["timeRemap".to_string()]));
@@ -482,7 +482,7 @@ fn the_layer_context_menu_draws_in_the_interface_language() {
 /// The automation labels stay English.
 #[test]
 fn the_property_context_menu_draws_in_the_interface_language() {
-    let mut s = effectcraft_engine::Session::default();
+    let mut s = artheffect_engine::Session::default();
     s.execute("comp.new", json!({"name": "Main", "width": 64, "height": 64, "duration": 4})).unwrap();
     let l = s.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080"})).unwrap()["layer"].as_u64().unwrap();
     let opacity = s.active_comp().unwrap().layer(LayerId(l)).unwrap().props.prop("transform/opacity").unwrap().uid;
@@ -515,7 +515,7 @@ fn the_property_context_menu_draws_in_the_interface_language() {
 fn rows_and_bars_follow_after_effects_proportions() {
     let t = crate::theme::Tokens::for_kind(crate::theme::ThemeKind::Dark);
     assert_eq!(t.row_h, 19.0);
-    let red = t.label(effectcraft_engine::color::Label::Red);
+    let red = t.label(artheffect_engine::color::Label::Red);
     let bar = bar_color(red, false);
     // Muted: darker and less saturated than the label, still reddish.
     assert!(bar.r() < red.r() && bar.r() > bar.g() + 30 && bar.g() >= red.g().min(0x3a) - 1);
@@ -547,13 +547,13 @@ fn disk_bar_range_covers_partial_frames() {
 fn the_key_menu_is_translated_and_cannot_edit_a_locked_layers_keys() {
     use egui_kittest::Harness;
     use egui_kittest::kittest::{NodeT, Queryable};
-    let mut s = effectcraft_engine::Session::default();
+    let mut s = artheffect_engine::Session::default();
     s.execute("comp.new", json!({"name": "C", "width": 64, "height": 64, "duration": 2})).unwrap();
     let id = s.execute("layer.newSolid", json!({"name": "Box", "color": "#fff"})).unwrap()["layer"].as_u64().unwrap();
     for (t, v) in [(0.0, 0), (1.0, 50)] {
         s.execute("prop.addKey", json!({"layer": id, "path": "transform/opacity", "time": t, "value": v})).unwrap();
     }
-    let app = EffectcraftApp::new(s);
+    let app = ArtheffectApp::new(s);
     let layer = app.session.active_comp().unwrap().layer(LayerId(id)).unwrap().clone();
     let prop = layer.props.prop("transform/opacity").unwrap().clone();
     let key = prop.keys[0].clone();
@@ -600,7 +600,7 @@ fn the_key_menu_is_translated_and_cannot_edit_a_locked_layers_keys() {
 #[test]
 fn a_key_menu_edit_selects_the_clicked_key_before_applying_the_command() {
     use egui_kittest::{Harness, kittest::Queryable};
-    let mut s = effectcraft_engine::Session::default();
+    let mut s = artheffect_engine::Session::default();
     s.execute("comp.new", json!({"width": 64, "height": 64, "duration": 2})).unwrap();
     let id = s.execute("layer.newSolid", json!({"color": "#fff"})).unwrap()["layer"].as_u64().unwrap();
     for (time, value) in [(0.0, 0), (1.0, 50)] {
@@ -609,7 +609,7 @@ fn a_key_menu_edit_selects_the_clicked_key_before_applying_the_command() {
     let layer = s.active_comp().unwrap().layer(LayerId(id)).unwrap().clone();
     let prop = layer.props.prop("transform/opacity").unwrap().clone();
     s.execute("keys.select", json!({"keys": [{"layer": id, "prop": prop.uid, "time": 1.0}]})).unwrap();
-    let mut app = EffectcraftApp::new(s);
+    let mut app = ArtheffectApp::new(s);
     let mut actions = vec![];
     {
         let mut h = Harness::new_ui(|ui| key_menu(ui, &app, &layer, &prop, &prop.keys[0], false, &mut actions));
@@ -631,7 +631,7 @@ fn a_key_menu_edit_selects_the_clicked_key_before_applying_the_command() {
 /// A key's marquee target is the marker it draws: a roving key's is its smaller dot.
 #[test]
 fn a_keys_glyph_rect_is_what_it_draws() {
-    let mut s = effectcraft_engine::Session::default();
+    let mut s = artheffect_engine::Session::default();
     s.execute("comp.new", json!({"name": "C", "width": 64, "height": 64, "duration": 2})).unwrap();
     let id = s.execute("layer.newSolid", json!({"name": "Box", "color": "#fff"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("prop.addKey", json!({"layer": id, "path": "transform/opacity", "time": 0.5, "value": 0})).unwrap();
@@ -646,7 +646,7 @@ fn a_keys_glyph_rect_is_what_it_draws() {
 /// line (an expression editor) push the keys below them down, as they are drawn.
 #[test]
 fn keys_in_box_walks_the_rows_and_tests_each_glyph() {
-    let mut s = effectcraft_engine::Session::default();
+    let mut s = artheffect_engine::Session::default();
     s.execute("comp.new", json!({"name": "C", "width": 64, "height": 64, "duration": 4, "frameRate": 30})).unwrap();
     let mut layers = vec![];
     for name in ["A", "B"] {

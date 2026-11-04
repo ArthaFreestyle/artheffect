@@ -1,6 +1,6 @@
 use super::{Arc, Buf, EffectHost, EvalCtx, ItemKind, Layer, LayerPixels, LayerSource, Params, Renderer, Tick, three_d};
 
-/// Layer parameters and audio for effects (see [`effectcraft_effects::EffectHost`]). What it
+/// Layer parameters and audio for effects (see [`artheffect_effects::EffectHost`]). What it
 /// hands out is in effect space (see [`effect_bounds`]): the other layer's for its pixels, the
 /// running layer's for its own frames and the comp scene.
 pub(crate) struct FxHost<'r, 'a, 'c> {
@@ -31,7 +31,7 @@ impl FxHost<'_, '_, '_> {
 /// [`EffectHost::comp_scene`]): the comp camera's view of the layer (as if 3D at its transform),
 /// brought back into the layer's own pixel grid through the inverse of how the layer itself
 /// composites.
-pub(crate) fn comp_scene(ctx: &EvalCtx, layer: &Layer) -> Option<effectcraft_effects::CompScene> {
+pub(crate) fn comp_scene(ctx: &EvalCtx, layer: &Layer) -> Option<artheffect_effects::CompScene> {
     let world = ctx.world_matrix(layer);
     let (cam, _, _) = ctx.camera();
     let p = (cam * world).0;
@@ -45,14 +45,14 @@ pub(crate) fn comp_scene(ctx: &EvalCtx, layer: &Layer) -> Option<effectcraft_eff
         let dir = inv.apply_vec(l.dir);
         let len = (dir.x * dir.x + dir.y * dir.y + dir.z * dir.z).sqrt().max(1e-12);
         let kind = match l.kind {
-            effectcraft_project::LightKind::Parallel => 0,
-            effectcraft_project::LightKind::Ambient => 2,
+            artheffect_project::LightKind::Parallel => 0,
+            artheffect_project::LightKind::Ambient => 2,
             _ => 1,
         };
-        Some(effectcraft_effects::CompLight { pos: [pos.x, pos.y, pos.z], dir: [dir.x / len, dir.y / len, dir.z / len], color: l.color, kind })
+        Some(artheffect_effects::CompLight { pos: [pos.x, pos.y, pos.z], dir: [dir.x / len, dir.y / len, dir.z / len], color: l.color, kind })
     });
     let camera_layer = ctx.comp.active_camera(ctx.time).is_some();
-    Some(effectcraft_effects::CompScene { camera: Some(camera), camera_layer, light })
+    Some(artheffect_effects::CompScene { camera: Some(camera), camera_layer, light })
 }
 
 /// Nesting limit for effects that render layers (other layers, other times).
@@ -63,11 +63,11 @@ impl EffectHost for FxHost<'_, '_, '_> {
         self.original
     }
 
-    fn particles(&self) -> Option<&dyn effectcraft_effects::psim::ParticleSim> {
+    fn particles(&self) -> Option<&dyn artheffect_effects::psim::ParticleSim> {
         self.r.active_accel().and_then(|a| a.particles())
     }
     fn layer(&self, id: u64, masks_and_effects: bool) -> Option<LayerPixels> {
-        let other = self.ctx.layer(effectcraft_project::LayerId(id))?;
+        let other = self.ctx.layer(artheffect_project::LayerId(id))?;
         if (other.id == self.layer.id && masks_and_effects) || self.r.depth > MAX_FX_DEPTH {
             return None;
         }
@@ -86,7 +86,7 @@ impl EffectHost for FxHost<'_, '_, '_> {
     }
 
     fn layer_masks(&self, id: u64) -> Option<LayerPixels> {
-        let other = self.ctx.layer(effectcraft_project::LayerId(id))?;
+        let other = self.ctx.layer(artheffect_project::LayerId(id))?;
         if self.r.depth > MAX_FX_DEPTH {
             return None;
         }
@@ -96,7 +96,7 @@ impl EffectHost for FxHost<'_, '_, '_> {
     }
 
     fn audio(&self, id: u64, start: f64, frames: usize, rate: u32) -> Option<Vec<f32>> {
-        let other = self.ctx.layer(effectcraft_project::LayerId(id))?;
+        let other = self.ctx.layer(artheffect_project::LayerId(id))?;
         let LayerSource::Footage { item } = &other.source else { return None };
         let item = self.ctx.media_item(other, *item);
         let ItemKind::Footage(f) = &self.r.project.item(item)?.kind else { return None };
@@ -117,17 +117,17 @@ impl EffectHost for FxHost<'_, '_, '_> {
         sub.layer_input(&self.ctx.at(t), self.layer, n).map(|b| (*b).clone())
     }
 
-    fn aux(&self) -> Option<Arc<effectcraft_raster::AuxChannels>> {
+    fn aux(&self) -> Option<Arc<artheffect_raster::AuxChannels>> {
         self.r.layer_aux(self.ctx, self.layer)
     }
 
     fn params_at(&self, layer_time: f64) -> Option<Params> {
         let g = self.layer.effects()?.groups().nth(self.index)?;
         let ctx = self.ctx.at(self.layer.comp_time(Tick::from_seconds_f64(layer_time)));
-        Some(effectcraft_effects::flatten_params(g, &mut |pr| ctx.value(self.layer, pr)))
+        Some(artheffect_effects::flatten_params(g, &mut |pr| ctx.value(self.layer, pr)))
     }
 
-    fn param_at(&self, effect_index: usize, id: &str, layer_time: f64) -> Option<effectcraft_keyframe::Value> {
+    fn param_at(&self, effect_index: usize, id: &str, layer_time: f64) -> Option<artheffect_keyframe::Value> {
         // Only the one property: a simulation samples it at every step. Its keyframes are read
         // at the requested layer time exactly (mapping it to comp time and back rounds under a
         // fractional stretch, so a Hold key there could read its previous value).
@@ -140,12 +140,12 @@ impl EffectHost for FxHost<'_, '_, '_> {
         effect_param(self.layer, effect_index, id).is_some_and(|p| p.keys.is_empty() && !p.has_expression())
     }
 
-    fn comp_scene(&self) -> Option<effectcraft_effects::CompScene> {
+    fn comp_scene(&self) -> Option<artheffect_effects::CompScene> {
         Some(comp_scene(self.ctx, self.layer)?.rebased(self.origin))
     }
 
     fn layer_at(&self, id: u64, comp_time: f64, masks_and_effects: bool) -> Option<LayerPixels> {
-        let other = self.ctx.layer(effectcraft_project::LayerId(id))?;
+        let other = self.ctx.layer(artheffect_project::LayerId(id))?;
         if (other.id == self.layer.id && masks_and_effects) || !comp_time.is_finite() || self.r.depth > MAX_FX_DEPTH {
             return None;
         }
@@ -164,18 +164,18 @@ impl EffectHost for FxHost<'_, '_, '_> {
 
 /// Parameter `id` (a flattened id: match ids joined by `/`) of effect `effect_index` in
 /// `layer`'s stack.
-fn effect_param<'a>(layer: &'a Layer, effect_index: usize, id: &str) -> Option<&'a effectcraft_project::Property> {
+fn effect_param<'a>(layer: &'a Layer, effect_index: usize, id: &str) -> Option<&'a artheffect_project::Property> {
     let mut g = layer.effects()?.groups().nth(effect_index)?;
     let mut path = id.split('/').peekable();
     while let Some(m) = path.next() {
         if path.peek().is_none() {
             return g.children.iter().find_map(|c| match c {
-                effectcraft_project::Node::Prop(p) if p.match_id == m => Some(p),
+                artheffect_project::Node::Prop(p) if p.match_id == m => Some(p),
                 _ => None,
             });
         }
         g = g.children.iter().find_map(|c| match c {
-            effectcraft_project::Node::Group(sg) if sg.match_id == m => Some(sg),
+            artheffect_project::Node::Group(sg) if sg.match_id == m => Some(sg),
             _ => None,
         })?;
     }
@@ -183,8 +183,8 @@ fn effect_param<'a>(layer: &'a Layer, effect_index: usize, id: &str) -> Option<&
 }
 
 /// The Essential Properties overrides of a precomp layer, evaluated at the context time.
-pub fn essential_overrides(ctx: &EvalCtx, layer: &Layer) -> Vec<effectcraft_project::essential::Override> {
-    use effectcraft_project::essential;
+pub fn essential_overrides(ctx: &EvalCtx, layer: &Layer) -> Vec<artheffect_project::essential::Override> {
+    use artheffect_project::essential;
     let over = essential::overridden(layer);
     let Some(g) = essential::group(layer).filter(|_| !over.is_empty()) else { return vec![] };
     let mut out = vec![];

@@ -13,7 +13,7 @@
 pub mod text_doc;
 pub mod value;
 
-use effectcraft_time::{TICKS_PER_SECOND, Tick};
+use artheffect_time::{TICKS_PER_SECOND, Tick};
 use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
 pub use text_doc::{BaselineOption, CharStyle, Composer, Direction, FigureStyle, FigureWidth, Kerning, LineJoin, OpenType, ParaStyle, StyleRun};

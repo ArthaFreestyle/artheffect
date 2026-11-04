@@ -1,9 +1,9 @@
-//! Render Queue commands against mock exporters (real encoding is tested in `effectcraft-export`
-//! and end to end in `effectcraft-host`).
+//! Render Queue commands against mock exporters (real encoding is tested in `artheffect-export`
+//! and end to end in `artheffect-host`).
 
 use std::sync::{Arc, Mutex};
 
-use effectcraft_project::render_queue::{OutputFormat, RenderQuality, RenderStatus};
+use artheffect_project::render_queue::{OutputFormat, RenderQuality, RenderStatus};
 use serde_json::json;
 
 use crate::render_queue::CANCELLED;
@@ -108,12 +108,12 @@ fn persists_in_project_file() {
     let (mut s, _) = rq_session();
     s.execute("renderQueue.add", json!({"format": "tiff", "output": "[compName]/[compName]_[####].tif", "quality": "draft"})).unwrap();
     let json = s.project.to_json();
-    let p = effectcraft_project::Project::from_json(&json).unwrap();
+    let p = artheffect_project::Project::from_json(&json).unwrap();
     assert_eq!(p.render_queue, s.project.render_queue);
     assert_eq!(p.render_queue[0].settings.quality, RenderQuality::Draft);
     // Projects without a queue still load.
     let old = json.replace("\"render_queue\"", "\"_ignored\"");
-    assert!(effectcraft_project::Project::from_json(&old).unwrap().render_queue.is_empty());
+    assert!(artheffect_project::Project::from_json(&old).unwrap().render_queue.is_empty());
 }
 
 #[test]

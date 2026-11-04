@@ -15,10 +15,10 @@
 //!
 //! - GPU frames: a worker with its own WebGPU device ([`FrameServer::accel`]) renders through
 //!   the GPU compositor and GPU effects. Its readbacks can't be waited for, so a frame renders
-//!   in passes ([`effectcraft_render::Accelerator::frame_begin`]): [`FrameServer::handle`]
+//!   in passes ([`artheffect_render::Accelerator::frame_begin`]): [`FrameServer::handle`]
 //!   runs the first, and while [`FrameServer::waiting`] the transport awaits the device and
 //!   calls [`FrameServer::resume`] for the next. Backend Auto picks CPU or GPU per comp from
-//!   the frames' total times ([`effectcraft_render::AutoPick`]).
+//!   the frames' total times ([`artheffect_render::AutoPick`]).
 //! - Disk cache: a render request may carry the frame's disk-cache key ([`FrameMsg::Render`]
 //!   `disk`); the transport stores the finished frame under it (the browser: in the Origin
 //!   Private File System) and reports [`FrameReply::Stored`].
@@ -36,9 +36,9 @@
 
 use std::sync::Arc;
 
-use effectcraft_project::{ItemId, Project};
-use effectcraft_render::{Accelerator, AutoKey, Backend, ExprHost, FootageSource, Image, LayerCache, LayerStore, PrefetchStore, RenderOpts, Renderer};
-use effectcraft_time::Tick;
+use artheffect_project::{ItemId, Project};
+use artheffect_render::{Accelerator, AutoKey, Backend, ExprHost, FootageSource, Image, LayerCache, LayerStore, PrefetchStore, RenderOpts, Renderer};
+use artheffect_time::Tick;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -347,7 +347,7 @@ impl FrameServer {
 
     fn load(&mut self, revision: u64) -> Result<(), String> {
         let p = Project::from_json(&self.doc.to_string()).map_err(|e| e.to_string())?;
-        self.salt = effectcraft_render::disk_cache::footage_salt_with(&p, self.virtual_id.as_deref());
+        self.salt = artheffect_render::disk_cache::footage_salt_with(&p, self.virtual_id.as_deref());
         self.cache.set_store_salt(self.salt);
         self.project = Some(Arc::new(p));
         self.revision = Some(revision);

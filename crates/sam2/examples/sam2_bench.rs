@@ -1,13 +1,13 @@
 //! Timing of the SAM 2 image path on this machine: load, encode one frame, decode a click.
 //!
-//! `cargo run -p effectcraft-sam2 --example sam2_bench -- [MODEL_DIR]` (default `sam2-tiny`).
+//! `cargo run -p artheffect-sam2 --example sam2_bench -- [MODEL_DIR]` (default `sam2-tiny`).
 //! Prints a message and exits when the weights are not there.
 
 use std::time::Instant;
 
+use artheffect_sam2::model::ImageModel;
+use artheffect_sam2::prompt::Prompt;
 use candle_core::{DType, Device, Tensor};
-use effectcraft_sam2::model::ImageModel;
-use effectcraft_sam2::prompt::Prompt;
 
 fn main() {
     if let Err(e) = run() {
@@ -53,13 +53,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     println!("neck (convolutions + positions): {:.0} ms", t.elapsed().as_secs_f64() * 1e3);
     let t = Instant::now();
     for (h, w) in [(32, 32), (64, 64), (128, 128), (256, 256)] {
-        let _ = effectcraft_sam2::neck::sine_position(128, h, w)?;
+        let _ = artheffect_sam2::neck::sine_position(128, h, w)?;
     }
     println!("sine positions for the four levels: {:.0} ms", t.elapsed().as_secs_f64() * 1e3);
     // What a tracked frame adds to the encode: memory attention over the memory bank (7 memory frames and
     // 16 object pointers of 4 tokens), then the memory encoder.
-    let weights = effectcraft_sam2::weights::Weights::open(&file)?;
-    let attn = effectcraft_sam2::memattn::MemoryAttention::load(&weights)?;
+    let weights = artheffect_sam2::weights::Weights::open(&file)?;
+    let attn = artheffect_sam2::memattn::MemoryAttention::load(&weights)?;
     let cur = Tensor::randn(0f32, 1.0, (4096, 256), &Device::Cpu)?;
     let cur_pos = Tensor::randn(0f32, 1.0, (4096, 256), &Device::Cpu)?;
     let m = 7 * 4096 + 64;
@@ -71,11 +71,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         println!("memory attention (run {run}, {m} memory tokens): {:.0} ms", t.elapsed().as_secs_f64() * 1e3);
     }
     // The same two costs on the GPU (wgpu kernels), when there is one.
-    match effectcraft_sam2::gpu::Gpu::shared() {
+    match artheffect_sam2::gpu::Gpu::shared() {
         Ok(gpu) => {
             println!("GPU: {}", gpu.adapter_name());
-            let enc = effectcraft_sam2::gpu::encoder::GpuEncoder::load(gpu.clone(), &weights, model.vision.hiera.clone())?;
-            let gattn = effectcraft_sam2::gpu::memattn::GpuMemoryAttention::load(gpu, &weights)?;
+            let enc = artheffect_sam2::gpu::encoder::GpuEncoder::load(gpu.clone(), &weights, model.vision.hiera.clone())?;
+            let gattn = artheffect_sam2::gpu::memattn::GpuMemoryAttention::load(gpu, &weights)?;
             for run in 0..3 {
                 let t = Instant::now();
                 let _ = enc.encode(&pixels)?;
@@ -89,25 +89,25 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     // A whole tracked frame (encode, memory attention, decode, memory encoding) through the video session, on each backend.
     struct Same(Tensor);
-    impl effectcraft_sam2::session::FrameSource for Same {
+    impl artheffect_sam2::session::FrameSource for Same {
         fn num_frames(&self) -> usize {
             12
         }
-        fn frame(&self, _i: usize) -> effectcraft_sam2::Result<Tensor> {
+        fn frame(&self, _i: usize) -> artheffect_sam2::Result<Tensor> {
             Ok(self.0.clone())
         }
     }
-    for backend in [effectcraft_sam2::session::Backend::Cpu, effectcraft_sam2::session::Backend::Gpu] {
-        let Ok(vm) = effectcraft_sam2::session::VideoModel::load_with(&weights, backend) else { continue };
+    for backend in [artheffect_sam2::session::Backend::Cpu, artheffect_sam2::session::Backend::Gpu] {
+        let Ok(vm) = artheffect_sam2::session::VideoModel::load_with(&weights, backend) else { continue };
         let vm = std::sync::Arc::new(vm);
-        let mut tracker = effectcraft_sam2::session::VideoTracker::new(vm.clone(), Box::new(Same(pixels.clone())))?;
-        let obj = effectcraft_sam2::session::ObjectId(1);
+        let mut tracker = artheffect_sam2::session::VideoTracker::new(vm.clone(), Box::new(Same(pixels.clone())))?;
+        let obj = artheffect_sam2::session::ObjectId(1);
         let t = Instant::now();
         tracker.prompt(0, obj, &Prompt { points: vec![([512.0, 512.0], true)], bbox: None })?;
         println!("{:?} ({}): prompt frame {:.0} ms", backend, vm.device_name(), t.elapsed().as_secs_f64() * 1e3);
         let mut last = Instant::now();
         let mut times = vec![];
-        tracker.propagate(0, effectcraft_sam2::session::Direction::Forward, None, &effectcraft_sam2::session::Cancel::new(), &mut |m| {
+        tracker.propagate(0, artheffect_sam2::session::Direction::Forward, None, &artheffect_sam2::session::Cancel::new(), &mut |m| {
             if m.frame > 0 {
                 times.push(last.elapsed().as_secs_f64() * 1e3);
             }

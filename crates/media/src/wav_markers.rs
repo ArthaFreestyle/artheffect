@@ -15,9 +15,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use effectcraft_color::Label;
-use effectcraft_project::Marker;
-use effectcraft_time::Tick;
+use artheffect_color::Label;
+use artheffect_project::Marker;
+use artheffect_time::Tick;
 
 /// Most markers read from one file.
 pub const MAX_MARKERS: usize = 10_000;

@@ -3,24 +3,24 @@
 //! viewer makes it the active one; closing a viewer forgets it.
 
 use crate::gpu_test::RenderSerial;
-use effectcraft_engine::Session;
-use effectcraft_engine::project::ItemId;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
-use effectcraft_ui_egui::dock::WorkspaceExt as _;
-use effectcraft_ui_egui::panels::viewers;
+use artheffect_engine::Session;
+use artheffect_engine::project::ItemId;
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::dock::PanelKind;
+use artheffect_ui_egui::dock::WorkspaceExt as _;
+use artheffect_ui_egui::panels::viewers;
 use egui::{Event, pos2};
 use egui_kittest::Harness;
 use serde_json::{Value, json};
 
-fn invoke(h: &mut Harness<'_, EffectcraftApp>, id: &str, p: Value) {
+fn invoke(h: &mut Harness<'_, ArtheffectApp>, id: &str, p: Value) {
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, id, p).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, id, p).unwrap();
     h.run_steps(3);
 }
 
 /// Hover element `id`; returns its centre.
-fn hover(h: &mut Harness<'_, EffectcraftApp>, id: &str) -> egui::Pos2 {
+fn hover(h: &mut Harness<'_, ArtheffectApp>, id: &str) -> egui::Pos2 {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).clone();
     let p = pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0);
     h.input_mut().events.push(Event::PointerMoved(p));
@@ -28,13 +28,13 @@ fn hover(h: &mut Harness<'_, EffectcraftApp>, id: &str) -> egui::Pos2 {
     p
 }
 
-fn button(h: &mut Harness<'_, EffectcraftApp>, pos: egui::Pos2, pressed: bool) {
+fn button(h: &mut Harness<'_, ArtheffectApp>, pos: egui::Pos2, pressed: bool) {
     h.input_mut().events.push(Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed, modifiers: Default::default() });
 }
 
 /// Click element `id`, the release a frame after the press (as a hand does: a press in a tab
 /// strip focuses the shown panel first, the click then the tab).
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, id: &str) {
     let p = hover(h, id);
     button(h, p, true);
     h.step();
@@ -43,7 +43,7 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
 }
 
 /// Double-click element `id` (in one frame: the harness' frame time is longer than a double-click's).
-fn double_click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn double_click(h: &mut Harness<'_, ArtheffectApp>, id: &str) {
     let p = hover(h, id);
     for pressed in [true, false, true, false] {
         button(h, p, pressed);
@@ -51,7 +51,7 @@ fn double_click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
     h.run_steps(3);
 }
 
-fn shows(h: &Harness<'_, EffectcraftApp>, viewer: u32) -> Option<u64> {
+fn shows(h: &Harness<'_, ArtheffectApp>, viewer: u32) -> Option<u64> {
     viewers::comp_of(h.state(), viewer).map(|c| c.0)
 }
 
@@ -65,7 +65,7 @@ fn new_viewers_lock_route_comps_and_activate_on_click() {
     let c = new_comp(&mut s, "C");
     let b = new_comp(&mut s, "B");
     let a = new_comp(&mut s, "A");
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     // View ▸ New Viewer: viewer 1 shows A too, viewer 0 (the Composition panel) is locked.
     invoke(&mut h, "view.newViewer", json!({}));
@@ -127,7 +127,7 @@ fn a_locked_viewer_keeps_its_comp_when_the_project_panel_opens_another() {
     let mut s = Session::default();
     let b = new_comp(&mut s, "B");
     let a = new_comp(&mut s, "A");
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     // Viewer 0 locked to A, and B in viewer 1 (a tab next to it).
     invoke(&mut h, "view.newViewer", json!({}));
@@ -142,7 +142,7 @@ fn a_locked_viewer_keeps_its_comp_when_the_project_panel_opens_another() {
     assert_eq!((h.state().ui.active_viewer, shows(&h, 0), shows(&h, 1)), (1, Some(a), Some(b)));
 }
 
-/// `cargo test -p effectcraft-ui-egui --test it ui_viewers:: -- --ignored`: two viewers side by side
+/// `cargo test -p artheffect-ui-egui --test it ui_viewers:: -- --ignored`: two viewers side by side
 /// (`target/test-out/viewers.png`).
 #[test]
 #[ignore]
@@ -150,7 +150,7 @@ fn viewers_snapshot() {
     let mut s = Session::default();
     s.execute("file.openDemoProject", json!({})).unwrap();
     let other = s.project.items.values().filter(|i| i.as_comp().is_some()).map(|i| i.id).find(|id| Some(*id) != s.active_comp_id()).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     invoke(&mut h, "view.newViewer", json!({}));
     h.state_mut()

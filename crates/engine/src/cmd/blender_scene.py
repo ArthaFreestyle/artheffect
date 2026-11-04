@@ -1,4 +1,4 @@
-# EffectCraft camera tracker → Blender, original code under MIT OR Apache-2.0.
+# Artheffect camera tracker → Blender, original code under MIT OR Apache-2.0.
 # Run in Blender's Scripting workspace (Open, Run Script), or:
 # blender --background --python "Tracked Scene.py"
 # Creates a NEW scene; existing scenes and objects are preserved. Save the .blend yourself.
@@ -10,7 +10,7 @@ import os
 import bpy
 from mathutils import Matrix
 
-DATA = json.loads(__EFFECTCRAFT_DATA__)
+DATA = json.loads(__ARTHEFFECT_DATA__)
 
 
 def _curves(owner):
@@ -55,7 +55,7 @@ def _media_path():
 
 def import_scene():
     if bpy.app.version < (4, 0, 0):
-        raise RuntimeError("EffectCraft scene import requires Blender 4.0 or newer")
+        raise RuntimeError("Artheffect scene import requires Blender 4.0 or newer")
     scene = bpy.data.scenes.new(DATA["name"])
     scene.frame_start = DATA["startFrame"]
     scene.frame_end = DATA["endFrame"]
@@ -70,11 +70,11 @@ def import_scene():
     scene.render.motion_blur_shutter = max(0.0, min(2.0, DATA["shutter"]))
     scene.unit_settings.system = 'METRIC'
     scene.unit_settings.scale_length = 1.0
-    scene["effectcraft_unit_scale"] = DATA["unitScale"]
-    scene["effectcraft_scale_is_arbitrary"] = True
-    scene["effectcraft_shutter_phase_degrees"] = DATA["shutterPhase"]
+    scene["artheffect_unit_scale"] = DATA["unitScale"]
+    scene["artheffect_scale_is_arbitrary"] = True
+    scene["artheffect_shutter_phase_degrees"] = DATA["shutterPhase"]
 
-    collection = bpy.data.collections.new("EffectCraft Tracking")
+    collection = bpy.data.collections.new("Artheffect Tracking")
     scene.collection.children.link(collection)
     camera_data = bpy.data.cameras.new("3D Tracker Camera")
     camera = bpy.data.objects.new("3D Tracker Camera", camera_data)
@@ -160,7 +160,7 @@ def import_scene():
                                 ("first_frame", 'INT', "first"), ("last_frame", 'INT', "last")):
             attr = mesh.attributes.new(name=name, type=kind, domain='POINT')
             for dest, point in zip(attr.data, DATA["points"]):
-                # Track IDs are u32 in EffectCraft; keep the full IDs in the JSON text too.
+                # Track IDs are u32 in Artheffect; keep the full IDs in the JSON text too.
                 dest.value = point[key] if kind == 'FLOAT' else min(2147483647, point[key])
 
     if DATA["ground"]:
@@ -178,16 +178,16 @@ def import_scene():
 
     _interpolation(camera)
     _interpolation(camera_data)
-    metadata = bpy.data.texts.new("EffectCraft Tracking Metadata.json")
+    metadata = bpy.data.texts.new("Artheffect Tracking Metadata.json")
     metadata.write(json.dumps(DATA, ensure_ascii=False, indent=2))
-    scene["effectcraft_metadata_text"] = metadata.name
-    camera_data["effectcraft_average_error_pixels"] = DATA["solve"]["averageError"]
-    camera_data["effectcraft_solve_method"] = DATA["solve"]["methodUsed"]
-    camera_data["effectcraft_focus_source"] = "See warnings in " + metadata.name
+    scene["artheffect_metadata_text"] = metadata.name
+    camera_data["artheffect_average_error_pixels"] = DATA["solve"]["averageError"]
+    camera_data["artheffect_solve_method"] = DATA["solve"]["methodUsed"]
+    camera_data["artheffect_focus_source"] = "See warnings in " + metadata.name
     distortion = DATA["solve"].get("distortion")
     if distortion:
         for key in ("k1", "k2", "radius"):
-            camera_data["effectcraft_distortion_" + key] = distortion[key]
+            camera_data["artheffect_distortion_" + key] = distortion[key]
     if bpy.context.window is not None:
         bpy.context.window.scene = scene
         for area in bpy.context.window.screen.areas:
@@ -195,10 +195,10 @@ def import_scene():
                 area.spaces.active.region_3d.view_perspective = 'CAMERA'
     scene.frame_set(scene.frame_start)
     for warning in DATA["warnings"]:
-        print("EffectCraft: " + warning)
-    print("EffectCraft: imported", len(DATA["frames"]), "baked camera frames into", scene.name)
+        print("Artheffect: " + warning)
+    print("Artheffect: imported", len(DATA["frames"]), "baked camera frames into", scene.name)
     return scene
 
 
 if __name__ == "__main__":
-    EFFECTCRAFT_SCENE = import_scene()
+    ARTHEFFECT_SCENE = import_scene()

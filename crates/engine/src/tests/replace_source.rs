@@ -3,8 +3,8 @@
 
 use std::sync::Arc;
 
-use effectcraft_color::Label;
-use effectcraft_project::{Footage, FootageKind, ItemId, ItemKind, LayerSource, Solid};
+use artheffect_color::Label;
+use artheffect_project::{Footage, FootageKind, ItemId, ItemKind, LayerSource, Solid};
 use serde_json::json;
 
 use crate::Session;
@@ -15,8 +15,8 @@ fn comp() -> Session {
     s
 }
 
-fn layer(s: &Session, id: u64) -> effectcraft_project::Layer {
-    s.active_comp().unwrap().layer(effectcraft_project::LayerId(id)).unwrap().clone()
+fn layer(s: &Session, id: u64) -> artheffect_project::Layer {
+    s.active_comp().unwrap().layer(artheffect_project::LayerId(id)).unwrap().clone()
 }
 
 fn solid(s: &mut Session, name: &str) -> u64 {
@@ -150,7 +150,7 @@ fn replace_source_uses_the_project_selection_and_skips_locked_layers() {
     assert!(err.contains("locked"), "{err}");
 }
 
-/// After Effects' Ctrl+Alt+/ default (Cmd+Alt+/ in EffectCraft's shortcut syntax).
+/// After Effects' Ctrl+Alt+/ default (Cmd+Alt+/ in Artheffect's shortcut syntax).
 #[test]
 fn replace_source_is_bound_to_ctrl_alt_slash() {
     let b = crate::shortcuts::bindables(&[]).into_iter().find(|b| b.command == "layer.replaceSource").expect("layer.replaceSource is bindable");

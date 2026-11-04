@@ -4,16 +4,16 @@
 //! (#2489), copying shape items between shape layers (#227), and Ctrl+V of SVG markup making a shape
 //! layer (#738).
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::LayerId;
-use effectcraft_ui_egui::{Dialog, EffectcraftApp};
+use artheffect_engine::Session;
+use artheffect_engine::project::LayerId;
+use artheffect_ui_egui::{ArtheffectApp, Dialog};
 use egui::{Event, Key, Modifiers, PointerButton, Pos2, pos2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
 use serde_json::json;
 
-fn harness(s: Session) -> Harness<'static, EffectcraftApp> {
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+fn harness(s: Session) -> Harness<'static, ArtheffectApp> {
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     h
 }
@@ -24,13 +24,13 @@ fn session() -> Session {
     s
 }
 
-fn center(h: &Harness<'_, EffectcraftApp>, id: &str) -> Pos2 {
+fn center(h: &Harness<'_, ArtheffectApp>, id: &str) -> Pos2 {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0)
 }
 
 /// Step until the viewer's frame has rendered (frames render on background threads).
-fn settle(h: &mut Harness<'_, EffectcraftApp>) {
+fn settle(h: &mut Harness<'_, ArtheffectApp>) {
     for _ in 0..600 {
         h.step();
         if h.state().frames.inflight() == 0 && h.state().frames.last_ms.lock().map(|v| *v > 0.0).unwrap_or(false) {
@@ -41,7 +41,7 @@ fn settle(h: &mut Harness<'_, EffectcraftApp>) {
     h.run_steps(2);
 }
 
-fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+fn click_at(h: &mut Harness<'_, ArtheffectApp>, p: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.step();
     h.input_mut().events.push(Event::PointerButton { pos: p, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -50,12 +50,12 @@ fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
     h.run_steps(3);
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, id: &str) {
     let p = center(h, id);
     click_at(h, p);
 }
 
-fn open_layer(h: &mut Harness<'_, EffectcraftApp>, id: u64) {
+fn open_layer(h: &mut Harness<'_, ArtheffectApp>, id: u64) {
     h.state_mut().ui.timeline.open_layers.insert(id);
     h.run_steps(2);
 }
@@ -138,7 +138,7 @@ fn add_position_key_reveals_position() {
     let l = s.execute("layer.newSolid", json!({"color": "#808080"})).unwrap()["layer"].as_u64().unwrap();
     let mut h = harness(s);
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "timeline.keyAt.position", json!({})).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, "timeline.keyAt.position", json!({})).unwrap();
     h.run_steps(2);
     let app = h.state();
     let position = app.session.active_comp().unwrap().layer(LayerId(l)).unwrap().props.prop("transform/position").unwrap().clone();
@@ -164,7 +164,7 @@ fn mask_feather_values_are_linked_and_not_negative() {
     let mut s = session();
     let l = s.execute("layer.newSolid", json!({"color": "#808080"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("layer.addMask", json!({"layer": l, "shape": "rect"})).unwrap();
-    let feather = |h: &Harness<'_, EffectcraftApp>| {
+    let feather = |h: &Harness<'_, ArtheffectApp>| {
         let p = h.state().session.active_comp().unwrap().layer(LayerId(l)).unwrap().props.prop("masks/#1/feather").unwrap().clone();
         (p.uid, p.value.components())
     };
@@ -173,7 +173,7 @@ fn mask_feather_values_are_linked_and_not_negative() {
     h.state_mut().ui.timeline.layer_reveal.insert(l, vec!["feather".into()]);
     h.run_steps(2);
     let (uid, _) = feather(&h);
-    let type_value = |h: &mut Harness<'_, EffectcraftApp>, d: usize, v: &str| {
+    let type_value = |h: &mut Harness<'_, ArtheffectApp>, d: usize, v: &str| {
         click(h, &format!("timeline.prop.{uid}.value.{d}"));
         h.input_mut().events.push(Event::Text(v.into()));
         h.step();
@@ -207,10 +207,10 @@ fn shape_size_chain_starts_unlinked_and_keeps_the_ratio_when_linked() {
         h.state_mut().ui.timeline.reveal_props.extend(props);
     }
     h.run_steps(2);
-    let value = |h: &Harness<'_, EffectcraftApp>, l: u64, uid: u64| {
+    let value = |h: &Harness<'_, ArtheffectApp>, l: u64, uid: u64| {
         h.state().session.active_comp().unwrap().layer(LayerId(l)).unwrap().props.prop(&format!("@{uid}")).unwrap().value.components()
     };
-    let type_value = |h: &mut Harness<'_, EffectcraftApp>, uid: u64, d: usize, v: &str| {
+    let type_value = |h: &mut Harness<'_, ArtheffectApp>, uid: u64, d: usize, v: &str| {
         click(h, &format!("timeline.prop.{uid}.value.{d}"));
         h.input_mut().events.push(Event::Text(v.into()));
         h.step();
@@ -237,7 +237,7 @@ fn shape_size_chain_starts_unlinked_and_keeps_the_ratio_when_linked() {
 
 /// Two shape layers, "Rect" (Rectangle 1) and "Oval" (Ellipse 1, selected): (harness with Rect's
 /// Contents open, Rect, Oval, Rectangle 1's uid).
-fn two_shape_layers() -> (Harness<'static, EffectcraftApp>, u64, u64, u64) {
+fn two_shape_layers() -> (Harness<'static, ArtheffectApp>, u64, u64, u64) {
     let mut s = session();
     let a = s.execute("layer.newShape", json!({"kind": "rect", "name": "Rect"})).unwrap()["layer"].as_u64().unwrap();
     let b = s.execute("layer.newShape", json!({"kind": "ellipse", "name": "Oval"})).unwrap()["layer"].as_u64().unwrap();
@@ -249,7 +249,7 @@ fn two_shape_layers() -> (Harness<'static, EffectcraftApp>, u64, u64, u64) {
     (h, a, b, rect)
 }
 
-fn contents_names(h: &Harness<'_, EffectcraftApp>, l: u64) -> Vec<String> {
+fn contents_names(h: &Harness<'_, ArtheffectApp>, l: u64) -> Vec<String> {
     h.state().session.active_comp().unwrap().layer(LayerId(l)).unwrap().props.sub("contents").unwrap().groups().map(|g| g.name.clone()).collect()
 }
 
@@ -258,7 +258,7 @@ fn contents_names(h: &Harness<'_, EffectcraftApp>, l: u64) -> Vec<String> {
 #[test]
 fn shape_contents_items_have_eye_switches() {
     let (mut h, a, _, rect) = two_shape_layers();
-    let enabled = |h: &Harness<'_, EffectcraftApp>| {
+    let enabled = |h: &Harness<'_, ArtheffectApp>| {
         h.state().session.active_comp().unwrap().layer(LayerId(a)).unwrap().props.sub("contents").unwrap().find_group(rect).unwrap().enabled
     };
     let eye = format!("timeline.group.{rect}.eye");
@@ -289,7 +289,7 @@ fn ctrl_c_and_ctrl_v_copy_a_shape_group_into_another_shape_layer() {
     h.step();
     click(&mut h, &format!("timeline.layer.{b}.row"));
     assert_eq!(h.state().session.state.selected_layers, vec![LayerId(b)]);
-    h.input_mut().events.push(Event::Paste("EffectCraft: 1 shape item".into()));
+    h.input_mut().events.push(Event::Paste("Artheffect: 1 shape item".into()));
     h.run_steps(3);
     assert_eq!(h.state().session.active_comp().unwrap().layers.len(), 2, "no new layer");
     assert_eq!(contents_names(&h, b), ["Rectangle 1", "Ellipse 1"]);
@@ -333,12 +333,12 @@ fn timeline_colour_eyedropper_samples_the_comp() {
     let layer = s.active_comp().unwrap().layer(LayerId(l)).unwrap().clone();
     let mut fill = None;
     layer.props.walk("", &mut |_, p| {
-        if fill.is_none() && matches!(p.value, effectcraft_engine::keyframe::Value::Color(_)) {
+        if fill.is_none() && matches!(p.value, artheffect_engine::keyframe::Value::Color(_)) {
             fill = Some(p.uid);
         }
     });
     let fill = fill.expect("a fill colour");
-    fn groups(g: &effectcraft_engine::project::PropGroup, out: &mut Vec<u64>) {
+    fn groups(g: &artheffect_engine::project::PropGroup, out: &mut Vec<u64>) {
         for c in g.groups() {
             // The rectangle's path rows would push Fill below the rows the Timeline fits; the
             // eyedropper only needs Fill, so leave that group collapsed.
@@ -357,7 +357,7 @@ fn timeline_colour_eyedropper_samples_the_comp() {
     settle(&mut h);
     click(&mut h, &format!("timeline.prop.{fill}.eyedropper"));
     assert_eq!(h.state().ui.fx_pick.as_ref().map(|p| (p.prop, p.kind.as_str())), Some((fill, "color")), "the eyedropper waits for a viewer click");
-    let pos = effectcraft_ui_egui::panels::viewer::comp_to_screen(&h.ctx, [6.0, 6.0]).unwrap();
+    let pos = artheffect_ui_egui::panels::viewer::comp_to_screen(&h.ctx, [6.0, 6.0]).unwrap();
     click_at(&mut h, pos);
     assert!(h.state().ui.fx_pick.is_none(), "the pick is used up");
     let layer = h.state().session.active_comp().unwrap().layer(LayerId(l)).unwrap().clone();
@@ -367,7 +367,7 @@ fn timeline_colour_eyedropper_samples_the_comp() {
             got = Some(p.value.clone());
         }
     });
-    let Some(effectcraft_engine::keyframe::Value::Color(c)) = got else { panic!("{got:?}") };
+    let Some(artheffect_engine::keyframe::Value::Color(c)) = got else { panic!("{got:?}") };
     let want = [0x20 as f64 / 255.0, 0xc0 as f64 / 255.0, 0x40 as f64 / 255.0];
     for k in 0..3 {
         assert!((c[k] - want[k]).abs() < 0.02, "{c:?} vs {want:?}");
@@ -395,14 +395,14 @@ fn ctrl_v_pastes_svg_markup_as_a_shape_layer() {
     assert_eq!(top.props.sub("contents").unwrap().groups().count(), 2);
     assert_eq!(h.state().session.state.selected_layers, vec![top.id]);
     // The app's own clipboard note pastes the copied layer as before.
-    h.input_mut().events.push(Event::Paste("EffectCraft: 1 layer".into()));
+    h.input_mut().events.push(Event::Paste("Artheffect: 1 layer".into()));
     h.run_steps(3);
     let c = h.state().session.active_comp().unwrap();
     assert_eq!(c.layers.len(), 4);
     assert_eq!(c.layers[0].name, "Oval 2");
 }
 
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, cancel: bool) {
+fn drag(h: &mut Harness<'_, ArtheffectApp>, from: Pos2, to: Pos2, cancel: bool) {
     h.input_mut().events.push(Event::PointerMoved(from));
     h.step();
     h.input_mut().events.push(Event::PointerButton { pos: from, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -433,10 +433,10 @@ fn effects_drag_to_a_new_place_in_the_timeline() {
     let mut h = harness(s);
     h.state_mut().ui.timeline.open_groups.insert(effects.uid);
     open_layer(&mut h, l);
-    let names = |h: &Harness<'_, EffectcraftApp>| -> Vec<String> {
+    let names = |h: &Harness<'_, ArtheffectApp>| -> Vec<String> {
         h.state().session.active_comp().unwrap().layer(LayerId(l)).unwrap().props.sub("effects").unwrap().groups().map(|g| g.name.clone()).collect()
     };
-    let row = |h: &Harness<'_, EffectcraftApp>, uid: u64| {
+    let row = |h: &Harness<'_, ArtheffectApp>, uid: u64| {
         let e = h.state().auto.find(&format!("timeline.group.{uid}.name")).unwrap_or_else(|| panic!("no row for {uid}"));
         egui::Rect::from_min_size(pos2(e.rect[0], e.rect[1]), egui::vec2(e.rect[2], e.rect[3]))
     };
@@ -468,7 +468,7 @@ fn shift_click_selects_several_effects_for_a_preset() {
     let mut h = harness(s);
     h.state_mut().ui.timeline.open_groups.insert(effects.uid);
     open_layer(&mut h, l);
-    let shift_click = |h: &mut Harness<'_, EffectcraftApp>, uid: u64| {
+    let shift_click = |h: &mut Harness<'_, ArtheffectApp>, uid: u64| {
         let p = center(h, &format!("timeline.group.{uid}.name"));
         h.input_mut().events.push(Event::ModifiersChanged(Modifiers::SHIFT));
         h.input_mut().events.push(Event::PointerMoved(p));
@@ -480,7 +480,7 @@ fn shift_click_selects_several_effects_for_a_preset() {
         h.input_mut().events.push(Event::ModifiersChanged(Modifiers::NONE));
         h.run_steps(2);
     };
-    let selected = |h: &Harness<'_, EffectcraftApp>| h.state().session.state.selected_props.iter().map(|(_, u)| *u).collect::<Vec<_>>();
+    let selected = |h: &Harness<'_, ArtheffectApp>| h.state().session.state.selected_props.iter().map(|(_, u)| *u).collect::<Vec<_>>();
     click(&mut h, &format!("timeline.group.{}.name", uids[0]));
     assert_eq!(selected(&h), [uids[0]]);
     shift_click(&mut h, uids[1]);
@@ -508,12 +508,12 @@ fn text_animate_menu_adds_an_animator_with_the_property() {
     click(&mut h, &format!("timeline.group.{text}.animate"));
     let entry = h.query_all_by_label("Position").map(|n| n.rect()).find(|r| !shown.contains(r)).expect("the Animate menu's Position entry");
     click_at(&mut h, entry.center());
-    let animators = |h: &Harness<'_, EffectcraftApp>| {
+    let animators = |h: &Harness<'_, ArtheffectApp>| {
         h.state().session.active_comp().unwrap().layer(LayerId(l)).unwrap().props.sub("text").unwrap().sub("animators").cloned()
     };
     let anims = animators(&h).expect("an Animators group");
     let a = anims.groups().next().expect("Animator 1");
-    let has = |a: &effectcraft_engine::project::PropGroup, m: &str| a.sub("properties").is_some_and(|p| p.children.iter().any(|c| c.match_id() == m));
+    let has = |a: &artheffect_engine::project::PropGroup, m: &str| a.sub("properties").is_some_and(|p| p.children.iter().any(|c| c.match_id() == m));
     assert!(has(a, "position"), "Position was added: {:?}", a.sub("properties"));
     assert!(a.sub("selectors").is_some_and(|s| !s.children.is_empty()), "with a Range Selector");
     // The animator's Add menu adds a property to it.

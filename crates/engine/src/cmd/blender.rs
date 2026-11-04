@@ -3,11 +3,11 @@
 
 use std::path::Path;
 
-use effectcraft_effects::camera_tracker as ct;
-use effectcraft_project::{Footage, FootageKind, ItemId, ItemKind, Layer, LayerId, LayerSource, Uid};
-use effectcraft_render::EvalCtx;
-use effectcraft_time::Tick;
-use effectcraft_track::camtrack::{CameraSolve, linalg};
+use artheffect_effects::camera_tracker as ct;
+use artheffect_project::{Footage, FootageKind, ItemId, ItemKind, Layer, LayerId, LayerSource, Uid};
+use artheffect_render::EvalCtx;
+use artheffect_time::Tick;
+use artheffect_track::camtrack::{CameraSolve, linalg};
 use serde_json::{Value, json};
 
 mod validate;
@@ -39,7 +39,7 @@ fn finite(values: impl IntoIterator<Item = f64>) -> Result<()> {
     Ok(())
 }
 
-/// Right-handed EffectCraft world (right, down, forward) → Blender (right, forward, up).
+/// Right-handed Artheffect world (right, down, forward) → Blender (right, forward, up).
 fn position(p: [f64; 3], scale: f64) -> [f64; 3] {
     [p[0] * scale, p[2] * scale, -p[1] * scale]
 }
@@ -70,7 +70,7 @@ pub(super) fn export(s: &mut Session, p: &Value, cid: ItemId, lid: LayerId, uid:
     let layer = comp.layer(lid).ok_or_else(|| bad(CMD, "tracked layer missing"))?;
     let g = layer.props.find_group(uid).ok_or_else(|| bad(CMD, "tracker missing"))?;
     for name in [ct::SOLVE, ct::TRACKS] {
-        if g.prop(name).is_some_and(|p| matches!(&p.value, effectcraft_keyframe::Value::Str(v) if v.len() > MAX_JSON)) {
+        if g.prop(name).is_some_and(|p| matches!(&p.value, artheffect_keyframe::Value::Str(v) if v.len() > MAX_JSON)) {
             return Err(bad(CMD, "tracking data exceeds the 64 MiB export limit"));
         }
     }
@@ -128,7 +128,7 @@ pub(super) fn export(s: &mut Session, p: &Value, cid: ItemId, lid: LayerId, uid:
         return Err(bad(CMD, "scene exceeds the 64 MiB script limit; disable includePoints or split the shot"));
     }
     let quoted = serde_json::to_string(&data).map_err(|e| bad(CMD, format!("cannot encode scene: {e}")))?;
-    let script = include_str!("blender_scene.py").replace("__EFFECTCRAFT_DATA__", &quoted);
+    let script = include_str!("blender_scene.py").replace("__ARTHEFFECT_DATA__", &quoted);
     s.services.write_file(path, script.as_bytes()).map_err(|e| bad(CMD, format!("cannot write {path}: {e}")))?;
     Ok(json!({"path": path, "bytes": script.len(), "frames": frames.len(), "points": points.len(), "warnings": warnings}))
 }
@@ -192,7 +192,7 @@ fn source<'a>(s: &'a Session, layer: &Layer, solve: &CameraSolve, path: &str) ->
     }
     // Same frame selection as the media pool: interpreted FPS, rounded per-loop frame count,
     // clamp to the total loop range, then wrap. Native FPS does not change the frame index.
-    let divisor = (effectcraft_time::TICKS_PER_SECOND as i128).saturating_mul(footage.frame_rate.den as i128);
+    let divisor = (artheffect_time::TICKS_PER_SECOND as i128).saturating_mul(footage.frame_rate.den as i128);
     let source_count = (footage.duration.0 as i128).saturating_mul(footage.frame_rate.num as i128).saturating_add(divisor / 2) / divisor;
     let source_count = if footage.kind == FootageKind::Still { 1 } else { source_count };
     if !(1..=MAX_FRAME as i128).contains(&source_count) {
@@ -211,7 +211,7 @@ fn scene_warnings(camera: Option<&Layer>, solve: &CameraSolve, footage: &Footage
         warnings
             .push("No linked tracker camera: focus uses the default scene depth, DOF is off; optical focus cannot be recovered from feature tracks.".into());
     } else {
-        warnings.push("Focus/iris settings are sampled from the linked camera; pose and lens come from the tracker solve. Blender's physical DOF is an approximation of EffectCraft's blur model.".into());
+        warnings.push("Focus/iris settings are sampled from the linked camera; pose and lens come from the tracker solve. Blender's physical DOF is an approximation of Artheffect's blur model.".into());
     }
     if solve.distortion.is_some_and(|d| !d.is_none()) {
         warnings.push("Radial distortion is preserved as metadata (Brown k1/k2, half-diagonal normalization), not applied to Blender's pinhole camera. Use an undistorted plate for exact alignment.".into());

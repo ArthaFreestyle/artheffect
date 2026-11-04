@@ -1,7 +1,7 @@
 //! Agent keyframe times on offset, stretched and reversed layers (#257).
 
-use effectcraft_project::LayerId;
-use effectcraft_time::Tick;
+use artheffect_project::LayerId;
+use artheffect_time::Tick;
 use serde_json::{Value, json};
 
 use crate::{Session, tests::timeline::prop};

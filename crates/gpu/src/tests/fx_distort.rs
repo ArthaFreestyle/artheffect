@@ -1,10 +1,10 @@
 //! Distort / stylize GPU effects vs the CPU effects (the oracle): see `fx_distort.rs`.
 
-use effectcraft_keyframe::Value;
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{BitDepth, LayerSource};
-use effectcraft_render::RenderOpts;
-use effectcraft_time::Tick;
+use artheffect_keyframe::Value;
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{BitDepth, LayerSource};
+use artheffect_render::RenderOpts;
+use artheffect_time::Tick;
 
 use crate::tests::{Scene, check, compare_at, effect_case, n, opts, set};
 

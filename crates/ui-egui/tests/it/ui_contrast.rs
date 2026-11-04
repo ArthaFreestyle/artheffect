@@ -7,7 +7,7 @@
 //! must leave the list. This checks the tokens, not what a panel really draws with them (text on
 //! a label colour, an image, a disabled control) and not colour-blindness.
 
-use effectcraft_ui_egui::theme::{ThemeKind, Tokens};
+use artheffect_ui_egui::theme::{ThemeKind, Tokens};
 use egui::Color32;
 
 /// WCAG 2 relative luminance of an sRGB colour.

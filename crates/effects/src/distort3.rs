@@ -7,10 +7,10 @@
 
 use std::f64::consts::{PI, TAU};
 
-use effectcraft_geom::{Mat3, vec2};
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
-use effectcraft_raster::{Image, Px};
+use artheffect_geom::{Mat3, vec2};
+use artheffect_keyframe::Value;
+use artheffect_project::ParamUi;
+use artheffect_raster::{Image, Px};
 use rayon::prelude::*;
 
 use crate::util::{Plane, dist_to_poly, gauss_plane, layer_or_self, pick, point_in_poly, poly_length, poly_point_at, premul, remap, src_at, unpremul};
@@ -853,7 +853,7 @@ fn upscale(ctx: &EffectCtx, mut b: Buf) -> Buf {
     }
     let detail = (ctx.params.f("detail") / 100.0) as f32;
     let noise = ctx.params.f("reduceNoise") / 100.0;
-    let src = if noise > 0.0 { effectcraft_raster::gaussian_blur(&b.img, noise * 1.5, noise * 1.5, true) } else { b.img.clone() };
+    let src = if noise > 0.0 { artheffect_raster::gaussian_blur(&b.img, noise * 1.5, noise * 1.5, true) } else { b.img.clone() };
     let lc = [ctx.layer_size[0] * 0.5, ctx.layer_size[1] * 0.5];
     // Alpha: Bilinear (index 0) resamples the alpha channel bilinearly, Bicubic like the colour.
     let bilinear_alpha = ctx.params.e("alpha") == 0;
@@ -894,7 +894,7 @@ fn upscale(ctx: &EffectCtx, mut b: Buf) -> Buf {
     };
     if detail > 0.0 {
         let sigma = 0.6 * k;
-        let blur = effectcraft_raster::gaussian_blur(&out, sigma, sigma, true);
+        let blur = artheffect_raster::gaussian_blur(&out, sigma, sigma, true);
         out.data.par_iter_mut().zip(blur.data.par_iter()).for_each(|(p, q)| {
             let a = p[3];
             for c in 0..3 {

@@ -3,7 +3,7 @@
 //! `orientation`, `alignChildren`, `onClick`/`onChange`, `show()`, `close()`,
 //! `layout.layout()`…).
 //!
-//! The scripting engine (`effectcraft-script`) owns the live JavaScript objects; after every
+//! The scripting engine (`artheffect-script`) owns the live JavaScript objects; after every
 //! script step it publishes a serde description of each open window here ([`ScriptWindow`],
 //! a [`Widget`] tree with computed [`Widget::bounds`]). Frontends draw that description (the egui
 //! UI renders dialogs, palettes and dockable panels from it) and report what the user does as
@@ -409,7 +409,7 @@ pub struct ScriptUi {
     #[serde(skip)]
     pub task_hosts: Vec<u32>,
     /// The script contexts of Startup scripts: their tasks go on when the project is closed or
-    /// replaced, until EffectCraft quits.
+    /// replaced, until Artheffect quits.
     #[serde(skip)]
     pub startup_hosts: Vec<u32>,
 }

@@ -1,4 +1,4 @@
-use super::{EffectcraftApp, LayerId, Mat3, Pos2, Rect, Tick, Tool, ViewerMap, ov, vec2};
+use super::{ArtheffectApp, LayerId, Mat3, Pos2, Rect, Tick, Tool, ViewerMap, ov, vec2};
 
 /// What a drag in the viewer is doing.
 #[derive(Clone, Debug)]
@@ -57,7 +57,7 @@ pub(super) enum Gesture {
         inv: Mat3,
         l2p: Mat3,
         /// The layer's own snap targets as the drag began (its box and path vertices).
-        own: Vec<effectcraft_engine::viewer::SnapTarget>,
+        own: Vec<artheffect_engine::viewer::SnapTarget>,
         /// Alt held as the drag began: the anchor point moves alone, so the layer shifts.
         anchor_only: bool,
     },
@@ -183,7 +183,7 @@ pub(super) fn roi_handles(r: Rect) -> [Pos2; 8] {
 
 /// A drag starting on a region of interest handle: the ROI redrawn from the opposite corner (or
 /// edge, with the other axis kept).
-pub(super) fn roi_drag(app: &EffectcraftApp, map: &ViewerMap, comp_rect: Rect, zoom: f32, press: Pos2) -> Option<ov::Drag> {
+pub(super) fn roi_drag(app: &ArtheffectApp, map: &ViewerMap, comp_rect: Rect, zoom: f32, press: Pos2) -> Option<ov::Drag> {
     let [rx, ry, rw, rh] = app.session.state.region_of_interest?;
     let r = Rect::from_min_size(comp_rect.min + vec2(rx as f32 * zoom, ry as f32 * zoom), vec2(rw as f32 * zoom, rh as f32 * zoom));
     let i = roi_handles(r).iter().position(|h| h.distance(press) < 6.0)?;

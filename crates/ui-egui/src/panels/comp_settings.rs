@@ -4,9 +4,9 @@
 
 use crate::i18n::{tr, tr_args};
 use crate::icons::Icon;
-use effectcraft_engine::prefs::CompPreset;
-use effectcraft_engine::project::Resolution;
-use effectcraft_engine::time::{FrameRate, format_timecode_frames, parse_timecode};
+use artheffect_engine::prefs::CompPreset;
+use artheffect_engine::project::Resolution;
+use artheffect_engine::time::{FrameRate, format_timecode_frames, parse_timecode};
 use egui::{Color32, vec2};
 use serde_json::json;
 
@@ -580,7 +580,7 @@ pub fn params(d: &CompDraft) -> serde_json::Value {
 /// The frame size the comp renders at `res` (Auto follows the magnification, so the dialog shows
 /// the full frame for it).
 pub fn frame_at(w: u32, h: u32, res: Resolution) -> (u32, u32) {
-    effectcraft_render::frame_size(w, h, 1.0 / f64::from(res.factor().unwrap_or(1).max(1)))
+    artheffect_render::frame_size(w, h, 1.0 / f64::from(res.factor().unwrap_or(1).max(1)))
 }
 
 #[cfg(test)]

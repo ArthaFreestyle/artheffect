@@ -5,13 +5,13 @@
 use std::path::Path;
 use std::process::Command;
 
-use effectcraft_color::Label;
-use effectcraft_export::render_queue::{Channels, OutputFormat, OutputModule, RenderSettings, TimeSpan, sequence_path};
-use effectcraft_export::{Job, export};
-use effectcraft_media::MediaPool;
-use effectcraft_project::{ColorSpace, Comp, ItemKind, LayerSource, Project, Solid, build};
-use effectcraft_render::{FootageSource, NoFootage};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_export::render_queue::{Channels, OutputFormat, OutputModule, RenderSettings, TimeSpan, sequence_path};
+use artheffect_export::{Job, export};
+use artheffect_media::MediaPool;
+use artheffect_project::{ColorSpace, Comp, ItemKind, LayerSource, Project, Solid, build};
+use artheffect_render::{FootageSource, NoFootage};
+use artheffect_time::{FrameRate, Tick};
 use filmcraft_isobmff::{ColorInfo, TrackKind};
 
 struct Row {
@@ -72,7 +72,7 @@ fn render(row: &Row, path: &Path) {
     run(&p, comp, &NoFootage, &output, path);
 }
 
-fn run(p: &Project, comp: effectcraft_project::ItemId, footage: &dyn FootageSource, output: &OutputModule, path: &Path) {
+fn run(p: &Project, comp: artheffect_project::ItemId, footage: &dyn FootageSource, output: &OutputModule, path: &Path) {
     let settings = RenderSettings { time_span: TimeSpan::LengthOfComp, ..Default::default() };
     let out = path.to_string_lossy().to_string();
     let job = Job {
@@ -139,7 +139,7 @@ fn hdr_renders_reimport_with_their_colours() {
         let movie = dir.join(format!("{name}.mov"));
         render(row, &movie);
 
-        let footage = effectcraft_media::probe(&movie).expect("probe");
+        let footage = artheffect_media::probe(&movie).expect("probe");
         let profile = footage.color_profile;
         let mut p = Project::default();
         p.settings.working_space = SRGB;

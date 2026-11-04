@@ -1,6 +1,6 @@
 // Ease Presets: easing curves kept by name and applied to the sides of selected keyframes.
 //
-// A ScriptUI panel that ships with EffectCraft as an optional extension (Window ▸ Ease
+// A ScriptUI panel that ships with Artheffect as an optional extension (Window ▸ Ease
 // Presets.jsx). It uses only After Effects' documented scripting API: comp.selectedProperties,
 // Property.selectedKeys, keyInTemporalEase / keyOutTemporalEase, setTemporalEaseAtKey with
 // KeyframeEase, setInterpolationTypeAtKey, app.settings and ScriptUI. Original work by the

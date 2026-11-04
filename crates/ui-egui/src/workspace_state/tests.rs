@@ -1,8 +1,8 @@
 use super::*;
 use crate::dock::{Floating, Layout, Node, StackEntry, WorkspaceExt as _};
+use artheffect_engine::config::MemoryConfig;
 use craft_ui::docking::Action;
 use craft_ui::layout::{SplitAxis, SplitSize};
-use effectcraft_engine::config::MemoryConfig;
 
 fn minimal() -> Workspace {
     Workspace::new(crate::dock::workspace("Minimal"))
@@ -59,7 +59,7 @@ fn corrupt_future_or_unknown_workspace_keeps_defaults_and_original_file() {
     }
 }
 
-/// A file written by EffectCraft 0.10 (craft-libs 5c874d51): the Default workspace with
+/// A file written by Artheffect 0.10 (craft-libs 5c874d51): the Default workspace with
 /// Preview floating, Render Queue floating in its own native window, Align closed,
 /// Effects & Presets moved into the Project group and Audio split beside the Timeline,
 /// saved as "My Layout"; then Layer closed.
@@ -281,7 +281,7 @@ fn restored_viewer_slots_do_not_reuse_ids_or_restore_document_links() {
     ui.saved_workspaces.insert("Two views".into(), two(5));
     ui.viewers.insert(2, Some(42));
     assert!(store.save(Some(&config), &ui).unwrap());
-    let mut app = crate::EffectcraftApp::new(effectcraft_engine::Session::default());
+    let mut app = crate::ArtheffectApp::new(artheffect_engine::Session::default());
     WorkspaceStore::load(Some(&config), &mut app.ui);
     assert_eq!(app.ui.viewers.get(&2), Some(&None));
     assert_eq!(app.ui.viewers.get(&5), Some(&None));

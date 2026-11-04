@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 use std::mem::size_of;
 
-use effectcraft_segment::TrackedFrame;
+use artheffect_segment::TrackedFrame;
 
 /// Separate from the model's memory banks: probability maps are full-resolution and can otherwise
 /// grow with the entire clip when objects start on different frames.

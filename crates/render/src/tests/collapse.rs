@@ -1,10 +1,10 @@
 //! Collapse Transformations, Continuously Rasterize and the Quality switch.
 
-use effectcraft_color::{BlendMode, Label};
-use effectcraft_keyframe::{TextDoc, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{BitDepth, Comp, FrameBlend, ItemId, ItemKind, Layer, LayerSource, Project, Quality, Solid};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::{BlendMode, Label};
+use artheffect_keyframe::{TextDoc, Value};
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{BitDepth, Comp, FrameBlend, ItemId, ItemKind, Layer, LayerSource, Project, Quality, Solid};
+use artheffect_time::{FrameRate, Tick};
 
 use crate::{EvalCtx, Image, NoFootage, RenderOpts, Renderer, render_frame};
 
@@ -99,8 +99,8 @@ fn masks_on_a_collapsed_layer_force_a_flattened_render() {
     let mask = build::mask(
         &mut Ids(&mut next),
         "Mask 1",
-        effectcraft_keyframe::ShapePath::rect([50.0, 50.0], 4000.0, 4000.0),
-        effectcraft_project::MaskMode::Add,
+        artheffect_keyframe::ShapePath::rect([50.0, 50.0], 4000.0, 4000.0),
+        artheffect_project::MaskMode::Add,
         [255, 255, 0],
     );
     p.next_id = next;
@@ -131,7 +131,7 @@ fn proxy_and_frame_blending_keep_a_precomp_on_the_flattened_path() {
     // A composition proxy stands in for the precomp's pixels.
     let LayerSource::Comp { item } = p.comp(cid).unwrap().layers[0].source else { panic!("a precomp layer") };
     let proxy =
-        effectcraft_project::Proxy { footage: effectcraft_project::Footage { has_video: true, width: 32, height: 32, ..Default::default() }, enabled: true };
+        artheffect_project::Proxy { footage: artheffect_project::Footage { has_video: true, width: 32, height: 32, ..Default::default() }, enabled: true };
     p.item_mut(item).unwrap().proxy = Some(Box::new(proxy));
     assert!(!collapses(&p), "a proxy keeps the flattened path");
 }
@@ -148,8 +148,8 @@ fn referenced_layer_overrides_change_the_owner_cache_key() {
     let bid = b.id;
     let mut next = p.next_id;
     let mut ids = Ids(&mut next);
-    let spec = effectcraft_effects::find("ec.channel.setmatte").unwrap();
-    let mut fx = effectcraft_effects::instantiate(spec, &mut ids, spec.name, [100.0, 100.0]);
+    let spec = artheffect_effects::find("ec.channel.setmatte").unwrap();
+    let mut fx = artheffect_effects::instantiate(spec, &mut ids, spec.name, [100.0, 100.0]);
     fx.prop_mut("takeMatteFromLayer").unwrap().value = Value::Layer(Some(a.id.0));
     p.next_id = next;
     b.props.sub_mut("effects").unwrap().children.push(fx.into());
@@ -377,8 +377,8 @@ fn effects_on_a_scaled_shape_follow_its_scale() {
         let rect = build::shape_rect(&mut ids, [size, size], [0.0, 0.0], 0.0);
         let fill = build::shape_fill(&mut ids, [1.0, 1.0, 1.0, 1.0]);
         let g = build::shape_group(&mut ids, "Rectangle 1", vec![rect, fill]);
-        let spec = effectcraft_effects::find("ec.blur.gaussian").unwrap();
-        let mut fx = effectcraft_effects::instantiate(spec, &mut ids, spec.name, [200.0, 200.0]);
+        let spec = artheffect_effects::find("ec.blur.gaussian").unwrap();
+        let mut fx = artheffect_effects::instantiate(spec, &mut ids, spec.name, [200.0, 200.0]);
         p.next_id = next;
         fx.prop_mut("blurriness").unwrap().value = Value::Scalar(blur);
         l.props.sub_mut("contents").unwrap().children.push(g.into());

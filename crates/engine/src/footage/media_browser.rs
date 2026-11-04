@@ -14,7 +14,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-use effectcraft_project::{Footage, FootageKind, Item, ItemKind, Project};
+use artheffect_project::{Footage, FootageKind, Item, ItemKind, Project};
 
 /// Media Browser state (in [`crate::EditorState`], serde for agents).
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -207,7 +207,7 @@ pub fn kind_of(path: &str) -> Option<&'static str> {
     let ext = std::path::Path::new(path).extension()?.to_str()?.to_ascii_lowercase();
     let e = ext.as_str();
     // (An animated GIF plays as a movie.)
-    if e == "gif" || effectcraft_project::VIDEO_EXTENSIONS.contains(&e) {
+    if e == "gif" || artheffect_project::VIDEO_EXTENSIONS.contains(&e) {
         Some("video")
     } else if IMAGE.contains(&e) {
         Some("image")
@@ -434,7 +434,7 @@ mod tests {
     /// Every movie type the importer reads lists as video, as an animated GIF does.
     #[test]
     fn movies_list_as_video() {
-        for ext in effectcraft_project::VIDEO_EXTENSIONS.iter().chain(&["gif"]) {
+        for ext in artheffect_project::VIDEO_EXTENSIONS.iter().chain(&["gif"]) {
             assert_eq!(kind_of(&format!("/clips/A.{}", ext.to_uppercase())), Some("video"), "{ext}");
         }
         assert_eq!(kind_of("/clips/capture.avi"), Some("video"));

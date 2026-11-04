@@ -74,7 +74,7 @@ impl Services for FsServices {
 pub trait Importer: Send + Sync {
     /// Probe one file and return footage metadata. Image sequences are the engine's
     /// ([`sequence`]): it groups numbered stills and probes their first file here.
-    fn probe(&self, path: &str) -> std::result::Result<effectcraft_project::Footage, String>;
+    fn probe(&self, path: &str) -> std::result::Result<artheffect_project::Footage, String>;
     /// A footage file's bytes are now at `path` (extracted from a template): hosts whose media
     /// layer reads from memory (the browser) register them; file-based ones need nothing.
     fn register(&self, _path: &str, _data: &[u8]) {}

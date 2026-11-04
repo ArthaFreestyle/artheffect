@@ -4,12 +4,12 @@
 //! doesn't move the layer. Uses only APIs that existed before the bars, so it runs (and fails)
 //! on the code without them.
 
-use effectcraft_engine::Session;
-use effectcraft_engine::commands::text_edit::layer_doc;
-use effectcraft_engine::project::{LayerId, PropGroup};
-use effectcraft_engine::text::layout_doc;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::panels::viewer::comp_to_screen;
+use artheffect_engine::Session;
+use artheffect_engine::commands::text_edit::layer_doc;
+use artheffect_engine::project::{LayerId, PropGroup};
+use artheffect_engine::text::layout_doc;
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::panels::viewer::comp_to_screen;
 use egui::{Event, Modifiers, PointerButton, Pos2, pos2, vec2};
 use egui_kittest::Harness;
 use serde_json::json;
@@ -41,22 +41,22 @@ fn setup() -> (Session, Ids) {
     (s, ids)
 }
 
-fn harness(s: Session) -> Harness<'static, EffectcraftApp> {
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+fn harness(s: Session) -> Harness<'static, ArtheffectApp> {
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(4);
     h
 }
 
-fn handle(h: &Harness<'_, EffectcraftApp>, uid: u64) -> Option<Pos2> {
+fn handle(h: &Harness<'_, ArtheffectApp>, uid: u64) -> Option<Pos2> {
     h.state().auto.find(&format!("viewer.textRange.{uid}")).map(|e| pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0))
 }
 
-fn value(h: &Harness<'_, EffectcraftApp>, ids: &Ids, uid: u64) -> f64 {
+fn value(h: &Harness<'_, ArtheffectApp>, ids: &Ids, uid: u64) -> f64 {
     h.state().session.active_comp().unwrap().layer(LayerId(ids.layer)).unwrap().props.find(uid).unwrap().value.as_f64()
 }
 
 /// Screen x of the caret before character `ci` of the text.
-fn caret_x(h: &Harness<'_, EffectcraftApp>, ids: &Ids, ci: usize) -> f32 {
+fn caret_x(h: &Harness<'_, ArtheffectApp>, ids: &Ids, ci: usize) -> f32 {
     let s = &h.state().session;
     let lay = layout_doc(&layer_doc(s, LayerId(ids.layer)).unwrap());
     let pos = s.active_comp().unwrap().layer(LayerId(ids.layer)).unwrap().props.prop("transform/position").unwrap().value.as_vec2();
@@ -64,7 +64,7 @@ fn caret_x(h: &Harness<'_, EffectcraftApp>, ids: &Ids, ci: usize) -> f32 {
     comp_to_screen(&h.ctx, [(pos[0] + bottom.x) as f32, (pos[1] + bottom.y) as f32]).unwrap().x
 }
 
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'_, ArtheffectApp>, from: Pos2, to: Pos2) {
     h.event(Event::PointerMoved(from));
     h.step();
     h.event(Event::PointerButton { pos: from, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -144,7 +144,7 @@ fn bars_show_only_for_a_selected_selector_or_animator() {
     h.run_steps(3);
     assert!(handle(&h, ids.end).is_none(), "View ▸ Show Layer Controls off hides them");
     h.state_mut().ui.viewer.show_layer_controls = true;
-    h.state_mut().ui.tool = effectcraft_ui_egui::state::Tool::Pen;
+    h.state_mut().ui.tool = artheffect_ui_egui::state::Tool::Pen;
     h.run_steps(3);
     assert!(handle(&h, ids.end).is_none(), "only the Selection tool drags them");
 }
@@ -185,7 +185,7 @@ fn a_bar_on_a_box_handle_leaves_it_the_press() {
         .min_by(|p, q| (*p - bar).length().total_cmp(&(*q - bar).length()))
         .expect("the box's handles");
     assert!((bar - at).length() < 9.0, "the fixture puts Start within the handle's reach: {bar:?} vs {at:?}");
-    let scale = |h: &Harness<'_, EffectcraftApp>| {
+    let scale = |h: &Harness<'_, ArtheffectApp>| {
         h.state().session.active_comp().unwrap().layer(LayerId(l)).unwrap().props.prop("transform/scale").unwrap().value.clone()
     };
     let before = scale(&h);
@@ -196,7 +196,7 @@ fn a_bar_on_a_box_handle_leaves_it_the_press() {
 }
 
 /// The text the Timeline paints in property `uid`'s value field.
-fn timeline_value(h: &Harness<'_, EffectcraftApp>, uid: u64) -> String {
+fn timeline_value(h: &Harness<'_, ArtheffectApp>, uid: u64) -> String {
     let e = h.state().auto.find(&format!("timeline.prop.{uid}.value")).unwrap_or_else(|| panic!("timeline.prop.{uid}.value isn't shown"));
     let field = egui::Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]));
     h.output()
@@ -210,14 +210,14 @@ fn timeline_value(h: &Harness<'_, EffectcraftApp>, uid: u64) -> String {
 }
 
 /// The centre of the first painted text that reads `label` exactly (a popup's option).
-fn text_at(h: &Harness<'_, EffectcraftApp>, label: &str) -> Option<Pos2> {
+fn text_at(h: &Harness<'_, ArtheffectApp>, label: &str) -> Option<Pos2> {
     h.output().shapes.iter().find_map(|c| match &c.shape {
         egui::Shape::Text(t) if t.galley.text() == label => Some(t.visual_bounding_rect().center()),
         _ => None,
     })
 }
 
-fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+fn click_at(h: &mut Harness<'_, ArtheffectApp>, p: Pos2) {
     h.event(Event::PointerMoved(p));
     h.step();
     h.event(Event::PointerButton { pos: p, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -250,8 +250,8 @@ fn index_units_show_start_end_and_offset_without_a_percent_sign() {
         assert!(timeline_value(&h, uid).ends_with('%'), "Percentage units: {}", timeline_value(&h, uid));
     }
     // Units ▸ Index through the Timeline: open its popup, pick the option.
-    let units_value = |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().layer(l).unwrap().props.find(units).unwrap().value.clone();
-    assert_eq!(units_value(&h), effectcraft_engine::keyframe::Value::Enum(0), "Percentage to start with");
+    let units_value = |h: &Harness<'_, ArtheffectApp>| h.state().session.active_comp().unwrap().layer(l).unwrap().props.find(units).unwrap().value.clone();
+    assert_eq!(units_value(&h), artheffect_engine::keyframe::Value::Enum(0), "Percentage to start with");
     let field = h
         .state()
         .auto
@@ -261,7 +261,7 @@ fn index_units_show_start_end_and_offset_without_a_percent_sign() {
     click_at(&mut h, field);
     let index = text_at(&h, "Index").expect("the Units popup lists Index");
     click_at(&mut h, index);
-    assert_eq!(units_value(&h), effectcraft_engine::keyframe::Value::Enum(1), "the popup set Units to Index");
+    assert_eq!(units_value(&h), artheffect_engine::keyframe::Value::Enum(1), "the popup set Units to Index");
     for uid in [ids.start, ids.end, offset] {
         let v = timeline_value(&h, uid);
         assert!(!v.is_empty() && !v.contains('%'), "Index units: {v:?}");

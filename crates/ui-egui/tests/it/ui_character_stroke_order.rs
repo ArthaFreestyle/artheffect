@@ -1,8 +1,8 @@
 //! The Character panel's stroke order menu: the two per-character orders and the two layer-wide
 //! ones (All Fills Over All Strokes, All Strokes Over All Fills), which set the text layer's
 //! More Options ▸ Fill & Stroke.
-use effectcraft_engine::{Session, commands::text_edit::layer_doc, project::LayerId};
-use effectcraft_ui_egui::{EffectcraftApp, dock::PanelKind};
+use artheffect_engine::{Session, commands::text_edit::layer_doc, project::LayerId};
+use artheffect_ui_egui::{ArtheffectApp, dock::PanelKind};
 use egui::{
     Event, Modifiers, PointerButton, Pos2,
     accesskit::{Role, Toggled},
@@ -14,7 +14,7 @@ use egui_kittest::{
 };
 use serde_json::json;
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, pos: Pos2) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, pos: Pos2) {
     h.event(Event::PointerMoved(pos));
     h.step();
     for pressed in [true, false] {
@@ -24,12 +24,12 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, pos: Pos2) {
     h.run_steps(2);
 }
 
-fn open_menu(h: &mut Harness<'_, EffectcraftApp>) {
+fn open_menu(h: &mut Harness<'_, ArtheffectApp>) {
     let e = h.state().auto.find("character.strokeOverFill").unwrap_or_else(|| panic!("missing character.strokeOverFill")).clone();
     click(h, pos2(e.rect[0] + e.rect[2] * 0.5, e.rect[1] + e.rect[3] * 0.5));
 }
 
-fn pick(h: &mut Harness<'_, EffectcraftApp>, label: &str) {
+fn pick(h: &mut Harness<'_, ArtheffectApp>, label: &str) {
     open_menu(h);
     // A menu row: the dropdown shows the current order under the same label.
     h.get_by_role_and_label(Role::Button, label).click();
@@ -46,7 +46,7 @@ fn character_stroke_order_menu_sets_layer_fill_and_stroke() {
     s.execute("comp.new", json!({"width": 320, "height": 180, "duration": 2})).unwrap();
     let text = s.execute("layer.newText", json!({"text": "Caption", "font": "Inter"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("layer.setText", json!({"layer": text, "applyStroke": true, "strokeWidth": 8.0, "strokeOverFill": false})).unwrap();
-    let mut app = EffectcraftApp::new(s);
+    let mut app = ArtheffectApp::new(s);
     app.set_workspace("Text");
     let builder = Harness::builder().with_size(vec2(1600.0, 1400.0));
     let mut h = if std::env::var_os("EC_SNAPSHOT_DIR").is_some() { builder.wgpu().build_eframe(|_| app) } else { builder.build_eframe(|_| app) };

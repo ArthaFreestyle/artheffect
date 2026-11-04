@@ -1,4 +1,4 @@
-//! EffectCraft text engine.
+//! Artheffect text engine.
 //!
 //! - [`fonts`], [`sfnt`], [`layout`]: font database, shaping (harfrust), bidi, line breaking and
 //!   paragraph layout (shared design with FilmCraft's text engine).
@@ -21,7 +21,7 @@ pub use kurbo;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use effectcraft_keyframe::{BaselineOption, CharStyle, Composer, Direction, Justify, Kerning, ParaStyle, TextDoc};
+use artheffect_keyframe::{BaselineOption, CharStyle, Composer, Direction, Justify, Kerning, ParaStyle, TextDoc};
 pub use fonts::{FaceId, Resolved, families, resolve};
 use kurbo::{Affine, BezPath, Point};
 pub use layout::{Align, Caps, Glyph, Layout, Line, ParagraphStyle, Script, TextStyle, layout as layout_text, layout_rich, measure};
@@ -718,7 +718,7 @@ mod tests {
         let text = "\u{0645}\u{0631}\u{062D}\u{0628}\u{0627} abc";
         let ltr = layout_doc(&TextDoc { text: text.into(), size: 30.0, ..Default::default() });
         let mut r = TextDoc { text: text.into(), size: 30.0, ..Default::default() };
-        r.direction = effectcraft_keyframe::text_doc::Direction::Rtl;
+        r.direction = artheffect_keyframe::text_doc::Direction::Rtl;
         let rtl = layout_doc(&r);
         let x_of = |l: &TextLayout, c: char| l.glyphs.iter().find(|g| g.ch == c).map(|g| g.origin.x).unwrap();
         let first_ar = '\u{0645}';
@@ -779,7 +779,7 @@ mod tests {
         assert!(xs.windows(2).all(|w| w[1] > w[0]), "{xs:?}");
         // Right to left: Start is on the right of the first character.
         let mut r = TextDoc { text: "\u{0645}\u{0631}\u{062D}\u{0628}\u{0627}".into(), size: 40.0, ..Default::default() };
-        r.direction = effectcraft_keyframe::text_doc::Direction::Rtl;
+        r.direction = artheffect_keyframe::text_doc::Direction::Rtl;
         let r = layout_doc(&r);
         assert!(bar_x(&r, Characters, 0.0) > bar_x(&r, Characters, 0.2) && bar_x(&r, Characters, 0.2) > bar_x(&r, Characters, 1.0));
     }

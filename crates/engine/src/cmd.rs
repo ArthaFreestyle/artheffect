@@ -91,8 +91,8 @@ pub(crate) use mask::split_segment as split_segment_for_tests;
 
 use std::sync::OnceLock;
 
-use effectcraft_project::{Comp, ItemId, Layer, LayerId};
-use effectcraft_time::Tick;
+use artheffect_project::{Comp, ItemId, Layer, LayerId};
+use artheffect_time::Tick;
 use serde_json::Value;
 
 use crate::{EngineError, Result, Session};
@@ -258,7 +258,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
 }
 
 /// Set `footage` as the proxy of `item` (File ▸ Create Proxy's post-render action).
-pub(crate) fn proxy_set(s: &mut Session, item: ItemId, footage: effectcraft_project::Footage) -> Result<()> {
+pub(crate) fn proxy_set(s: &mut Session, item: ItemId, footage: artheffect_project::Footage) -> Result<()> {
     proxy::set_proxy_footage(s, &[item], footage)
 }
 

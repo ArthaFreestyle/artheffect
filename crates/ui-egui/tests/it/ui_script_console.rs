@@ -2,11 +2,11 @@
 //! context) and logs output, results and errors (egui_kittest, UI logic only).
 
 use crate::gpu_test::RenderSerial;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::dock::PanelKind;
 use egui_kittest::Harness;
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, id: &str) {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).clone();
     let c = egui::pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0);
     h.input_mut().events.push(egui::Event::PointerMoved(c));
@@ -18,8 +18,8 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
 
 #[test]
 fn script_console_runs_scripts() {
-    let s = effectcraft_host::session();
-    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let s = artheffect_host::session();
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.state_mut().show_panel(PanelKind::ScriptConsole);
     h.run_steps(3);
     for id in ["scriptConsole.input", "scriptConsole.output", "scriptConsole.run", "scriptConsole.clear"] {
@@ -45,12 +45,12 @@ fn script_console_runs_scripts() {
 }
 
 /// Headless look at the panel (wgpu offscreen); run with
-/// `SC_SNAPSHOT=/abs/out.png cargo test -p effectcraft-ui-egui --test it ui_script_console:: -- --ignored`.
+/// `SC_SNAPSHOT=/abs/out.png cargo test -p artheffect-ui-egui --test it ui_script_console:: -- --ignored`.
 #[test]
 #[ignore]
 fn script_console_snapshot() {
-    let s = effectcraft_host::session();
-    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let s = artheffect_host::session();
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.state_mut().show_panel(PanelKind::ScriptConsole);
     h.run_steps(2);
     for code in ["var c = app.project.items.addComp('Console', 320, 180, 1, 2, 24); writeLn('made ' + c.name); c.id", "c.layers.addText('Hi').name", "nope()"] {

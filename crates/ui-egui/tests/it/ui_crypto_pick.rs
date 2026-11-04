@@ -5,14 +5,14 @@
 //! the asynchronous probe (hover and clicks before it is built, edits while it builds), playback
 //! and scrubbing, navigation tools, errors and disarming.
 
-use effectcraft_engine::Session;
-use effectcraft_engine::keyframe::Value as KV;
-use effectcraft_engine::project::{LayerId, Resolution};
-use effectcraft_engine::raster::channels3d::{crypto_float, crypto_hash};
-use effectcraft_ui_egui::dock::{self, PanelKind, SplitSize};
-use effectcraft_ui_egui::panels::viewer::comp_to_screen;
-use effectcraft_ui_egui::state::Tool;
-use effectcraft_ui_egui::{Dialog, EffectcraftApp};
+use artheffect_engine::Session;
+use artheffect_engine::keyframe::Value as KV;
+use artheffect_engine::project::{LayerId, Resolution};
+use artheffect_engine::raster::channels3d::{crypto_float, crypto_hash};
+use artheffect_ui_egui::dock::{self, PanelKind, SplitSize};
+use artheffect_ui_egui::panels::viewer::comp_to_screen;
+use artheffect_ui_egui::state::Tool;
+use artheffect_ui_egui::{ArtheffectApp, Dialog};
 use egui::{Event, Modifiers, PointerButton, Pos2, pos2, vec2};
 use egui_kittest::Harness;
 use serde_json::json;
@@ -64,7 +64,7 @@ fn crypto_session(tag: &str, w: usize, h: usize, blur: bool) -> (Session, Ids) {
     std::fs::create_dir_all(dir.join("proxy")).unwrap();
     let path = crypto_exr(&dir, "plate.exr", w, h, 1);
     crypto_exr(&dir.join("proxy"), "plate_proxy.exr", w.div_ceil(2), h.div_ceil(2), 2);
-    let mut s = effectcraft_host::session();
+    let mut s = artheffect_host::session();
     let r = s.execute("file.import", json!({"paths": [path]})).unwrap();
     assert_eq!(r["errors"], json!([]), "{r}");
     let footage = r["items"][0].as_u64().unwrap();
@@ -82,20 +82,20 @@ fn crypto_session(tag: &str, w: usize, h: usize, blur: bool) -> (Session, Ids) {
 }
 
 /// The app with the Composition viewer and Effect Controls (`ec` points wide) side by side.
-fn harness(s: Session, size: egui::Vec2, ppp: f32, ec: f32) -> Harness<'static, EffectcraftApp> {
+fn harness(s: Session, size: egui::Vec2, ppp: f32, ec: f32) -> Harness<'static, ArtheffectApp> {
     harness_dt(s, size, ppp, ec, 0.25)
 }
 
 /// [`harness`] whose steps advance the clock by `dt` seconds.
-fn harness_dt(s: Session, size: egui::Vec2, ppp: f32, ec: f32, dt: f32) -> Harness<'static, EffectcraftApp> {
+fn harness_dt(s: Session, size: egui::Vec2, ppp: f32, ec: f32, dt: f32) -> Harness<'static, ArtheffectApp> {
     let app = app(s, ec);
     let mut h = Harness::builder().with_size(size).with_pixels_per_point(ppp).with_step_dt(dt).build_eframe(|_| app);
     settle(&mut h);
     h
 }
 
-fn app(s: Session, ec: f32) -> EffectcraftApp {
-    let mut app = EffectcraftApp::new(s);
+fn app(s: Session, ec: f32) -> ArtheffectApp {
+    let mut app = ArtheffectApp::new(s);
     app.ui.viewer.show_layer_controls = false;
     app.ui.dock = dock::docked(dock::vsplit(
         SplitSize::FixedSecond(160.0),
@@ -105,7 +105,7 @@ fn app(s: Session, ec: f32) -> EffectcraftApp {
     app
 }
 
-pub(crate) fn settle(h: &mut Harness<'_, EffectcraftApp>) {
+pub(crate) fn settle(h: &mut Harness<'_, ArtheffectApp>) {
     for _ in 0..1500 {
         h.step();
         if h.state().frames.inflight() == 0 && h.state().frames.last_ms.lock().is_ok_and(|v| *v > 0.0) {
@@ -116,12 +116,12 @@ pub(crate) fn settle(h: &mut Harness<'_, EffectcraftApp>) {
     h.run_steps(4);
 }
 
-pub(crate) fn chip(h: &Harness<'_, EffectcraftApp>) -> Option<String> {
+pub(crate) fn chip(h: &Harness<'_, ArtheffectApp>) -> Option<String> {
     h.state().auto.find("viewer.cryptoPick").map(|e| e.label.clone())
 }
 
 /// Step until the chip stops saying the probe is being built (the job runs on its own thread).
-pub(crate) fn wait_probe(h: &mut Harness<'_, EffectcraftApp>) {
+pub(crate) fn wait_probe(h: &mut Harness<'_, ArtheffectApp>) {
     for _ in 0..3000 {
         h.step();
         if chip(h).as_deref() != Some(READING) {
@@ -132,14 +132,14 @@ pub(crate) fn wait_probe(h: &mut Harness<'_, EffectcraftApp>) {
     panic!("the probe never finished");
 }
 
-fn hover(h: &mut Harness<'_, EffectcraftApp>, pos: Pos2) -> String {
+fn hover(h: &mut Harness<'_, ArtheffectApp>, pos: Pos2) -> String {
     h.event(Event::PointerMoved(pos));
     h.step();
     wait_probe(h);
     chip(h).unwrap_or_default()
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, pos: Pos2, modifiers: Modifiers) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, pos: Pos2, modifiers: Modifiers) {
     h.event(Event::PointerMoved(pos));
     h.event(Event::ModifiersChanged(modifiers));
     h.step();
@@ -153,12 +153,12 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, pos: Pos2, modifiers: Modifiers) {
     h.run_steps(2);
 }
 
-pub(crate) fn at(h: &Harness<'_, EffectcraftApp>, id: &str) -> Pos2 {
+pub(crate) fn at(h: &Harness<'_, ArtheffectApp>, id: &str) -> Pos2 {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("missing {id}")).clone();
     pos2(e.rect[0] + e.rect[2] * 0.5, e.rect[1] + e.rect[3] * 0.5)
 }
 
-fn selection(h: &Harness<'_, EffectcraftApp>, ids: &Ids) -> String {
+fn selection(h: &Harness<'_, ArtheffectApp>, ids: &Ids) -> String {
     let s = &h.state().session;
     match &s.active_comp().unwrap().layer(LayerId(ids.layer)).unwrap().props.find(ids.sel).unwrap().value {
         KV::Str(t) => t.clone(),
@@ -166,20 +166,20 @@ fn selection(h: &Harness<'_, EffectcraftApp>, ids: &Ids) -> String {
     }
 }
 
-fn arm(h: &mut Harness<'_, EffectcraftApp>, ids: &Ids) {
+fn arm(h: &mut Harness<'_, ArtheffectApp>, ids: &Ids) {
     let eye = at(h, &format!("effectControls.prop.{}.eyedropper", ids.sel));
     click(h, eye, Modifiers::NONE);
     assert!(h.state().ui.fx_pick.as_ref().is_some_and(|p| p.kind == "crypto" && p.prop == ids.sel), "armed");
 }
 
 /// The resolution of the frame the viewer shows: every n-th pixel (its key keeps thousandths).
-fn shown_scale(h: &Harness<'_, EffectcraftApp>) -> f64 {
+fn shown_scale(h: &Harness<'_, ArtheffectApp>) -> f64 {
     let s = &h.state().session;
     1.0 / (1000.0 / h.state().shown_series(s.active_comp_id().unwrap()).scale as f64).round()
 }
 
 /// The comp point the viewer maps screen point `p` to (its own arithmetic).
-fn to_comp(h: &Harness<'_, EffectcraftApp>, p: Pos2) -> [f64; 2] {
+fn to_comp(h: &Harness<'_, ArtheffectApp>, p: Pos2) -> [f64; 2] {
     let (o, k) = (comp_to_screen(&h.ctx, [0.0, 0.0]).unwrap(), comp_to_screen(&h.ctx, [1000.0, 1000.0]).unwrap());
     let z = (k - o) / 1000.0;
     [((p.x - o.x) / z.x) as f64, ((p.y - o.y) / z.y) as f64]
@@ -187,18 +187,18 @@ fn to_comp(h: &Harness<'_, EffectcraftApp>, p: Pos2) -> [f64; 2] {
 
 /// The rendered matte of ID `name` (as the viewer renders the frame at `scale`) at comp point `p`.
 /// A downsampled proxy blends cells at their edges, so an edge pixel can be a mix of IDs.
-fn lit(h: &mut Harness<'_, EffectcraftApp>, name: &str, p: [f64; 2], scale: f64) -> f32 {
+fn lit(h: &mut Harness<'_, ArtheffectApp>, name: &str, p: [f64; 2], scale: f64) -> f32 {
     let s = &mut h.state_mut().session;
     s.execute_checked("prop.set", json!({"path": "effects/#1/selection", "value": name})).unwrap();
     let cid = s.active_comp_id().unwrap();
-    let opts = effectcraft_engine::render::RenderOpts { roi: None, guides: false, ..h.state().frame_opts(cid, scale) };
-    let img = h.state().session.render(cid, effectcraft_engine::time::Tick::ZERO, opts);
+    let opts = artheffect_engine::render::RenderOpts { roi: None, guides: false, ..h.state().frame_opts(cid, scale) };
+    let img = h.state().session.render(cid, artheffect_engine::time::Tick::ZERO, opts);
     img.get((p[0] * scale).floor() as i64, (p[1] * scale).floor() as i64)[0]
 }
 
 /// Whether ID `got` (a cell name) has the largest coverage of the shown pixel at comp point `p`
 /// (a downsampled or scaled layer blends the cells around it).
-fn largest(h: &mut Harness<'_, EffectcraftApp>, got: &str, p: [f64; 2], scale: f64) -> bool {
+fn largest(h: &mut Harness<'_, ArtheffectApp>, got: &str, p: [f64; 2], scale: f64) -> bool {
     let v = lit(h, got, p, scale);
     if v >= 0.5 {
         return true;
@@ -357,22 +357,22 @@ fn picks_what_the_viewer_shows_across_sizes_scales_zoom_pan_resolution_and_proxi
     assert!(checked > 100, "{checked}");
 }
 
-fn set_frame(h: &mut Harness<'_, EffectcraftApp>, f: i64) {
-    h.state_mut().session.set_time(effectcraft_engine::time::Tick::from_seconds_f64(f as f64 / 24.0));
+fn set_frame(h: &mut Harness<'_, ArtheffectApp>, f: i64) {
+    h.state_mut().session.set_time(artheffect_engine::time::Tick::from_seconds_f64(f as f64 / 24.0));
 }
 
 /// The viewer's CPU frame `f` of the series shown.
-fn cpu_frame(h: &Harness<'_, EffectcraftApp>, f: i64) -> Option<([usize; 2], Vec<egui::Color32>)> {
+fn cpu_frame(h: &Harness<'_, ArtheffectApp>, f: i64) -> Option<([usize; 2], Vec<egui::Color32>)> {
     let key = h.state().shown_series(h.state().session.active_comp_id().unwrap());
-    match h.state().frames.get_for_viewer(&effectcraft_ui_egui::frames::FrameKey { frame: f, ..key }, None) {
-        Some((_, effectcraft_ui_egui::frames::FrameImage::Cpu(c))) => Some((c.size, c.pixels.clone())),
+    match h.state().frames.get_for_viewer(&artheffect_ui_egui::frames::FrameKey { frame: f, ..key }, None) {
+        Some((_, artheffect_ui_egui::frames::FrameImage::Cpu(c))) => Some((c.size, c.pixels.clone())),
         _ => None,
     }
 }
 
 /// At `res`, with the Colors display: frame 20 cached when idle against frame 0 rendered by the
 /// viewer (the footage is a still), then hovers on frame 20. Returns what is wrong.
-fn idle_cached_frames_are_shown_frames(h: &mut Harness<'_, EffectcraftApp>, res: Resolution) -> Vec<String> {
+fn idle_cached_frames_are_shown_frames(h: &mut Harness<'_, ArtheffectApp>, res: Resolution) -> Vec<String> {
     let cid = h.state().session.active_comp_id().unwrap();
     let display = h.state().session.active_comp().unwrap().layers[0].effects().unwrap().groups().last().unwrap().get("display").unwrap().value.to_json();
     h.state_mut().session.execute_checked("prop.set", json!({"path": "effects/#1/matteOnly", "value": false})).unwrap();
@@ -385,7 +385,7 @@ fn idle_cached_frames_are_shown_frames(h: &mut Harness<'_, EffectcraftApp>, res:
     for _ in 0..2000 {
         h.step();
         let key = h.state().shown_series(cid);
-        if h.state().frames.is_cached(&effectcraft_ui_egui::frames::FrameKey { frame: 20, ..key }) {
+        if h.state().frames.is_cached(&artheffect_ui_egui::frames::FrameKey { frame: 20, ..key }) {
             break;
         }
         std::thread::sleep(std::time::Duration::from_millis(5));
@@ -417,7 +417,7 @@ fn idle_cached_frames_are_shown_frames(h: &mut Harness<'_, EffectcraftApp>, res:
 }
 
 /// Press and release at `pos` without waiting for the probe.
-fn press(h: &mut Harness<'_, EffectcraftApp>, pos: Pos2) {
+fn press(h: &mut Harness<'_, ArtheffectApp>, pos: Pos2) {
     h.event(Event::PointerMoved(pos));
     h.run_steps(2);
     for pressed in [true, false] {
@@ -429,12 +429,12 @@ fn press(h: &mut Harness<'_, EffectcraftApp>, pos: Pos2) {
 /// An edit that drops the probe: the blur before the Cryptomatte effect changes, so the next
 /// hover or click has to render it again to build the probe.
 /// (Each blurriness `v` once: an earlier one would come from the layer cache.)
-fn edit(h: &mut Harness<'_, EffectcraftApp>, v: f64) {
+fn edit(h: &mut Harness<'_, ArtheffectApp>, v: f64) {
     h.state_mut().session.execute_checked("prop.set", json!({"path": "effects/#1/blurriness", "value": v})).unwrap();
 }
 
 /// Let a probe still being built finish with nothing waiting on it.
-fn drain(h: &mut Harness<'_, EffectcraftApp>) {
+fn drain(h: &mut Harness<'_, ArtheffectApp>) {
     for _ in 0..100 {
         h.step();
         std::thread::sleep(std::time::Duration::from_millis(20));
@@ -447,7 +447,7 @@ fn drain(h: &mut Harness<'_, EffectcraftApp>) {
 /// asserts and the action that drops the click, then released before `wait_probe` / `drain` /
 /// `hover` so a held build can finish.
 fn waiting_clicks_are_dropped_by_edits_esc_disarm_and_hiding_the_viewer(
-    h: &mut Harness<'_, EffectcraftApp>,
+    h: &mut Harness<'_, ArtheffectApp>,
     ids: &Ids,
     a: Pos2,
     b: Pos2,
@@ -537,7 +537,7 @@ fn waiting_clicks_are_dropped_by_edits_esc_disarm_and_hiding_the_viewer(
 
 /// Popups and dialogs over the viewer take the pointer. Another selected layer keeps the pick;
 /// deleting the layer or switching comps ends it.
-fn popups_dialogs_and_comp_switches_end_or_block_them(h: &mut Harness<'_, EffectcraftApp>, ids: &Ids, b: Pos2) {
+fn popups_dialogs_and_comp_switches_end_or_block_them(h: &mut Harness<'_, ArtheffectApp>, ids: &Ids, b: Pos2) {
     // A popup over the viewer takes the pointer: no hover, its click is its own.
     let area = h.state().auto.find("viewer.fxPick").unwrap().rect;
     let inside = |p: Pos2| p.x > area[0] && p.y > area[1] && p.x < area[0] + area[2] && p.y < area[1] + area[3];
@@ -548,7 +548,7 @@ fn popups_dialogs_and_comp_switches_end_or_block_them(h: &mut Harness<'_, Effect
     assert_eq!(hover(h, item), HINT, "nothing hovered under the popup");
     click(h, item, Modifiers::NONE);
     settle(h);
-    assert_eq!(h.state().viewer_res(), effectcraft_ui_egui::state::Resolution::Full);
+    assert_eq!(h.state().viewer_res(), artheffect_ui_egui::state::Resolution::Full);
     assert_eq!(selection(h, ids), "c27_20", "the popup's click picked nothing");
     assert!(h.state().ui.fx_pick.is_some(), "still armed");
     assert_eq!(hover(h, b), "c50_40");
@@ -613,11 +613,11 @@ fn clicks_wait_for_the_probe_and_edits_popups_dialogs_and_comp_switches_end_or_b
 /// each Resolution. Skips without a GPU adapter.
 #[test]
 fn picks_on_the_gpu_viewer() {
-    let Some(probe) = effectcraft_gpu::Gpu::headless() else {
+    let Some(probe) = artheffect_gpu::Gpu::headless() else {
         eprintln!("no GPU adapter: skipping");
         return;
     };
-    let adapter = effectcraft_engine::render::Accelerator::name(&probe);
+    let adapter = artheffect_engine::render::Accelerator::name(&probe);
     drop(probe);
     let mut setup = egui_kittest::wgpu::default_wgpu_setup();
     if let eframe::egui_wgpu::WgpuSetup::CreateNew(c) = &mut setup {
@@ -661,7 +661,7 @@ fn picks_on_the_gpu_viewer() {
     // The highlight is drawn: a pixel of the hovered ID (just up-left of the pointer) is tinted
     // while hovered, not with the pointer off the layer (the frame itself unchanged).
     settle(&mut h);
-    let px = |h: &mut Harness<'_, EffectcraftApp>| *h.render().expect("render").get_pixel(sp.x as u32 - 2, sp.y as u32 - 2);
+    let px = |h: &mut Harness<'_, ArtheffectApp>| *h.render().expect("render").get_pixel(sp.x as u32 - 2, sp.y as u32 - 2);
     let lit_px = px(&mut h);
     let off = comp_to_screen(&h.ctx, [-3.0, 540.0]).unwrap_or(pos2(2.0, 2.0));
     hover(&mut h, off);
@@ -678,7 +678,7 @@ fn picks_on_the_gpu_viewer() {
 /// How many probes the session built so far, and whether one is kept.
 /// Waits until the build thread started after `jobs` jobs has counted itself (it may not have
 /// run yet when the pass that spawned it returns).
-fn started(h: &Harness<'_, EffectcraftApp>, jobs: u64) {
+fn started(h: &Harness<'_, ArtheffectApp>, jobs: u64) {
     for _ in 0..2500 {
         if h.state().session.crypto_probe_jobs() > jobs {
             return;
@@ -688,7 +688,7 @@ fn started(h: &Harness<'_, EffectcraftApp>, jobs: u64) {
     panic!("no build started");
 }
 
-fn builds(h: &Harness<'_, EffectcraftApp>) -> u64 {
+fn builds(h: &Harness<'_, ArtheffectApp>) -> u64 {
     h.state().session.crypto_probe_stats().1
 }
 
@@ -741,14 +741,14 @@ fn a_drifting_click_picks_and_never_moves_the_layer() {
     arm(&mut h, &ids);
     let a = comp_to_screen(&h.ctx, [50.0, 40.0]).unwrap();
     assert_eq!(hover(&mut h, a), "c1_1");
-    let position = |h: &Harness<'_, EffectcraftApp>| {
+    let position = |h: &Harness<'_, ArtheffectApp>| {
         format!(
             "{:?}",
             h.state().session.active_comp().unwrap().layer(LayerId(ids.layer)).unwrap().transform().and_then(|t| t.get("position")).map(|p| p.value.clone())
         )
     };
     let (steps, before) = (h.state().session.history.undo.len(), position(&h));
-    let drag = |h: &mut Harness<'_, EffectcraftApp>, to: egui::Vec2| {
+    let drag = |h: &mut Harness<'_, ArtheffectApp>, to: egui::Vec2| {
         h.event(Event::PointerButton { pos: a, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
         h.step();
         for k in 1..=4 {
@@ -779,7 +779,7 @@ fn frame_steps_on_a_still_reuse_the_probe() {
     assert_eq!(hover(&mut h, a), "c27_20");
     let n = builds(&h);
     for f in 1..=4 {
-        h.state_mut().session.set_time(effectcraft_engine::time::Tick::from_seconds_f64(f as f64 / 24.0));
+        h.state_mut().session.set_time(artheffect_engine::time::Tick::from_seconds_f64(f as f64 / 24.0));
         h.run_steps(2);
         assert_eq!(chip(&h).as_deref(), Some("c27_20"), "frame {f}");
     }
@@ -800,7 +800,7 @@ fn no_probe_builds_while_playing_and_one_per_settled_scrub() {
     let a = comp_to_screen(&h.ctx, [260.0, 150.0]).unwrap();
     assert_eq!(hover(&mut h, a), "c7_5");
     let n = builds(&h);
-    let set = |h: &mut Harness<'_, EffectcraftApp>, f: i64| h.state_mut().session.set_time(effectcraft_engine::time::Tick::from_seconds_f64(f as f64 / 24.0));
+    let set = |h: &mut Harness<'_, ArtheffectApp>, f: i64| h.state_mut().session.set_time(artheffect_engine::time::Tick::from_seconds_f64(f as f64 / 24.0));
     // Scrubbing: a frame per 20 ms step; nothing built until it stays put for a while.
     // (The viewer names what it shows: a new frame takes a step or two to arrive.)
     let mut read = false;
@@ -826,7 +826,7 @@ fn no_probe_builds_while_playing_and_one_per_settled_scrub() {
     let now = h.ctx.input(|i| i.time);
     let pb = &mut h.state_mut().playback;
     (pb.start_wall, pb.start_frame) = (now, 9);
-    pb.plan = Some(effectcraft_engine::preview::PreviewPlan {
+    pb.plan = Some(artheffect_engine::preview::PreviewPlan {
         start: 0,
         end: 47,
         first: 9,
@@ -836,7 +836,7 @@ fn no_probe_builds_while_playing_and_one_per_settled_scrub() {
         cache_first: false,
         video: false,
         audio: true,
-        origin: effectcraft_engine::time::Tick::ZERO,
+        origin: artheffect_engine::time::Tick::ZERO,
     });
     for _ in 0..20 {
         h.step();
@@ -860,7 +860,7 @@ fn disarming_releases_the_probe() {
     let (s, ids) = crypto_session("release", 320, 180, false);
     let mut h = harness(s, vec2(1400.0, 800.0), 1.0, 420.0);
     let a = comp_to_screen(&h.ctx, [50.0, 40.0]).unwrap();
-    let kept = |h: &Harness<'_, EffectcraftApp>| h.state().session.crypto_probe_stats().0;
+    let kept = |h: &Harness<'_, ArtheffectApp>| h.state().session.crypto_probe_stats().0;
     for how in ["esc", "button", "other"] {
         arm(&mut h, &ids);
         assert_eq!(hover(&mut h, a), "c1_1");
@@ -977,32 +977,32 @@ fn a_layer_without_cryptomatte_shows_the_error_in_a_bounded_chip() {
 }
 
 /// Footage whose Cryptomatte reader panics on the probe's thread.
-struct Broken(std::sync::Arc<dyn effectcraft_engine::render::FootageSource>);
-impl effectcraft_engine::render::FootageSource for Broken {
+struct Broken(std::sync::Arc<dyn artheffect_engine::render::FootageSource>);
+impl artheffect_engine::render::FootageSource for Broken {
     fn frame(
         &self,
-        i: effectcraft_engine::project::ItemId,
-        f: &effectcraft_engine::project::Footage,
-        t: effectcraft_engine::time::Tick,
-    ) -> Option<std::sync::Arc<effectcraft_engine::raster::Image>> {
+        i: artheffect_engine::project::ItemId,
+        f: &artheffect_engine::project::Footage,
+        t: artheffect_engine::time::Tick,
+    ) -> Option<std::sync::Arc<artheffect_engine::raster::Image>> {
         self.0.frame(i, f, t)
     }
     fn frame_with(
         &self,
-        i: effectcraft_engine::project::ItemId,
-        f: &effectcraft_engine::project::Footage,
-        t: effectcraft_engine::time::Tick,
+        i: artheffect_engine::project::ItemId,
+        f: &artheffect_engine::project::Footage,
+        t: artheffect_engine::time::Tick,
         size: Option<(u32, u32)>,
-        float: effectcraft_engine::render::FloatCurve,
-    ) -> Option<std::sync::Arc<effectcraft_engine::raster::Image>> {
+        float: artheffect_engine::render::FloatCurve,
+    ) -> Option<std::sync::Arc<artheffect_engine::raster::Image>> {
         self.0.frame_with(i, f, t, size, float)
     }
     fn aux(
         &self,
-        i: effectcraft_engine::project::ItemId,
-        f: &effectcraft_engine::project::Footage,
-        t: effectcraft_engine::time::Tick,
-    ) -> Option<std::sync::Arc<effectcraft_engine::raster::AuxChannels>> {
+        i: artheffect_engine::project::ItemId,
+        f: &artheffect_engine::project::Footage,
+        t: artheffect_engine::time::Tick,
+    ) -> Option<std::sync::Arc<artheffect_engine::raster::AuxChannels>> {
         assert_ne!(std::thread::current().name(), Some("crypto-probe"), "a broken Cryptomatte reader");
         self.0.aux(i, f, t)
     }
@@ -1040,7 +1040,7 @@ fn a_cut_off_selection_shows_whole_on_hover() {
 }
 
 /// The highlight's screen corners (its automation label), when one is drawn.
-fn highlight(h: &Harness<'_, EffectcraftApp>) -> Option<Vec<Pos2>> {
+fn highlight(h: &Harness<'_, ArtheffectApp>) -> Option<Vec<Pos2>> {
     let e = h.state().auto.find("viewer.cryptoPick.highlight")?;
     Some(e.label.split(' ').map(|c| c.split_once(',').map(|(x, y)| pos2(x.parse().unwrap(), y.parse().unwrap())).unwrap()).collect())
 }
@@ -1110,10 +1110,10 @@ fn a_frame_step_while_a_click_waits_settles_within_a_few_builds() {
         h.event(Event::PointerButton { pos: a, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE });
         h.step();
     }
-    let jobs = |h: &Harness<'_, EffectcraftApp>| h.state().session.crypto_probe_jobs();
+    let jobs = |h: &Harness<'_, ArtheffectApp>| h.state().session.crypto_probe_jobs();
     let j0 = jobs(&h);
     set_frame(&mut h, 4);
-    let step = |h: &mut Harness<'_, EffectcraftApp>| {
+    let step = |h: &mut Harness<'_, ArtheffectApp>| {
         h.step();
         std::thread::sleep(std::time::Duration::from_millis(5));
     };
@@ -1159,7 +1159,7 @@ fn a_frame_step_while_a_click_waits_settles_within_a_few_builds() {
 /// Footage whose Cryptomatte read on the probe's thread waits while `hold` is set. It logs the
 /// probe threads' reads: (thread, a picture frame rather than the IDs).
 pub(crate) struct Held(
-    pub(crate) std::sync::Arc<dyn effectcraft_engine::render::FootageSource>,
+    pub(crate) std::sync::Arc<dyn artheffect_engine::render::FootageSource>,
     pub(crate) std::sync::Arc<std::sync::atomic::AtomicBool>,
     pub(crate) ReadLog,
 );
@@ -1171,33 +1171,33 @@ impl Held {
         }
     }
 }
-impl effectcraft_engine::render::FootageSource for Held {
+impl artheffect_engine::render::FootageSource for Held {
     fn frame(
         &self,
-        i: effectcraft_engine::project::ItemId,
-        f: &effectcraft_engine::project::Footage,
-        t: effectcraft_engine::time::Tick,
-    ) -> Option<std::sync::Arc<effectcraft_engine::raster::Image>> {
+        i: artheffect_engine::project::ItemId,
+        f: &artheffect_engine::project::Footage,
+        t: artheffect_engine::time::Tick,
+    ) -> Option<std::sync::Arc<artheffect_engine::raster::Image>> {
         self.log(true);
         self.0.frame(i, f, t)
     }
     fn frame_with(
         &self,
-        i: effectcraft_engine::project::ItemId,
-        f: &effectcraft_engine::project::Footage,
-        t: effectcraft_engine::time::Tick,
+        i: artheffect_engine::project::ItemId,
+        f: &artheffect_engine::project::Footage,
+        t: artheffect_engine::time::Tick,
         size: Option<(u32, u32)>,
-        float: effectcraft_engine::render::FloatCurve,
-    ) -> Option<std::sync::Arc<effectcraft_engine::raster::Image>> {
+        float: artheffect_engine::render::FloatCurve,
+    ) -> Option<std::sync::Arc<artheffect_engine::raster::Image>> {
         self.log(true);
         self.0.frame_with(i, f, t, size, float)
     }
     fn aux(
         &self,
-        i: effectcraft_engine::project::ItemId,
-        f: &effectcraft_engine::project::Footage,
-        t: effectcraft_engine::time::Tick,
-    ) -> Option<std::sync::Arc<effectcraft_engine::raster::AuxChannels>> {
+        i: artheffect_engine::project::ItemId,
+        f: &artheffect_engine::project::Footage,
+        t: artheffect_engine::time::Tick,
+    ) -> Option<std::sync::Arc<artheffect_engine::raster::AuxChannels>> {
         self.log(false);
         while std::thread::current().name() == Some("crypto-probe") && self.1.load(std::sync::atomic::Ordering::Acquire) {
             std::thread::sleep(std::time::Duration::from_millis(2));
@@ -1208,7 +1208,7 @@ impl effectcraft_engine::render::FootageSource for Held {
 
 /// Step until a held probe build has reached the ID (`aux`) read, so READING asserts are about a
 /// build that is really running.
-pub(crate) fn wait_held_id_read(h: &mut Harness<'_, EffectcraftApp>, log: &ReadLog) {
+pub(crate) fn wait_held_id_read(h: &mut Harness<'_, ArtheffectApp>, log: &ReadLog) {
     for _ in 0..3000 {
         h.step();
         if log.lock().unwrap().iter().any(|(_, frame)| !*frame) {
@@ -1333,13 +1333,13 @@ fn a_click_while_playing_says_to_stop_playback() {
     assert_eq!(hover(&mut h, a), "c7_5");
     let (steps, n) = (h.state().session.history.undo.len(), builds(&h));
     // Playing with the frame held at 9 (an audio-only preview), so a queued click could be made.
-    let play = |h: &mut Harness<'_, EffectcraftApp>| {
+    let play = |h: &mut Harness<'_, ArtheffectApp>| {
         set_frame(h, 9);
         let now = h.ctx.input(|i| i.time);
         let pb = &mut h.state_mut().playback;
         (pb.playing, pb.start_wall, pb.start_frame) = (true, now, 9);
-        let origin = effectcraft_engine::time::Tick::ZERO;
-        let plan = effectcraft_engine::preview::PreviewPlan {
+        let origin = artheffect_engine::time::Tick::ZERO;
+        let plan = artheffect_engine::preview::PreviewPlan {
             start: 0,
             end: 47,
             first: 9,
@@ -1353,7 +1353,7 @@ fn a_click_while_playing_says_to_stop_playback() {
         };
         pb.plan = Some(plan);
     };
-    let stop = |h: &mut Harness<'_, EffectcraftApp>| (h.state_mut().playback.plan, h.state_mut().playback.playing) = (None, false);
+    let stop = |h: &mut Harness<'_, ArtheffectApp>| (h.state_mut().playback.plan, h.state_mut().playback.playing) = (None, false);
     play(&mut h);
     for _ in 0..500 {
         h.step();
@@ -1390,7 +1390,7 @@ fn a_click_while_playing_says_to_stop_playback() {
 }
 
 /// A 320 × 180 still whose probe builds are held (`hold`), the eyedropper armed and reading.
-fn held_session(tag: &str) -> (Harness<'static, EffectcraftApp>, Ids, std::sync::Arc<std::sync::atomic::AtomicBool>) {
+fn held_session(tag: &str) -> (Harness<'static, ArtheffectApp>, Ids, std::sync::Arc<std::sync::atomic::AtomicBool>) {
     let (mut s, ids) = crypto_session(tag, 320, 180, false);
     let hold = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     s.footage = std::sync::Arc::new(Held(s.footage.clone(), hold.clone(), Default::default()));
@@ -1406,7 +1406,7 @@ fn held_session(tag: &str) -> (Harness<'static, EffectcraftApp>, Ids, std::sync:
 
 /// Lets the held builds go and runs passes for a second, then returns whether one said a pick
 /// wasn't made, and the undo labels.
-fn let_go(h: &mut Harness<'static, EffectcraftApp>, hold: &std::sync::atomic::AtomicBool) -> (bool, Vec<String>) {
+fn let_go(h: &mut Harness<'static, ArtheffectApp>, hold: &std::sync::atomic::AtomicBool) -> (bool, Vec<String>) {
     hold.store(false, std::sync::atomic::Ordering::Release);
     let mut said = false;
     for _ in 0..200 {
@@ -1417,7 +1417,7 @@ fn let_go(h: &mut Harness<'static, EffectcraftApp>, hold: &std::sync::atomic::At
     (said, h.state().session.history.undo.iter().map(|(l, _)| l.clone()).collect())
 }
 
-fn button(h: &mut Harness<'static, EffectcraftApp>, pos: Pos2, pressed: bool, modifiers: Modifiers) {
+fn button(h: &mut Harness<'static, ArtheffectApp>, pos: Pos2, pressed: bool, modifiers: Modifiers) {
     h.event(Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers });
 }
 
@@ -1427,7 +1427,7 @@ fn button(h: &mut Harness<'static, EffectcraftApp>, pos: Pos2, pressed: bool, mo
 /// the click, drop it too. Without a change it is made (the control).
 #[test]
 fn a_click_is_dropped_when_the_frame_or_project_changes_before_its_release_or_ids() {
-    type Change = Box<dyn Fn(&mut Harness<'static, EffectcraftApp>)>;
+    type Change = Box<dyn Fn(&mut Harness<'static, ArtheffectApp>)>;
     let exec = |c: &'static str, p: serde_json::Value| -> Change { Box::new(move |h| drop(h.state_mut().session.execute_checked(c, p.clone()).unwrap())) };
     let key = |key: egui::Key| -> Change {
         Box::new(move |h| {
@@ -1673,7 +1673,7 @@ fn a_long_still_press_with_no_pass_in_between_is_a_click() {
 
 // Several primary-button events in one pass (Windows round 5, c).
 /// An armed eyedropper with the IDs read and hovered at two points (c1_1 and c3_3).
-fn ready_at_two_ids(tag: &str) -> (Harness<'static, EffectcraftApp>, Ids, Pos2, Pos2) {
+fn ready_at_two_ids(tag: &str) -> (Harness<'static, ArtheffectApp>, Ids, Pos2, Pos2) {
     let (s, ids) = crypto_session(tag, 320, 180, false);
     let mut h = harness(s, vec2(1400.0, 800.0), 1.0, 420.0);
     arm(&mut h, &ids);
@@ -1683,7 +1683,7 @@ fn ready_at_two_ids(tag: &str) -> (Harness<'static, EffectcraftApp>, Ids, Pos2, 
     (h, ids, a, b)
 }
 
-fn pick_steps(h: &Harness<'_, EffectcraftApp>) -> usize {
+fn pick_steps(h: &Harness<'_, ArtheffectApp>) -> usize {
     h.state().session.history.undo.iter().filter(|(l, _)| l == "Pick Cryptomatte").count()
 }
 
@@ -1785,12 +1785,12 @@ fn a_whole_click_in_one_pass_waits_while_reading_and_is_made() {
 }
 
 /// Playback from `frame` (an audio-only preview, so the frame is the one set here).
-fn play_at(h: &mut Harness<'_, EffectcraftApp>, frame: i64) {
+fn play_at(h: &mut Harness<'_, ArtheffectApp>, frame: i64) {
     set_frame(h, frame);
     let now = h.ctx.input(|i| i.time);
     let pb = &mut h.state_mut().playback;
     (pb.playing, pb.start_wall, pb.start_frame) = (true, now, frame);
-    let plan = effectcraft_engine::preview::PreviewPlan {
+    let plan = artheffect_engine::preview::PreviewPlan {
         start: 0,
         end: 47,
         first: frame,
@@ -1800,7 +1800,7 @@ fn play_at(h: &mut Harness<'_, EffectcraftApp>, frame: i64) {
         cache_first: false,
         video: false,
         audio: true,
-        origin: effectcraft_engine::time::Tick::ZERO,
+        origin: artheffect_engine::time::Tick::ZERO,
     };
     pb.plan = Some(plan);
 }

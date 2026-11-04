@@ -9,7 +9,7 @@ pub type SystemThemeFn = Box<dyn Fn(&egui::Context) -> Option<egui::Theme>>;
 pub enum FileDialog {
     /// Files to open or import with these extensions; several when `many`.
     Open { exts: Vec<String>, many: bool },
-    /// An EffectCraft project to open.
+    /// An Artheffect project to open.
     OpenProject,
     /// A folder.
     Folder,

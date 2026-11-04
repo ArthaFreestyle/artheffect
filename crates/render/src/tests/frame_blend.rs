@@ -4,11 +4,11 @@ use std::sync::Arc;
 
 use rayon::prelude::*;
 
-use effectcraft_color::Label;
-use effectcraft_keyframe::{Keyframe, Value};
-use effectcraft_project::build;
-use effectcraft_project::{AlphaMode, BitDepth, Comp, Footage, FootageKind, FrameBlend, ItemId, ItemKind, LayerSource, Project, Solid};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_keyframe::{Keyframe, Value};
+use artheffect_project::build;
+use artheffect_project::{AlphaMode, BitDepth, Comp, Footage, FootageKind, FrameBlend, ItemId, ItemKind, LayerSource, Project, Solid};
+use artheffect_time::{FrameRate, Tick};
 
 use crate::{FootageSource, Image, RenderOpts, Renderer, frame_position};
 

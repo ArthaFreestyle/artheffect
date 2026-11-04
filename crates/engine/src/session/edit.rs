@@ -35,9 +35,9 @@ impl Session {
         let mut st = self.state.clone();
         let r = f(&mut p, &mut st)?;
         // Layer styles: one Global Light per comp, whichever layer edited it.
-        effectcraft_project::styles::sync_global_light(&before, &mut p);
+        artheffect_project::styles::sync_global_light(&before, &mut p);
         // Essential Properties of precomp layers follow their comps' Essential Graphics.
-        effectcraft_project::essential::sync_project(&before, &mut p);
+        artheffect_project::essential::sync_project(&before, &mut p);
         // Warp Stabilizer analyses made from other frames are cleared (and queued again).
         for w in warp::invalidate(&before, &mut p) {
             if !self.warp_pending.contains(&w) {
@@ -102,7 +102,7 @@ impl Session {
     }
 
     /// Salt the disk cache's layer keys with the project's footage files
-    /// ([`effectcraft_render::disk_cache::footage_salt`]). Taking it reads the size and time of
+    /// ([`artheffect_render::disk_cache::footage_salt`]). Taking it reads the size and time of
     /// every file, every frame of an image sequence included, so it is taken again only when the
     /// footage items changed, or with `force` (a project opened, footage reloaded, the disk cache
     /// attached), not at every edit: with a few large sequences that cost each keystroke in a
@@ -115,7 +115,7 @@ impl Session {
         }
         let mut h = std::collections::hash_map::DefaultHasher::new();
         for (id, it) in &self.project.items {
-            if let effectcraft_project::ItemKind::Footage(f) = &it.kind {
+            if let artheffect_project::ItemKind::Footage(f) = &it.kind {
                 id.hash(&mut h);
                 format!("{f:?}").hash(&mut h);
             }
@@ -127,7 +127,7 @@ impl Session {
         {
             return Some(salt);
         }
-        let salt = effectcraft_render::disk_cache::footage_salt(&self.project);
+        let salt = artheffect_render::disk_cache::footage_salt(&self.project);
         self.disk_salt = Some((footage, salt));
         self.layer_cache.set_disk_salt(salt);
         Some(salt)
@@ -135,8 +135,8 @@ impl Session {
 
     /// Set a comp's Resolution. As in After Effects it is saved with the project (which becomes
     /// modified) but is no undo step, and it changes no pixels: the comp's cached frames stay
-    /// valid ([`effectcraft_project::Comp::same_pixels`]).
-    pub fn set_resolution(&mut self, comp: ItemId, r: effectcraft_project::Resolution) -> Result<()> {
+    /// valid ([`artheffect_project::Comp::same_pixels`]).
+    pub fn set_resolution(&mut self, comp: ItemId, r: artheffect_project::Resolution) -> Result<()> {
         if self.project.comp(comp).ok_or(EngineError::NoComp)?.resolution == r {
             return Ok(());
         }
@@ -148,7 +148,7 @@ impl Session {
     /// Keep what lives outside the undo history (each comp's Resolution) as it is in `from`, the
     /// project before undo, redo or a history jump restored another state.
     pub(crate) fn keep_view_settings(&mut self, from: &Project) {
-        let keep: Vec<(ItemId, effectcraft_project::Resolution)> =
+        let keep: Vec<(ItemId, artheffect_project::Resolution)> =
             self.project.comps().filter_map(|(id, c)| from.comp(*id).map(|f| (*id, f.resolution)).filter(|(_, r)| *r != c.resolution)).collect();
         if keep.is_empty() {
             return;
@@ -244,7 +244,7 @@ impl Session {
         // The media layer keys decoded frames by path: files of the new project may have changed
         // since an earlier project decoded them (#1070).
         for it in p.items.values() {
-            if let effectcraft_project::ItemKind::Footage(f) = &it.kind {
+            if let artheffect_project::ItemKind::Footage(f) = &it.kind {
                 self.forget_decoded(f);
             }
         }
@@ -266,23 +266,23 @@ impl Session {
 
 /// Bring effect instances saved by earlier versions up to date with the effect registry
 /// (renamed / regrouped / added parameters, reordered popups; see
-/// [`effectcraft_effects::migrate`]), and a project from before
-/// [`effectcraft_project::SCHEMA_EFFECT_SPACE`] into effect space
-/// ([`effectcraft_effects::migrate::to_effect_space`]). Shape path operations get the
-/// properties added since ([`effectcraft_project::build::upgrade_shape_contents`]). Stamps the
+/// [`artheffect_effects::migrate`]), and a project from before
+/// [`artheffect_project::SCHEMA_EFFECT_SPACE`] into effect space
+/// ([`artheffect_effects::migrate::to_effect_space`]). Shape path operations get the
+/// properties added since ([`artheffect_project::build::upgrade_shape_contents`]). Stamps the
 /// current schema.
 pub fn upgrade_effects(p: &mut Project) {
-    let to_effect_space = p.schema < effectcraft_project::SCHEMA_EFFECT_SPACE;
+    let to_effect_space = p.schema < artheffect_project::SCHEMA_EFFECT_SPACE;
     // Effect bounds per layer: (size, top-left in layer coordinates).
     let mut bounds = std::collections::HashMap::new();
     for (cid, c) in p.comps() {
         for l in &c.layers {
-            bounds.insert((*cid, l.id), effectcraft_render::effect_bounds(p, c, l));
+            bounds.insert((*cid, l.id), artheffect_render::effect_bounds(p, c, l));
         }
     }
     let mut next = p.next_id;
     for (cid, it) in p.items.iter_mut() {
-        let effectcraft_project::ItemKind::Comp(c) = &mut it.kind else { continue };
+        let artheffect_project::ItemKind::Comp(c) = &mut it.kind else { continue };
         for l in &mut std::sync::Arc::make_mut(c).layers {
             let (size, origin) = bounds.get(&(*cid, l.id)).copied().unwrap_or(([100.0, 100.0], [0.0; 2]));
             // Effect space starts at the bounds' top-left: positions move by minus that corner.
@@ -290,25 +290,25 @@ pub fn upgrade_effects(p: &mut Project) {
             let shift = |o: [f64; 2]| [-o[0], -o[1]];
             let d = if l.switches.adjustment { [0.0; 2] } else { shift(origin) };
             let clone_d = |src: Option<u64>| match src {
-                Some(id) => bounds.get(&(*cid, effectcraft_project::LayerId(id))).map_or([0.0; 2], |b| shift(b.1)),
+                Some(id) => bounds.get(&(*cid, artheffect_project::LayerId(id))).map_or([0.0; 2], |b| shift(b.1)),
                 None => d,
             };
             if let Some(contents) = l.props.sub_mut("contents") {
-                effectcraft_project::build::upgrade_shape_contents(&mut effectcraft_project::build::Ids(&mut next), contents);
+                artheffect_project::build::upgrade_shape_contents(&mut artheffect_project::build::Ids(&mut next), contents);
             }
             let Some(fx) = l.props.sub_mut("effects") else { continue };
             for n in &mut fx.children {
-                let effectcraft_project::Node::Group(g) = n else { continue };
-                let effectcraft_project::GroupKind::Effect { effect } = &g.kind else { continue };
-                if let Some(spec) = effectcraft_effects::find(effect) {
-                    effectcraft_effects::migrate::upgrade_instance(spec, g, &mut effectcraft_project::build::Ids(&mut next), size);
+                let artheffect_project::Node::Group(g) = n else { continue };
+                let artheffect_project::GroupKind::Effect { effect } = &g.kind else { continue };
+                if let Some(spec) = artheffect_effects::find(effect) {
+                    artheffect_effects::migrate::upgrade_instance(spec, g, &mut artheffect_project::build::Ids(&mut next), size);
                     if to_effect_space {
-                        effectcraft_effects::migrate::to_effect_space(spec, g, size, d, &clone_d);
+                        artheffect_effects::migrate::to_effect_space(spec, g, size, d, &clone_d);
                     }
                 }
             }
         }
     }
     p.next_id = next;
-    p.schema = effectcraft_project::SCHEMA_VERSION;
+    p.schema = artheffect_project::SCHEMA_VERSION;
 }

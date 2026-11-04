@@ -6,7 +6,7 @@
 //! Arming it whenever the effect is selected (After Effects' behaviour, #1811) would only need
 //! to set the same pick.
 //!
-//! The hover needs the frame's Cryptomatte probe ([`effectcraft_engine::Session::crypto_probe_job`]):
+//! The hover needs the frame's Cryptomatte probe ([`artheffect_engine::Session::crypto_probe_job`]):
 //! it is built off the UI thread, one at a time, not while playing or scrubbing; the chip says so
 //! meanwhile, and clicks wait for it (the hover then builds nothing), except while playing, where
 //! a click without its probe is not made. Once built, a hover is a few array reads.
@@ -19,15 +19,15 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use effectcraft_engine::commands::CryptoProbeJob;
-use effectcraft_engine::geom::Mat3;
-use effectcraft_engine::project::Layer;
-use effectcraft_engine::render::EvalCtx;
+use artheffect_engine::commands::CryptoProbeJob;
+use artheffect_engine::geom::Mat3;
+use artheffect_engine::project::Layer;
+use artheffect_engine::render::EvalCtx;
 use egui::{Color32, Rect, Sense, vec2};
 use serde_json::{Value, json};
 
 use super::fx_widgets as fw;
-use crate::EffectcraftApp;
+use crate::ArtheffectApp;
 use crate::i18n::{tr, tr_args};
 use crate::state::{FxPick, Tool};
 use crate::theme::Tokens;
@@ -130,7 +130,7 @@ fn run(job: CryptoProbeJob, done: Done) {
 /// Whether the probe `q` needs is built; if not and `start`, start building it unless one is
 /// being built (one at a time for the app). Asking changes nothing: only a build started here
 /// supersedes another.
-fn ready(app: &EffectcraftApp, ctx: &egui::Context, q: &Value, start: bool) -> Result<bool, String> {
+fn ready(app: &ArtheffectApp, ctx: &egui::Context, q: &Value, start: bool) -> Result<bool, String> {
     let busy = &app.crypto_probe_busy;
     if app.session.crypto_probe_ready(q).map_err(|e| shown_error(&e.to_string()))? {
         return Ok(true);
@@ -166,12 +166,12 @@ pub fn remove_keys(os: egui::os::OperatingSystem) -> &'static str {
 /// At the start of every pass, before its keys: the project revision and frame on screen when
 /// the pass's input happened. A press in the pass is taken against them, not against what the
 /// pass's own keys made of them (a slow pass can hold a press, a PageDown and the release).
-pub fn pass_start(app: &EffectcraftApp, ctx: &egui::Context) {
+pub fn pass_start(app: &ArtheffectApp, ctx: &egui::Context) {
     ctx.data_mut(|d| d.insert_temp(pick_start_id(), (app.session.revision, app.session.time().seconds())));
 }
 
 /// Every frame: a disarmed eyedropper lets go of its state and the session's probe.
-pub fn upkeep(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub fn upkeep(app: &mut ArtheffectApp, ctx: &egui::Context) {
     let sid = pick_id();
     // Another project (New, Open, Revert) ends a pick: it is kept by layer id and property uid,
     // which the next project reuses.
@@ -198,13 +198,13 @@ pub fn upkeep(app: &mut EffectcraftApp, ctx: &egui::Context) {
 }
 
 /// Drop every waiting click, and say so.
-fn drop_waiting(app: &mut EffectcraftApp, ctx: &egui::Context, st: &mut State) {
+fn drop_waiting(app: &mut ArtheffectApp, ctx: &egui::Context, st: &mut State) {
     (st.pending, st.after_typing) = (vec![], false);
     app.say(ctx, tr(if app.playback.playing { PLAYING } else { NOT_MADE }).to_string());
 }
 
 /// Make one click. Our own pick is not "the project changed" for a click still held.
-fn make(app: &mut EffectcraftApp, ctx: &egui::Context, st: &mut State, q: Value) -> Result<Value, String> {
+fn make(app: &mut ArtheffectApp, ctx: &egui::Context, st: &mut State, q: Value) -> Result<Value, String> {
     let before = app.session.revision;
     let r = crate::menus::invoke(app, ctx, "effect.pickCryptomatte", q);
     if let Some(p) = st.press.as_mut()
@@ -218,7 +218,7 @@ fn make(app: &mut EffectcraftApp, ctx: &egui::Context, st: &mut State, q: Value)
 /// Make the waiting clicks whose probe is built, in order. Each is checked against the frame and
 /// the project right before it is made, with nothing in between: if either changed since its
 /// press, it and the clicks waiting with it are not made.
-fn make_waiting(app: &mut EffectcraftApp, ctx: &egui::Context, st: &mut State) {
+fn make_waiting(app: &mut ArtheffectApp, ctx: &egui::Context, st: &mut State) {
     // A click that took the focus from a text field waits for the field to commit (it may do so
     // later in this pass or in the next), then is made on what it committed.
     let typing = st.after_typing && ctx.text_edit_focused();
@@ -253,7 +253,7 @@ fn make_waiting(app: &mut EffectcraftApp, ctx: &egui::Context, st: &mut State) {
 }
 
 /// Middle-button pan and forwarded right-click for the armed eyedropper overlay.
-fn viewer_pan_and_secondary(app: &mut EffectcraftApp, ctx: &egui::Context, resp: &egui::Response) {
+fn viewer_pan_and_secondary(app: &mut ArtheffectApp, ctx: &egui::Context, resp: &egui::Response) {
     // The middle button pans the viewer, as the Hand tool (and as without the eyedropper).
     if resp.dragged_by(egui::PointerButton::Middle) {
         let pid = egui::Id::unique("viewer-fx-pick-pan");
@@ -285,7 +285,7 @@ struct PointerNav {
 /// (or dropped if the drag, playback, frame or project make it invalid). `nav` suppresses a new
 /// press when another pointer button or tool owns the click.
 fn viewer_click_to_pick(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     map: &super::viewer::ViewerMap,
     ectx: &EvalCtx,
@@ -367,7 +367,7 @@ fn viewer_click_to_pick(
 }
 
 /// Drop stale hover/click state when the pick or pass gap means it no longer applies.
-fn reset_stale_state(app: &mut EffectcraftApp, ctx: &egui::Context, st: &mut State, pick: &FxPick) {
+fn reset_stale_state(app: &mut ArtheffectApp, ctx: &egui::Context, st: &mut State, pick: &FxPick) {
     let pass = ctx.cumulative_pass_nr();
     // Disarmed (or the viewer hidden) since, or another pick: start afresh, so an old click
     // waiting for its probe is never made. (A probe still being built keeps the app's flag.)
@@ -381,7 +381,7 @@ fn reset_stale_state(app: &mut EffectcraftApp, ctx: &egui::Context, st: &mut Sta
 }
 
 /// Track the shown time for scrub settle; returns whether probe builds may start.
-fn track_scrub_settle(app: &EffectcraftApp, ctx: &egui::Context, st: &mut State, time_secs: f64) -> bool {
+fn track_scrub_settle(app: &ArtheffectApp, ctx: &egui::Context, st: &mut State, time_secs: f64) -> bool {
     // No builds while playing, nor until a scrub has settled.
     let now = ctx.input(|i| i.time);
     if st.shown.is_none_or(|s| s.0 != time_secs) {
@@ -398,7 +398,7 @@ fn track_scrub_settle(app: &EffectcraftApp, ctx: &egui::Context, st: &mut State,
 
 /// Read the Cryptomatte ID under the cursor; returns whether a probe is still being read.
 fn hover_read(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ctx: &egui::Context,
     map: &super::viewer::ViewerMap,
     st: &mut State,
@@ -440,7 +440,7 @@ fn hover_read(
 
 /// Rebuilds the texture when the hovered ID, or the layer, effect, scale, frame or project
 /// revision it was read at, changes; then draws it.
-fn draw_coverage_highlight(app: &mut EffectcraftApp, ctx: &egui::Context, painter: &egui::Painter, map: &super::viewer::ViewerMap, m: &Mat3, st: &mut State) {
+fn draw_coverage_highlight(app: &mut ArtheffectApp, ctx: &egui::Context, painter: &egui::Painter, map: &super::viewer::ViewerMap, m: &Mat3, st: &mut State) {
     let hovered = st.reply.as_ref().and_then(|r| u32::from_str_radix(r.as_ref().ok()?["hash"].as_str()?, 16).ok());
     let hovered = hovered.zip(st.asked.as_ref()).map(|(h, (q, rev))| (h, json!([q["layer"], q["effect"], q["scale"], q["time"], rev])));
     if let (Some(h), Some(q)) = (&hovered, st.asked.as_ref().map(|a| &a.0))
@@ -477,7 +477,7 @@ fn draw_coverage_highlight(app: &mut EffectcraftApp, ctx: &egui::Context, painte
 }
 
 /// Draw the status chip (hovered name, reading, or usage hint).
-fn draw_status_chip(app: &mut EffectcraftApp, ctx: &egui::Context, painter: &egui::Painter, map: &super::viewer::ViewerMap, st: &State, reading: bool) {
+fn draw_status_chip(app: &mut ArtheffectApp, ctx: &egui::Context, painter: &egui::Painter, map: &super::viewer::ViewerMap, st: &State, reading: bool) {
     let err = !reading && matches!(st.reply, Some(Err(_)));
     let text = match &st.reply {
         _ if reading && app.playback.playing => tr("Stop playback to pick").to_string(),
@@ -511,7 +511,7 @@ fn draw_status_chip(app: &mut EffectcraftApp, ctx: &egui::Context, painter: &egu
 /// Esc disarms the eyedropper only when no text field, popup, or dialog had the keyboard this
 /// pass or the pass before (egui lets go of the focus and closes popups, and Esc closes the
 /// dialog, before the viewer runs).
-fn handle_escape(app: &mut EffectcraftApp, ui: &mut egui::Ui, st: &mut State) {
+fn handle_escape(app: &mut ArtheffectApp, ui: &mut egui::Ui, st: &mut State) {
     let ctx = ui.ctx();
     // (Esc in a text field, the Selection being typed, only ends the typing; in a menu or dialog, it.)
     let esc_taken = std::mem::replace(&mut st.esc_taken, ctx.text_edit_focused() || egui::Popup::is_any_open(ctx) || app.dialog.is_some());
@@ -525,7 +525,7 @@ fn handle_escape(app: &mut EffectcraftApp, ui: &mut egui::Ui, st: &mut State) {
 /// The armed eyedropper's part of the viewer. `m` maps the layer's effect space to the comp.
 #[allow(clippy::too_many_arguments)]
 pub fn viewer_hook(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     painter: &egui::Painter,
     map: &super::viewer::ViewerMap,

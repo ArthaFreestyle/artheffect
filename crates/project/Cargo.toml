@@ -1,6 +1,6 @@
 [package]
-name = "effectcraft-project"
-description = "The EffectCraft document: project items, compositions, layers and the After-Effects-style property tree"
+name = "artheffect-project"
+description = "The Artheffect document: project items, compositions, layers and the After-Effects-style property tree"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,10 +10,10 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-effectcraft-time = { workspace = true }
-effectcraft-geom = { workspace = true }
-effectcraft-color = { workspace = true }
-effectcraft-keyframe = { workspace = true }
+artheffect-time = { workspace = true }
+artheffect-geom = { workspace = true }
+artheffect-color = { workspace = true }
+artheffect-keyframe = { workspace = true }
 craft-ecproj-format = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

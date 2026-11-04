@@ -16,8 +16,8 @@
 //! `dialog.gradient.delete`, `dialog.gradient.preview`, `dialog.gradient.ok`,
 //! `dialog.gradient.cancel`.
 
-use effectcraft_engine::keyframe::{Gradient, Value};
-use effectcraft_engine::project::{ItemId, LayerId};
+use artheffect_engine::keyframe::{Gradient, Value};
+use artheffect_engine::project::{ItemId, LayerId};
 use egui::{Color32, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
 use serde_json::{Value as Json, json};
 
@@ -25,7 +25,7 @@ use crate::i18n::tr;
 use crate::panels::layer_styles_dialog::{Checkpoint, checkpoint};
 use crate::panels::preview_merge::{self, Applied};
 use crate::theme::Tokens;
-use crate::{Dialog, EffectcraftApp};
+use crate::{ArtheffectApp, Dialog};
 
 /// Which row of stops: opacity (above the bar) or colour (below it).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -211,7 +211,7 @@ impl Draft {
 
 /// `prop.editGradient {layer, prop, comp?}`: open the editor on that gradient property at the
 /// current time (snapped to the nearest frame, as `prop.set` snaps it).
-pub fn open(app: &mut EffectcraftApp, p: &Json) -> Result<Json, String> {
+pub fn open(app: &mut ArtheffectApp, p: &Json) -> Result<Json, String> {
     let cid = match p.get("comp").and_then(Json::as_u64) {
         Some(c) => ItemId(c),
         None => app.session.active_comp_id().ok_or("no composition is open")?,
@@ -244,7 +244,7 @@ pub fn open(app: &mut EffectcraftApp, p: &Json) -> Result<Json, String> {
 
 /// Set the property to the draft: one `prop.set` at the time the editor opened, in composition
 /// time, or nothing when the draft is unchanged (so OK adds no keyframe).
-fn commit(app: &mut EffectcraftApp, ctx: &egui::Context) {
+fn commit(app: &mut ArtheffectApp, ctx: &egui::Context) {
     close(app);
     let d = std::mem::take(&mut app.dialog_state.gradient);
     let g = d.gradient();
@@ -265,7 +265,7 @@ fn commit(app: &mut EffectcraftApp, ctx: &egui::Context) {
 
 /// Close the editor without keeping the preview: the project and undo history go back to how they
 /// were when it opened (nothing happens when the preview never changed the property).
-pub fn finish(app: &mut EffectcraftApp, ok: bool, ctx: &egui::Context) {
+pub fn finish(app: &mut ArtheffectApp, ok: bool, ctx: &egui::Context) {
     if ok {
         // An edit made in the same frame as OK is not in the last preview yet.
         sync_preview(app, ctx);
@@ -283,14 +283,14 @@ pub fn finish(app: &mut EffectcraftApp, ok: bool, ctx: &egui::Context) {
 }
 
 /// Close the editor: back to the Layer Style dialog when it opened from there (#2057).
-fn close(app: &mut EffectcraftApp) {
+fn close(app: &mut ArtheffectApp) {
     app.dialog = std::mem::take(&mut app.dialog_state.layer_style.gradient_open).then_some(Dialog::LayerStyles);
 }
 
 /// Keep the property in step with the draft while Preview is on: apply a changed draft with one
 /// merged undo step, and roll back to the checkpoint when Preview goes off or the draft is back to
 /// how it opened.
-fn sync_preview(app: &mut EffectcraftApp, ctx: &egui::Context) {
+fn sync_preview(app: &mut ArtheffectApp, ctx: &egui::Context) {
     let d = &app.dialog_state.gradient;
     let Some(tg) = d.target.clone() else { return };
     let g = d.gradient();
@@ -328,7 +328,7 @@ pub(super) fn to_color32(c: [f32; 4]) -> Color32 {
 /// mismatched-stop-count warning, and OK/Cancel. Dragging moves stops, Delete/Backspace removes the
 /// selected one unless a widget wants keyboard input. OK runs the commit path; Cancel closes the dialog and drops the
 /// draft. With no gradient target it closes the dialog.
-pub fn show(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn show(app: &mut ArtheffectApp, ctx: &egui::Context, t: &Tokens) {
     if app.dialog_state.gradient.target.is_none() {
         app.dialog = None;
         return;

@@ -26,7 +26,7 @@ pub struct KeyClip {
     /// Match-id path relative to the layer (`transform/position`), portable between layers.
     pub path: String,
     /// Keys with times relative to the earliest copied key (layer time).
-    pub keys: Vec<effectcraft_keyframe::Keyframe>,
+    pub keys: Vec<artheffect_keyframe::Keyframe>,
 }
 
 /// A selected mask vertex: layer, mask group uid, vertex index.
@@ -85,7 +85,7 @@ pub struct EditorState {
     /// Values of selected unanimated properties (match path, value), copied with Edit ▸ Copy;
     /// Paste sets the same properties of the selected layers.
     #[serde(skip)]
-    pub value_clipboard: Vec<(String, effectcraft_keyframe::Value)>,
+    pub value_clipboard: Vec<(String, artheffect_keyframe::Value)>,
     /// The copied keyframes and values as After Effects keyframe text (one layer's Transform
     /// properties), for the system clipboard.
     #[serde(skip)]
@@ -93,14 +93,14 @@ pub struct EditorState {
     /// Copied effect instances, with comp-time key offsets from the earliest copied key.
     /// Paste adds them to the selected layers at the destination comp's CTI.
     #[serde(skip)]
-    pub effect_clipboard: Vec<effectcraft_project::PropGroup>,
+    pub effect_clipboard: Vec<artheffect_project::PropGroup>,
     /// Copied shape items (Edit ▸ Copy with groups, paths, paints or path operations selected in
     /// a shape layer's Contents); Paste adds them to the selected shape layers.
     #[serde(skip)]
-    pub contents_clipboard: Vec<effectcraft_project::PropGroup>,
+    pub contents_clipboard: Vec<artheffect_project::PropGroup>,
     /// Copied masks (Edit ▸ Copy with masks selected); Paste adds them to the selected layers.
     #[serde(skip)]
-    pub mask_clipboard: Vec<effectcraft_project::PropGroup>,
+    pub mask_clipboard: Vec<artheffect_project::PropGroup>,
     /// Selected mask vertices (viewer Selection tool / pen).
     #[serde(default)]
     pub selected_vertices: Vec<VertexRef>,
@@ -119,10 +119,10 @@ pub struct EditorState {
     pub link_clipboard: Option<LinkClip>,
     /// File ▸ Interpret Footage ▸ Remember Interpretation.
     #[serde(skip)]
-    pub interpretation: Option<effectcraft_project::Footage>,
+    pub interpretation: Option<artheffect_project::Footage>,
     /// Viewer 3D view per comp (Active Camera / Front / … / Custom View 3 and edited view cameras).
     #[serde(default)]
-    pub views3d: std::collections::BTreeMap<ItemId, effectcraft_render::three_d::Views3D>,
+    pub views3d: std::collections::BTreeMap<ItemId, artheffect_render::three_d::Views3D>,
     /// Tracker panel ▸ Current Track: (tracked layer, tracker group uid) in the active comp.
     #[serde(default)]
     pub current_track: Option<(LayerId, Uid)>,
@@ -161,7 +161,7 @@ pub struct EditorState {
     pub text_edit: Option<commands::text_edit::TextEdit>,
     /// Text copied while editing (with its formatting), for Paste / Paste Text Formatting Only.
     #[serde(skip)]
-    pub text_clipboard: Option<effectcraft_keyframe::TextDoc>,
+    pub text_clipboard: Option<artheffect_keyframe::TextDoc>,
     /// Composition viewer display options (Show Channel, exposure, snapshot, Fast Previews).
     #[serde(default)]
     pub viewer: commands::viewer_cmds::ViewOptions,
@@ -200,5 +200,5 @@ pub enum LinkClip {
     /// Expressions that link back to the source properties: (match path, expression text).
     Links { relative: bool, links: Vec<(String, String)> },
     /// Expressions only: (match path, expression).
-    Expressions(Vec<(String, effectcraft_project::Expression)>),
+    Expressions(Vec<(String, artheffect_project::Expression)>),
 }

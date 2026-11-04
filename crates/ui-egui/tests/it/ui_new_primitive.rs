@@ -1,29 +1,29 @@
 //! Layer ▸ New ▸ 3D Primitive… (#1734): the dialog picks a type, name and dimensions and runs
 //! `layer.newPrimitive`, which switches a Classic 3D comp to Advanced 3D in the same step.
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::{Layer, LayerSource, PrimitiveKind, Renderer};
-use effectcraft_ui_egui::{Dialog, EffectcraftApp};
+use artheffect_engine::Session;
+use artheffect_engine::project::{Layer, LayerSource, PrimitiveKind, Renderer};
+use artheffect_ui_egui::{ArtheffectApp, Dialog};
 use egui::{Event, Key, Modifiers, PointerButton};
 use egui_kittest::Harness;
 use serde_json::json;
 
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, ArtheffectApp> {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Scene", "width": 640, "height": 360, "duration": 2})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.step();
     h
 }
 
 /// An automation element's rect in the last frame drawn (a dialog settles its place in its
 /// first frames).
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Option<[f32; 4]> {
+fn rect(h: &Harness<'_, ArtheffectApp>, id: &str) -> Option<[f32; 4]> {
     let auto = &h.state().auto;
     auto.elements.iter().chain(auto.previous.iter()).find(|e| e.id == id).map(|e| e.rect)
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, id: &str) {
     let [x, y, w, hh] = rect(h, id).unwrap_or_else(|| panic!("{id} is registered"));
     let p = egui::pos2(x + w / 2.0, y + hh / 2.0);
     h.input_mut().events.push(Event::PointerMoved(p));
@@ -34,7 +34,7 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
     h.run_steps(3);
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
+fn key(h: &mut Harness<'_, ArtheffectApp>, key: Key, modifiers: Modifiers) {
     for pressed in [true, false] {
         h.input_mut().events.push(Event::Key { key, physical_key: None, pressed, repeat: false, modifiers });
     }
@@ -42,7 +42,7 @@ fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
 }
 
 /// Types `text` over a field's contents and leaves it with Tab.
-fn type_into(h: &mut Harness<'_, EffectcraftApp>, id: &str, text: &str) {
+fn type_into(h: &mut Harness<'_, ArtheffectApp>, id: &str, text: &str) {
     click(h, id);
     assert!(h.ctx.egui_wants_keyboard_input(), "{id} has focus");
     key(h, Key::A, Modifiers::COMMAND);
@@ -52,28 +52,27 @@ fn type_into(h: &mut Harness<'_, EffectcraftApp>, id: &str, text: &str) {
 }
 
 /// Layer ▸ New ▸ 3D Primitive…, as the menu runs it.
-fn open(h: &mut Harness<'_, EffectcraftApp>) {
-    let (path, entry) =
-        effectcraft_engine::menus::entries().into_iter().find(|(_, e)| e.label == "3D Primitive...").expect("Layer ▸ New lists 3D Primitive...");
+fn open(h: &mut Harness<'_, ArtheffectApp>) {
+    let (path, entry) = artheffect_engine::menus::entries().into_iter().find(|(_, e)| e.label == "3D Primitive...").expect("Layer ▸ New lists 3D Primitive...");
     assert_eq!(path, ["Layer", "New"]);
     assert_eq!(entry.command, "layer.newPrimitive");
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, &entry.command, entry.params_or_empty()).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, &entry.command, entry.params_or_empty()).unwrap();
     h.run_steps(2);
     assert_eq!(h.state().dialog, Some(Dialog::NewPrimitive));
 }
 
-fn choose(h: &mut Harness<'_, EffectcraftApp>, kind: PrimitiveKind) {
+fn choose(h: &mut Harness<'_, ArtheffectApp>, kind: PrimitiveKind) {
     click(h, "dialog.primitive.type");
     let i = PrimitiveKind::ALL.iter().position(|k| *k == kind).unwrap();
     click(h, &format!("dialog.primitive.typeItem.{i}"));
 }
 
-fn layers(h: &Harness<'_, EffectcraftApp>) -> Vec<Layer> {
+fn layers(h: &Harness<'_, ArtheffectApp>) -> Vec<Layer> {
     h.state().session.active_comp().unwrap().layers.to_vec()
 }
 
-fn renderer(h: &Harness<'_, EffectcraftApp>) -> Renderer {
+fn renderer(h: &Harness<'_, ArtheffectApp>) -> Renderer {
     h.state().session.active_comp().unwrap().renderer
 }
 
@@ -82,7 +81,7 @@ fn geometry(l: &Layer, id: &str) -> f64 {
 }
 
 /// A torus named "Ring" with a 250 px radius, the rest left at their defaults.
-fn create_ring(h: &mut Harness<'_, EffectcraftApp>) {
+fn create_ring(h: &mut Harness<'_, ArtheffectApp>) {
     open(h);
     choose(h, PrimitiveKind::Torus);
     type_into(h, "dialog.primitive.name", "Ring");

@@ -5,9 +5,9 @@
 //! Written from the public descriptions of the effects' behaviour. Pieces are textured convex
 //! polygons placed in 3D and drawn through a per-piece inverse homography, far to near.
 
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
-use effectcraft_raster::{Image, Px};
+use artheffect_keyframe::Value;
+use artheffect_project::ParamUi;
+use artheffect_raster::{Image, Px};
 use rayon::prelude::*;
 
 use crate::card3d::{Lighting, Proj};

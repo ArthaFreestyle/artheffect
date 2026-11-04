@@ -18,7 +18,7 @@ struct FakeTools {
 
 impl FakeTools {
     fn new(tag: &str) -> Self {
-        let base = std::env::temp_dir().join(format!("effectcraft-xtask-audio-{tag}-{}", std::process::id()));
+        let base = std::env::temp_dir().join(format!("artheffect-xtask-audio-{tag}-{}", std::process::id()));
         let dir = base.join("bin");
         let off_path = base.join("off-path");
         std::fs::create_dir_all(&dir).expect("create PATH dir");

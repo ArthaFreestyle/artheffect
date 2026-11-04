@@ -9,10 +9,10 @@
 
 use std::f64::consts::{FRAC_PI_2, TAU};
 
-use effectcraft_color::BlendMode;
-use effectcraft_effects::EffectCtx;
-use effectcraft_geom::{Mat3, vec2};
-use effectcraft_raster::Sampling;
+use artheffect_color::BlendMode;
+use artheffect_effects::EffectCtx;
+use artheffect_geom::{Mat3, vec2};
+use artheffect_raster::Sampling;
 
 use crate::context::{Enc, Params};
 use crate::effects::{GBuf, gaussian_blur};
@@ -125,7 +125,7 @@ fn run(e: &mut Enc, entry: &str, p: &Params, mut b: GBuf, data: Option<&wgpu::Bu
 
 /// util::layer_rect.
 fn layer_rect(ctx: &EffectCtx, b: &GBuf) -> (f64, f64, f64, f64) {
-    effectcraft_effects::util::layer_rect_at(ctx, b.offset, b.scale)
+    artheffect_effects::util::layer_rect_at(ctx, b.offset, b.scale)
 }
 
 // ---------------------------------------------------------------- per-pixel (fxs_point)
@@ -179,7 +179,7 @@ fn cc_threshold_rgb(e: &mut Enc, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
 }
 
 fn strobe(e: &mut Enc, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
-    let on = effectcraft_effects::strobe_on(
+    let on = artheffect_effects::strobe_on(
         ctx.time,
         ctx.params.f("strobeDuration"),
         ctx.params.f("strobePeriod"),
@@ -302,7 +302,7 @@ fn cc_slant(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
 fn cc_smear(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
     let reach = ctx.params.f("reach") / 100.0;
     if !ctx.adjustment {
-        b.pad(e, effectcraft_effects::cc_smear_pad(ctx, [b.img.width, b.img.height], b.offset, b.scale))?;
+        b.pad(e, artheffect_effects::cc_smear_pad(ctx, [b.img.width, b.img.height], b.offset, b.scale))?;
     }
     let from = b.to_px(ctx.params.v2("from"));
     let to = b.to_px(ctx.params.v2("to"));
@@ -429,7 +429,7 @@ fn liquify(e: &mut Enc, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
         return Some(b);
     }
     let pct = ctx.params.f("distortionPercentage") / 100.0;
-    let mesh = effectcraft_effects::liquify_mesh(ctx);
+    let mesh = artheffect_effects::liquify_mesh(ctx);
     if mesh.nx < 2 || mesh.ny < 2 {
         return None;
     }
@@ -591,7 +591,7 @@ fn offset(e: &mut Enc, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
 fn cc_tiler(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
     let s = (ctx.params.f("scale") / 100.0).max(0.001);
     if !ctx.adjustment {
-        b.pad(e, effectcraft_effects::util::layer_cover_pad(ctx, [b.img.width, b.img.height], b.offset, b.scale))?;
+        b.pad(e, artheffect_effects::util::layer_cover_pad(ctx, [b.img.width, b.img.height], b.offset, b.scale))?;
     }
     let c = b.to_px(ctx.params.v2("center"));
     let blend = (ctx.params.f("blendWithOriginal") / 100.0) as f32;
@@ -637,7 +637,7 @@ fn motion_tile(e: &mut Enc, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
     let mirror = ctx.params.b("mirrorEdges");
     let phase = ctx.params.f("phase") / 360.0;
     let hshift = ctx.params.b("horizontalPhaseShift");
-    let (nw, nh, noff) = effectcraft_effects::motion_tile_frame(ctx, b.offset, (b.img.width, b.img.height), s);
+    let (nw, nh, noff) = artheffect_effects::motion_tile_frame(ctx, b.offset, (b.img.width, b.img.height), s);
     if !e.g.fits(nw, nh) {
         return None;
     }
@@ -702,7 +702,7 @@ fn magnify(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
     }
     let op = (ctx.params.f("opacity") / 100.0) as f32;
     let mode = ctx.params.e("blendingMode") as usize;
-    let blend = effectcraft_effects::MAGNIFY_MODES.get(mode.wrapping_sub(1)).copied();
+    let blend = artheffect_effects::MAGNIFY_MODES.get(mode.wrapping_sub(1)).copied();
     if ctx.params.b("resizeLayer") && link == 0 && !ctx.adjustment {
         let (lx, ly, lw, lh) = layer_rect(ctx, &b);
         let reach = size.max(0.0);
@@ -763,7 +763,7 @@ fn brush_strokes(e: &mut Enc, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
     data.reserve((ncx * ncy * 6) as usize);
     for cy in 0..ncy {
         for cx in 0..ncx {
-            let hh = |k: u32| effectcraft_raster::hash_noise(cx.wrapping_add(k.wrapping_mul(7919)), cy, seed) as f64;
+            let hh = |k: u32| artheffect_raster::hash_noise(cx.wrapping_add(k.wrapping_mul(7919)), cy, seed) as f64;
             let a = (ang + (hh(0) - 0.5) * rnd * 60.0).to_radians();
             let l = len * (0.5 + hh(1));
             let (dx, dy) = (a.sin(), -a.cos());
@@ -888,7 +888,7 @@ fn corner_pin(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
 /// Glow settings the base kernel in `effects.rs` leaves to the CPU (another Glow Operation or
 /// the Arbitrary Map) and [`glow`] implements.
 pub(crate) fn glow_extra(ctx: &EffectCtx) -> bool {
-    ctx.params.e("colors") == 2 || effectcraft_effects::glow_operation(ctx) != BlendMode::Add
+    ctx.params.e("colors") == 2 || artheffect_effects::glow_operation(ctx) != BlendMode::Add
 }
 
 fn dims_xy(dim: u32) -> (f64, f64) {
@@ -916,7 +916,7 @@ pub(crate) fn glow(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
     if colors == 2 {
         // Arbitrary Map: Curves tables per channel (see effects::curves).
         let mut parts = ctx.params.s("arbitraryMap").split('|');
-        let curves: Vec<Option<effectcraft_effects::Curve>> = (0..3).map(|_| parts.next().and_then(effectcraft_effects::Curve::parse)).collect();
+        let curves: Vec<Option<artheffect_effects::Curve>> = (0..3).map(|_| parts.next().and_then(artheffect_effects::Curve::parse)).collect();
         let mut data = vec![0.0f32];
         let mut offs = [-1.0f32; 3];
         for (i, c) in curves.iter().enumerate() {
@@ -937,10 +937,10 @@ pub(crate) fn glow(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
         p.f[2] = ctx.params.color("colorB");
         e.pixels("glow_bright", &p, &b.img, None, &bright, None);
     }
-    let s = effectcraft_effects::glow_sigma(radius);
+    let s = artheffect_effects::glow_sigma(radius);
     let blurred = gaussian_blur(e, &bright, s * kx, s * ky, false);
     let operation = ctx.params.e("operation");
-    let glow_op = effectcraft_effects::glow_operation(ctx);
+    let glow_op = artheffect_effects::glow_operation(ctx);
     let mut p = Params::default();
     p.u[0][1] = (ctx.params.e("based") == 0) as u32;
     p.f[0][0] = intensity;
@@ -959,22 +959,22 @@ pub(crate) fn glow(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
 /// Transform renders with motion blur (a shutter and a host to read the parameters at other
 /// times): [`transform`] implements it, the base kernel in `effects.rs` the sharp case.
 pub(crate) fn transform_blur(ctx: &EffectCtx) -> bool {
-    ctx.env.host.is_some() && effectcraft_effects::transform_shutter(ctx).is_some()
+    ctx.env.host.is_some() && artheffect_effects::transform_shutter(ctx).is_some()
 }
 
 /// distort::transform_matrix.
-fn transform_matrix(pr: &effectcraft_effects::Params, b: &GBuf) -> Mat3 {
-    effectcraft_effects::transform_matrix_px(pr, |p| b.to_px(p))
+fn transform_matrix(pr: &artheffect_effects::Params, b: &GBuf) -> Mat3 {
+    artheffect_effects::transform_matrix_px(pr, |p| b.to_px(p))
 }
 
 /// distort::transform's motion blur: the transform at Samples instants across the shutter,
 /// averaged.
 pub(crate) fn transform(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
-    let (angle, phase, n) = effectcraft_effects::transform_shutter(ctx)?;
+    let (angle, phase, n) = artheffect_effects::transform_shutter(ctx)?;
     let host = ctx.env.host?;
     let sampling = if ctx.params.e("sampling") == 1 { Sampling::Bicubic } else { Sampling::Bilinear };
     let fd = 1.0 / ctx.fps();
-    let samples: Vec<effectcraft_effects::Params> =
+    let samples: Vec<artheffect_effects::Params> =
         (0..n).filter_map(|k| host.params_at(ctx.time + (phase + angle * k as f64 / (n - 1) as f64) / 360.0 * fd)).collect();
     if samples.is_empty() {
         // The CPU renders the frame sharp.
@@ -982,7 +982,7 @@ pub(crate) fn transform(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBu
     }
     if !ctx.adjustment {
         let ms: Vec<Mat3> = samples.iter().map(|pr| transform_matrix(pr, &b)).collect();
-        let sides = effectcraft_effects::transform_grow(&ms, b.img.width, b.img.height);
+        let sides = artheffect_effects::transform_grow(&ms, b.img.width, b.img.height);
         b.pad_sides(e, sides)?;
     }
     let (w, h) = (b.img.width, b.img.height);

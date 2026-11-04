@@ -4,15 +4,15 @@
 //! agents see and set exactly what the panels show.
 
 use crate::i18n::tr;
-use effectcraft_engine::effects::paint::{BRUSH_PRESETS, CHANNELS, DURATIONS, ERASE_MODES, MODES};
+use artheffect_engine::effects::paint::{BRUSH_PRESETS, CHANNELS, DURATIONS, ERASE_MODES, MODES};
 use egui::{Align2, Color32, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
 use serde_json::{Value, json};
 
 use crate::state::Tool;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{ArtheffectApp, widgets};
 
-fn set(app: &mut EffectcraftApp, v: Value) {
+fn set(app: &mut ArtheffectApp, v: Value) {
     if let Err(e) = app.session.execute("paint.options", v) {
         app.ui.status = e.to_string();
     }
@@ -21,7 +21,7 @@ fn set(app: &mut EffectcraftApp, v: Value) {
 /// A label + hot number row; returns the new value when changed.
 #[allow(clippy::too_many_arguments)]
 fn number(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     x: f32,
@@ -53,7 +53,7 @@ fn number(
 /// picked from the open menu, if any.
 #[allow(clippy::too_many_arguments)]
 fn popup_row(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     x: f32,
@@ -91,7 +91,7 @@ fn paint_swap_icon(p: &egui::Painter, rect: Rect, color: Color32) {
 }
 
 /// The foreground-over-background swatches (each opens a colour popup) with Swap and Reset.
-fn colour_swatches(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, x0: f32, y: f32, color: [f64; 4], background: [f64; 4]) {
+fn colour_swatches(app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, x0: f32, y: f32, color: [f64; 4], background: [f64; 4]) {
     let t = app.tokens;
     let fg = Rect::from_min_size(pos2(x0, y), vec2(26.0, 20.0));
     let bg = Rect::from_min_size(pos2(x0 + 14.0, y + 10.0), vec2(26.0, 20.0));
@@ -136,7 +136,7 @@ fn colour_swatches(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painte
 /// channels, duration, erase mode and the Clone Stamp options. Every change is sent as a
 /// `paint.options` command. Mode and Channels are disabled for the Eraser; Erase is enabled
 /// only for it. The Clone Options heading is dimmed for other tools, but its controls stay enabled.
-pub fn paint(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn paint(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     let o = app.session.state.paint.clone();
@@ -314,7 +314,7 @@ fn tip_preview(p: &egui::Painter, r: Rect, diameter: f64, angle: f64, roundness:
 /// The Brushes panel: a grid of built-in brush presets (each runs `paint.brushPreset`), a tip
 /// preview, diameter/angle/roundness/hardness/spacing fields and the size/opacity/flow pressure
 /// options. Values are sent as `paint.options` commands and failures land in `app.ui.status`.
-pub fn brushes(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn brushes(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     let o = app.session.state.paint.clone();

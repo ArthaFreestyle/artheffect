@@ -5,7 +5,7 @@
 
 use std::sync::Arc;
 
-use effectcraft_project::{Footage, FootageKind, ItemId, Proxy};
+use artheffect_project::{Footage, FootageKind, ItemId, Proxy};
 use serde_json::{Value, json};
 
 use super::render_overwrite::{Fixture, SOURCE};
@@ -328,6 +328,6 @@ fn background_pre_render_movies_are_checked_again_before_publication() {
         assert!(done.message.contains(source), "{}", done.message);
         assert_eq!(f.read(&filename), protected);
         assert_eq!(f.read("Main.otio"), document);
-        assert!(listing(&f.dir).iter().all(|name| !name.starts_with(".effectcraft-prerender-")));
+        assert!(listing(&f.dir).iter().all(|name| !name.starts_with(".artheffect-prerender-")));
     }
 }

@@ -53,7 +53,7 @@ pub fn cineon_frame(img: Arc<Image>, f: &Footage) -> Arc<Image> {
 
 /// Interpret Footage ▸ Invert Alpha and Interpret As Linear Light on decoded (premultiplied)
 /// pixels; linear light is encoded in `space` ([`color::Pipe::linear_footage_space`]).
-pub fn interpret_pixels(img: &Image, f: &Footage, space: effectcraft_color::ColorSpace) -> Image {
+pub fn interpret_pixels(img: &Image, f: &Footage, space: artheffect_color::ColorSpace) -> Image {
     let linear = f.linear_light_applies();
     if !f.invert_alpha && !linear {
         return img.clone();
@@ -93,8 +93,8 @@ pub fn frame_position(t: Tick, rate: FrameRate) -> (i64, f64) {
 /// motion-compensated interpolation (Pixel Motion).
 pub fn blend_frames(mode: FrameBlend, a: &Image, b: &Image, w: f32) -> Image {
     match mode {
-        FrameBlend::PixelMotion => effectcraft_raster::flow::interpolate(a, b, w),
-        _ => effectcraft_raster::flow::mix(a, b, w),
+        FrameBlend::PixelMotion => artheffect_raster::flow::interpolate(a, b, w),
+        _ => artheffect_raster::flow::mix(a, b, w),
     }
 }
 
@@ -144,12 +144,12 @@ pub fn render_frame(project: &Project, comp: ItemId, t: Tick, scale: f64) -> Ima
 /// Layer-space bounds `[x0, y0, x1, y1]` of a layer's content at the context time (source size
 /// for solids/footage/precomps, glyph bounds for text, painted bounds for shapes). Used for viewer
 /// handles and hit testing.
-pub fn content_bounds(ctx: &EvalCtx, layer: &effectcraft_project::Layer) -> Option<[f64; 4]> {
+pub fn content_bounds(ctx: &EvalCtx, layer: &artheffect_project::Layer) -> Option<[f64; 4]> {
     match &layer.source {
         LayerSource::Text => {
             let glyphs = text::glyph_paths(ctx, layer);
             let paths: Vec<_> = glyphs.into_iter().map(|g| g.0).collect();
-            effectcraft_path::bounds(&paths).map(|r| [r.x0, r.y0, r.x1, r.y1])
+            artheffect_path::bounds(&paths).map(|r| [r.x0, r.y0, r.x1, r.y1])
         }
         LayerSource::Shape => layer.props.sub("contents").and_then(|c| shapes::content_bounds(ctx, layer, c)).map(|r| [r.x0, r.y0, r.x1, r.y1]),
         LayerSource::Camera | LayerSource::Light { .. } => None,
@@ -161,6 +161,6 @@ pub fn content_bounds(ctx: &EvalCtx, layer: &effectcraft_project::Layer) -> Opti
 }
 
 /// A mask/shape path as a kurbo path (for drawing overlays).
-pub fn kurbo_path(sp: &effectcraft_keyframe::ShapePath) -> kurbo::BezPath {
-    effectcraft_path::to_kurbo(sp)
+pub fn kurbo_path(sp: &artheffect_keyframe::ShapePath) -> kurbo::BezPath {
+    artheffect_path::to_kurbo(sp)
 }

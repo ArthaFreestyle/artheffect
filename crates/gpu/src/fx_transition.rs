@@ -12,8 +12,8 @@
 //! `util::gauss_plane` steps (box passes, edges repeated). Card Wipe (a 3D card renderer
 //! shared with Card Dance and Shatter) stays on the CPU.
 
-use effectcraft_effects::{Buf, EffectCtx};
-use effectcraft_raster::Image;
+use artheffect_effects::{Buf, EffectCtx};
+use artheffect_raster::Image;
 
 use rayon::prelude::*;
 
@@ -126,7 +126,7 @@ fn shape(b: &GBuf) -> Buf {
 /// when none is chosen.
 fn fitted(e: &mut Enc, ctx: &EffectCtx, b: &GBuf, id: &str, masks_and_effects: bool, stretch: bool) -> Option<Option<GpuImage>> {
     match ctx.layer_param(id, masks_and_effects) {
-        Some(o) => Some(Some(e.g.upload_image(&effectcraft_effects::util::fit_layer(ctx, &shape(b), &o, stretch))?)),
+        Some(o) => Some(Some(e.g.upload_image(&artheffect_effects::util::fit_layer(ctx, &shape(b), &o, stretch))?)),
         None => Some(None),
     }
 }
@@ -212,7 +212,7 @@ fn grid_wipe(e: &mut Enc, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
         return None;
     }
     let geometry = shape(&b);
-    let grid = effectcraft_effects::GridWipe::new(ctx, &geometry);
+    let grid = artheffect_effects::GridWipe::new(ctx, &geometry);
     let mut mask = vec![0.0; count];
     mask.par_chunks_mut((b.img.width as usize).max(1)).enumerate().for_each(|(y, row)| {
         for (x, value) in row.iter_mut().enumerate() {

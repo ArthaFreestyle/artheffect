@@ -1,30 +1,30 @@
 //! Inline text fields (a name, the current time) open with their whole text selected so typing
 //! replaces it, commit on Enter and cancel on Escape (#170).
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
+use artheffect_engine::Session;
+use artheffect_ui_egui::ArtheffectApp;
 use egui::{Event, Key, Modifiers, PointerButton, Pos2, pos2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
 use serde_json::json;
 
-fn harness() -> (Harness<'static, EffectcraftApp>, u64) {
+fn harness() -> (Harness<'static, ArtheffectApp>, u64) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 4, "fps": 24})).unwrap();
     let comp = s.active_comp_id().unwrap().0;
     // Arabic, Hebrew, Devanagari and Thai names typed below need installed system faces: draw
     // tofu on a host without them rather than failing the missing-glyph gate.
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).allow_missing_glyphs().build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).allow_missing_glyphs().build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(4);
     (h, comp)
 }
 
-fn center(h: &Harness<'_, EffectcraftApp>, id: &str) -> Pos2 {
+fn center(h: &Harness<'_, ArtheffectApp>, id: &str) -> Pos2 {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0)
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, p: Pos2, times: usize) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, p: Pos2, times: usize) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.step();
     // All in one frame (the harness' frames are longer apart than a double-click).
@@ -36,7 +36,7 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, p: Pos2, times: usize) {
 }
 
 /// A primary-button drag from `from` to `to`, in steps.
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'_, ArtheffectApp>, from: Pos2, to: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(from));
     h.step();
     h.input_mut().events.push(Event::PointerButton { pos: from, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -49,13 +49,13 @@ fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
     h.run_steps(3);
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key) {
+fn key(h: &mut Harness<'_, ArtheffectApp>, key: Key) {
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE });
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: false, repeat: false, modifiers: Modifiers::NONE });
     h.run_steps(2);
 }
 
-fn type_text(h: &mut Harness<'_, EffectcraftApp>, text: &str) {
+fn type_text(h: &mut Harness<'_, ArtheffectApp>, text: &str) {
     assert!(h.ctx.egui_wants_keyboard_input(), "the field has the keyboard");
     h.input_mut().events.push(Event::Text(text.into()));
     h.step();
@@ -64,7 +64,7 @@ fn type_text(h: &mut Harness<'_, EffectcraftApp>, text: &str) {
 #[test]
 fn project_rename_replaces_the_name() {
     let (mut h, comp) = harness();
-    let name = |h: &Harness<'_, EffectcraftApp>| h.state().session.project.items.values().find(|i| i.id.0 == comp).unwrap().name.clone();
+    let name = |h: &Harness<'_, ArtheffectApp>| h.state().session.project.items.values().find(|i| i.id.0 == comp).unwrap().name.clone();
     let p = center(&h, &format!("project.item.{comp}.name"));
     click(&mut h, p, 1);
     key(&mut h, Key::Enter);
@@ -80,9 +80,9 @@ fn project_rename_replaces_the_name() {
 #[test]
 fn tab_in_the_project_rename_field_commits_and_keeps_enter_renaming() {
     let (mut h, comp) = harness();
-    let name = |h: &Harness<'_, EffectcraftApp>| h.state().session.project.items.values().find(|i| i.id.0 == comp).unwrap().name.clone();
+    let name = |h: &Harness<'_, ArtheffectApp>| h.state().session.project.items.values().find(|i| i.id.0 == comp).unwrap().name.clone();
     let edit = format!("project.item.{comp}.nameEdit");
-    let editing = |h: &Harness<'_, EffectcraftApp>| h.state().auto.elements.iter().any(|e| e.id == edit);
+    let editing = |h: &Harness<'_, ArtheffectApp>| h.state().auto.elements.iter().any(|e| e.id == edit);
     let p = center(&h, &format!("project.item.{comp}.name"));
     click(&mut h, p, 1);
     key(&mut h, Key::Enter);
@@ -101,7 +101,7 @@ fn tab_in_the_project_rename_field_commits_and_keeps_enter_renaming() {
 #[test]
 fn timecode_field_replaces_commits_and_cancels() {
     let (mut h, _) = harness();
-    let frame = |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().frame_rate.frame_at(h.state().session.time());
+    let frame = |h: &Harness<'_, ArtheffectApp>| h.state().session.active_comp().unwrap().frame_rate.frame_at(h.state().session.time());
     let p = center(&h, "timeline.timecode");
     click(&mut h, p, 2);
     type_text(&mut h, "0:00:01:00");
@@ -125,17 +125,17 @@ fn the_expression_pick_whip_inserts_at_the_cursor_while_editing() {
         let s = &mut h.state_mut().session;
         let l = s.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080"})).unwrap()["layer"].as_u64().unwrap();
         s.execute("prop.setExpression", json!({"layer": l, "path": "transform/opacity", "expression": "50 + 0"})).unwrap();
-        let tr = s.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(l)).unwrap().props.sub("transform").unwrap().clone();
+        let tr = s.active_comp().unwrap().layer(artheffect_engine::project::LayerId(l)).unwrap().props.sub("transform").unwrap().clone();
         (l, tr.get("opacity").unwrap().uid, tr.get("rotation").unwrap().uid, tr.uid)
     };
     h.state_mut().ui.timeline.open_layers.insert(layer);
     h.state_mut().ui.timeline.open_groups.insert(transform);
     h.run_steps(3);
-    let expr = |h: &Harness<'_, EffectcraftApp>| {
+    let expr = |h: &Harness<'_, ArtheffectApp>| {
         let comp = h.state().session.active_comp().unwrap();
-        comp.layer(effectcraft_engine::project::LayerId(layer)).unwrap().props.find(opacity).unwrap().expr.as_ref().unwrap().text.clone()
+        comp.layer(artheffect_engine::project::LayerId(layer)).unwrap().props.find(opacity).unwrap().expr.as_ref().unwrap().text.clone()
     };
-    let whip = |h: &mut Harness<'_, EffectcraftApp>| {
+    let whip = |h: &mut Harness<'_, ArtheffectApp>| {
         let (from, to) = (center(h, &format!("timeline.prop.{opacity}.pickWhip")), center(h, &format!("timeline.prop.{rotation}.name")));
         drag(h, from, to);
     };
@@ -169,17 +169,17 @@ fn the_expression_pick_whip_picks_the_dimension_it_is_dropped_on() {
         let s = &mut h.state_mut().session;
         let l = s.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080"})).unwrap()["layer"].as_u64().unwrap();
         s.execute("prop.setExpression", json!({"layer": l, "path": "transform/opacity", "expression": "50"})).unwrap();
-        let tr = s.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(l)).unwrap().props.sub("transform").unwrap().clone();
+        let tr = s.active_comp().unwrap().layer(artheffect_engine::project::LayerId(l)).unwrap().props.sub("transform").unwrap().clone();
         (l, tr.get("opacity").unwrap().uid, tr.get("position").unwrap().uid, tr.uid)
     };
     h.state_mut().ui.timeline.open_layers.insert(layer);
     h.state_mut().ui.timeline.open_groups.insert(transform);
     h.run_steps(3);
-    let expr = |h: &Harness<'_, EffectcraftApp>| {
+    let expr = |h: &Harness<'_, ArtheffectApp>| {
         let comp = h.state().session.active_comp().unwrap();
-        comp.layer(effectcraft_engine::project::LayerId(layer)).unwrap().props.find(opacity).unwrap().expr.as_ref().unwrap().text.clone()
+        comp.layer(artheffect_engine::project::LayerId(layer)).unwrap().props.find(opacity).unwrap().expr.as_ref().unwrap().text.clone()
     };
-    let whip_to = |h: &mut Harness<'_, EffectcraftApp>, target: &str| {
+    let whip_to = |h: &mut Harness<'_, ArtheffectApp>, target: &str| {
         let (from, to) = (center(h, &format!("timeline.prop.{opacity}.pickWhip")), center(h, target));
         drag(h, from, to);
     };
@@ -203,17 +203,17 @@ fn the_property_pick_whip_links_a_property_to_another() {
         for fx in ["Slider Control", "Point Control"] {
             s.execute("effect.apply", json!({"layers": [l], "effect": fx})).unwrap();
         }
-        let tr = s.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(l)).unwrap().props.sub("transform").unwrap().clone();
+        let tr = s.active_comp().unwrap().layer(artheffect_engine::project::LayerId(l)).unwrap().props.sub("transform").unwrap().clone();
         (l, tr.get("opacity").unwrap().uid, tr.get("rotation").unwrap().uid, tr.get("position").unwrap().uid, tr.uid)
     };
     h.state_mut().ui.timeline.open_layers.insert(layer);
     h.state_mut().ui.timeline.open_groups.insert(transform);
-    h.state_mut().show_panel(effectcraft_ui_egui::dock::PanelKind::EffectControls);
+    h.state_mut().show_panel(artheffect_ui_egui::dock::PanelKind::EffectControls);
     h.run_steps(3);
     let props =
-        |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(layer)).unwrap().props.clone();
-    let expr = |h: &Harness<'_, EffectcraftApp>| props(h).find(opacity).unwrap().expr.clone().map(|e| (e.text, e.enabled));
-    let whip_to = |h: &mut Harness<'_, EffectcraftApp>, target: &str| {
+        |h: &Harness<'_, ArtheffectApp>| h.state().session.active_comp().unwrap().layer(artheffect_engine::project::LayerId(layer)).unwrap().props.clone();
+    let expr = |h: &Harness<'_, ArtheffectApp>| props(h).find(opacity).unwrap().expr.clone().map(|e| (e.text, e.enabled));
+    let whip_to = |h: &mut Harness<'_, ArtheffectApp>, target: &str| {
         let (from, to) = (center(h, &format!("timeline.prop.{opacity}.propertyPickWhip")), center(h, target));
         drag(h, from, to);
     };
@@ -252,13 +252,13 @@ fn the_pick_whip_scrolls_the_timeline_at_its_edges() {
         }
         let l = s.execute("layer.newSolid", json!({"name": "Top", "color": "#406080"})).unwrap()["layer"].as_u64().unwrap();
         s.execute("prop.setExpression", json!({"layer": l, "path": "transform/opacity", "expression": "50"})).unwrap();
-        let tr = s.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(l)).unwrap().props.sub("transform").unwrap().clone();
+        let tr = s.active_comp().unwrap().layer(artheffect_engine::project::LayerId(l)).unwrap().props.sub("transform").unwrap().clone();
         (l, tr.get("opacity").unwrap().uid, tr.uid)
     };
     h.state_mut().ui.timeline.open_layers.insert(top);
     h.state_mut().ui.timeline.open_groups.insert(transform);
     h.run_steps(3);
-    let scroll = |h: &Harness<'_, EffectcraftApp>| h.state().ui.timeline.scroll_y;
+    let scroll = |h: &Harness<'_, ArtheffectApp>| h.state().ui.timeline.scroll_y;
     let rows = h.state().auto.find("timeline.scroll").unwrap().rect;
     let from = center(&h, &format!("timeline.prop.{opacity}.pickWhip"));
     let (bottom, upper) = (pos2(from.x, rows[1] + rows[3] - 2.0), pos2(from.x, rows[1] + 2.0));
@@ -294,14 +294,14 @@ fn the_expression_field_grows_while_editing_and_drags_taller() {
         let s = &mut h.state_mut().session;
         let l = s.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080"})).unwrap()["layer"].as_u64().unwrap();
         s.execute("prop.setExpression", json!({"layer": l, "path": "transform/opacity", "expression": "50"})).unwrap();
-        let tr = s.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(l)).unwrap().props.sub("transform").unwrap().clone();
+        let tr = s.active_comp().unwrap().layer(artheffect_engine::project::LayerId(l)).unwrap().props.sub("transform").unwrap().clone();
         (l, tr.get("opacity").unwrap().uid, tr.uid)
     };
     h.state_mut().ui.timeline.open_layers.insert(layer);
     h.state_mut().ui.timeline.open_groups.insert(transform);
     h.run_steps(3);
     let id = format!("timeline.prop.{opacity}.expression");
-    let height = |h: &Harness<'_, EffectcraftApp>| h.state().auto.find(&id).unwrap().rect[3];
+    let height = |h: &Harness<'_, ArtheffectApp>| h.state().auto.find(&id).unwrap().rect[3];
     let line = h.state().tokens.row_h;
     let one = height(&h);
     let p = center(&h, &id);
@@ -315,7 +315,7 @@ fn the_expression_field_grows_while_editing_and_drags_taller() {
     assert!((height(&h) - one - 2.0 * line).abs() < 0.5, "three lines while editing: {} from {one}", height(&h));
     // Its bottom edge: dragged down 4 lines, then up past the top (one line).
     let edge_id = format!("timeline.prop.{opacity}.expressionHeight");
-    let drag_edge = |h: &mut Harness<'_, EffectcraftApp>, dy: f32| {
+    let drag_edge = |h: &mut Harness<'_, ArtheffectApp>, dy: f32| {
         let edge = center(h, &edge_id);
         let to = edge + egui::vec2(0.0, dy);
         h.input_mut().events.push(Event::PointerMoved(edge));
@@ -336,7 +336,7 @@ fn the_expression_field_grows_while_editing_and_drags_taller() {
     assert_eq!(h.state().ui.timeline.expr_lines.get(&opacity), Some(&1));
 }
 
-fn key_with(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
+fn key_with(h: &mut Harness<'_, ArtheffectApp>, key: Key, modifiers: Modifiers) {
     h.input_mut().events.push(Event::ModifiersChanged(modifiers));
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers });
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: false, repeat: false, modifiers });
@@ -358,17 +358,17 @@ fn tab_commits_a_value_and_moves_to_the_next() {
         for fx in ["Point Control", "Slider Control"] {
             s.execute("effect.apply", json!({"layers": [l], "effect": fx})).unwrap();
         }
-        let tr = s.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(l)).unwrap().props.sub("transform").unwrap().uid;
+        let tr = s.active_comp().unwrap().layer(artheffect_engine::project::LayerId(l)).unwrap().props.sub("transform").unwrap().uid;
         (l, tr)
     };
     h.state_mut().ui.timeline.open_layers.insert(layer);
     h.state_mut().ui.timeline.open_groups.insert(transform);
-    h.state_mut().show_panel(effectcraft_ui_egui::dock::PanelKind::EffectControls);
+    h.state_mut().show_panel(artheffect_ui_egui::dock::PanelKind::EffectControls);
     h.run_steps(3);
     let props =
-        |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(layer)).unwrap().props.clone();
-    let value = |h: &Harness<'_, EffectcraftApp>, path: &str| props(h).prop(path).unwrap().value.components();
-    let uid = |h: &Harness<'_, EffectcraftApp>, path: &str| props(h).prop(path).unwrap().uid;
+        |h: &Harness<'_, ArtheffectApp>| h.state().session.active_comp().unwrap().layer(artheffect_engine::project::LayerId(layer)).unwrap().props.clone();
+    let value = |h: &Harness<'_, ArtheffectApp>, path: &str| props(h).prop(path).unwrap().value.components();
+    let uid = |h: &Harness<'_, ArtheffectApp>, path: &str| props(h).prop(path).unwrap().uid;
     let (position, scale) = (uid(&h, "transform/position"), uid(&h, "transform/scale"));
     let none = Modifiers::NONE;
     // Timeline: Position X, Tab, Position Y, Tab, Scale (linked).
@@ -405,7 +405,7 @@ fn tab_commits_a_value_and_moves_to_the_next() {
 }
 
 /// A click at `p` with `modifiers` held.
-fn click_with(h: &mut Harness<'_, EffectcraftApp>, p: Pos2, modifiers: Modifiers) {
+fn click_with(h: &mut Harness<'_, ArtheffectApp>, p: Pos2, modifiers: Modifiers) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.input_mut().events.push(Event::ModifiersChanged(modifiers));
     h.step();
@@ -421,12 +421,12 @@ fn click_with(h: &mut Harness<'_, EffectcraftApp>, p: Pos2, modifiers: Modifiers
 /// in After Effects; under the Timeline's display the other style shows.
 #[test]
 fn ctrl_click_on_the_time_display_toggles_timecode_and_frames() {
-    use effectcraft_engine::project::TimeDisplayStyle;
+    use artheffect_engine::project::TimeDisplayStyle;
     let (mut h, _) = harness();
     h.state_mut().session.execute("time.set", json!({"frame": 30})).unwrap();
     h.run_steps(2);
-    let shown = |h: &Harness<'_, EffectcraftApp>, id: &str| h.state().auto.find(id).unwrap().label.clone();
-    let style = |h: &Harness<'_, EffectcraftApp>| h.state().session.project.settings.time_display;
+    let shown = |h: &Harness<'_, ArtheffectApp>, id: &str| h.state().auto.find(id).unwrap().label.clone();
+    let style = |h: &Harness<'_, ArtheffectApp>| h.state().session.project.settings.time_display;
     let undo = h.state().session.history.undo.len();
     let at = center(&h, "timeline.timecode");
     click_with(&mut h, at, Modifiers::COMMAND);
@@ -452,7 +452,7 @@ fn ctrl_click_on_the_time_display_toggles_timecode_and_frames() {
 
 /// Hold Alt and Shift and let go of them, as Windows' keyboard-layout hotkey does; `shift_first`
 /// releases Shift before Alt.
-fn switch_layout(h: &mut Harness<'_, EffectcraftApp>, shift_first: bool) {
+fn switch_layout(h: &mut Harness<'_, ArtheffectApp>, shift_first: bool) {
     let held = if shift_first { Modifiers::ALT } else { Modifiers::SHIFT };
     for m in [Modifiers::ALT, Modifiers::ALT | Modifiers::SHIFT, held, Modifiers::NONE] {
         h.input_mut().events.push(Event::ModifiersChanged(m));
@@ -471,7 +471,7 @@ fn a_layout_switch_keeps_the_name_field_and_arabic_names_are_kept() {
     let layer = h.state_mut().session.execute("layer.newNull", json!({})).unwrap()["layer"].as_u64().unwrap();
     h.run_steps(3);
     let layer_name =
-        |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(layer)).unwrap().name.clone();
+        |h: &Harness<'_, ArtheffectApp>| h.state().session.active_comp().unwrap().layer(artheffect_engine::project::LayerId(layer)).unwrap().name.clone();
     let p = center(&h, &format!("timeline.layer.{layer}.row"));
     click(&mut h, p, 2);
     assert!(h.state().auto.find(&format!("timeline.layer.{layer}.nameEdit")).is_some(), "double-click opened the rename field");
@@ -506,7 +506,7 @@ fn a_layout_switch_keeps_the_name_field_and_arabic_names_are_kept() {
 #[test]
 fn arrow_keys_move_the_caret_in_rename_fields() {
     let (mut h, comp) = harness();
-    let name = |h: &Harness<'_, EffectcraftApp>| h.state().session.project.items.values().find(|i| i.id.0 == comp).unwrap().name.clone();
+    let name = |h: &Harness<'_, ArtheffectApp>| h.state().session.project.items.values().find(|i| i.id.0 == comp).unwrap().name.clone();
     let p = center(&h, &format!("project.item.{comp}.name"));
     click(&mut h, p, 1);
     key(&mut h, Key::Enter);
@@ -538,17 +538,17 @@ fn arrow_keys_move_the_caret_in_rename_fields() {
     key(&mut h, Key::ArrowLeft);
     type_text(&mut h, "-");
     key(&mut h, Key::Enter);
-    let layer_name = h.state().session.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(layer)).unwrap().name.clone();
+    let layer_name = h.state().session.active_comp().unwrap().layer(artheffect_engine::project::LayerId(layer)).unwrap().name.clone();
     assert_eq!(layer_name, "Pla-te");
 }
 
 /// A solid named `name` with its Transform group open in the Timeline; returns the layer, its
 /// Opacity uid and its Rotation uid.
-fn open_transform(h: &mut Harness<'_, EffectcraftApp>, name: &str) -> (u64, u64, u64) {
+fn open_transform(h: &mut Harness<'_, ArtheffectApp>, name: &str) -> (u64, u64, u64) {
     let (layer, opacity, rotation, transform) = {
         let s = &mut h.state_mut().session;
         let l = s.execute("layer.newSolid", json!({"name": name, "color": "#406080"})).unwrap()["layer"].as_u64().unwrap();
-        let tr = s.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(l)).unwrap().props.sub("transform").unwrap().clone();
+        let tr = s.active_comp().unwrap().layer(artheffect_engine::project::LayerId(l)).unwrap().props.sub("transform").unwrap().clone();
         (l, tr.get("opacity").unwrap().uid, tr.get("rotation").unwrap().uid, tr.uid)
     };
     h.state_mut().ui.timeline.open_layers.insert(layer);
@@ -557,12 +557,12 @@ fn open_transform(h: &mut Harness<'_, EffectcraftApp>, name: &str) -> (u64, u64,
     (layer, opacity, rotation)
 }
 
-fn expression(h: &Harness<'_, EffectcraftApp>, layer: u64, prop: u64) -> Option<String> {
+fn expression(h: &Harness<'_, ArtheffectApp>, layer: u64, prop: u64) -> Option<String> {
     let comp = h.state().session.active_comp().unwrap();
-    comp.layer(effectcraft_engine::project::LayerId(layer)).unwrap().props.find(prop).unwrap().expr.as_ref().map(|e| e.text.clone())
+    comp.layer(artheffect_engine::project::LayerId(layer)).unwrap().props.find(prop).unwrap().expr.as_ref().map(|e| e.text.clone())
 }
 
-fn commit_expression(h: &mut Harness<'_, EffectcraftApp>) {
+fn commit_expression(h: &mut Harness<'_, ArtheffectApp>) {
     h.input_mut().events.push(Event::ModifiersChanged(Modifiers::COMMAND));
     h.input_mut().events.push(Event::Key { key: Key::Enter, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::COMMAND });
     h.step();
@@ -579,7 +579,7 @@ fn alt_clicking_a_stopwatch_focuses_the_new_expression() {
     let (mut h, _) = harness();
     let (layer, opacity, rotation) = open_transform(&mut h, "Plate");
     let alt = Modifiers { alt: true, ..Modifiers::NONE };
-    let stopwatch = |h: &Harness<'_, EffectcraftApp>, prop: u64| center(h, &format!("timeline.prop.{prop}.stopwatch"));
+    let stopwatch = |h: &Harness<'_, ArtheffectApp>, prop: u64| center(h, &format!("timeline.prop.{prop}.stopwatch"));
     let at = stopwatch(&h, opacity);
     click_with(&mut h, at, alt);
     assert!(expression(&h, layer, opacity).is_some(), "an expression was added");
@@ -635,7 +635,7 @@ fn an_expression_added_at_the_bottom_of_the_timeline_comes_into_view() {
 }
 
 /// A primary-button drag from `from` to `to` with `modifiers` held from the press to the release.
-fn drag_with(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, modifiers: Modifiers) {
+fn drag_with(h: &mut Harness<'_, ArtheffectApp>, from: Pos2, to: Pos2, modifiers: Modifiers) {
     h.input_mut().events.push(Event::PointerMoved(from));
     h.input_mut().events.push(Event::ModifiersChanged(modifiers));
     h.step();
@@ -664,21 +664,21 @@ fn an_alt_pick_whip_refers_to_an_effect_property_by_index() {
         for fx in ["Slider Control", "Point Control"] {
             s.execute("effect.apply", json!({"layers": [l], "effect": fx})).unwrap();
         }
-        let props = s.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(l)).unwrap().props.clone();
+        let props = s.active_comp().unwrap().layer(artheffect_engine::project::LayerId(l)).unwrap().props.clone();
         let effects: Vec<u64> = std::iter::once(props.sub("effects").unwrap().uid).chain(props.sub("effects").unwrap().groups().map(|g| g.uid)).collect();
         (l, props.sub("transform").unwrap().get("opacity").unwrap().uid, props.sub("transform").unwrap().uid, effects)
     };
     h.state_mut().ui.timeline.open_layers.insert(layer);
     h.state_mut().ui.timeline.open_groups.insert(transform);
     h.state_mut().ui.timeline.open_groups.extend(effects);
-    h.state_mut().show_panel(effectcraft_ui_egui::dock::PanelKind::EffectControls);
+    h.state_mut().show_panel(artheffect_ui_egui::dock::PanelKind::EffectControls);
     h.run_steps(3);
     let props =
-        |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(layer)).unwrap().props.clone();
+        |h: &Harness<'_, ArtheffectApp>| h.state().session.active_comp().unwrap().layer(artheffect_engine::project::LayerId(layer)).unwrap().props.clone();
     let (slider, point) = (props(&h).prop("effects/#1/slider").unwrap().uid, props(&h).prop("effects/#2/point").unwrap().uid);
-    let expr = |h: &Harness<'_, EffectcraftApp>| props(h).find(opacity).unwrap().expr.clone().map(|e| e.text);
+    let expr = |h: &Harness<'_, ArtheffectApp>| props(h).find(opacity).unwrap().expr.clone().map(|e| e.text);
     let alt = Modifiers { alt: true, ..Modifiers::NONE };
-    let whip = |h: &mut Harness<'_, EffectcraftApp>, target: &str, modifiers: Modifiers| {
+    let whip = |h: &mut Harness<'_, ArtheffectApp>, target: &str, modifiers: Modifiers| {
         let (from, to) = (center(h, &format!("timeline.prop.{opacity}.propertyPickWhip")), center(h, target));
         drag_with(h, from, to, modifiers);
     };
@@ -718,18 +718,18 @@ fn typing_one_component_with_several_layers_selected_keeps_their_other_component
             ids.push(l);
         }
         s.execute("layer.select", json!({"layers": ids})).unwrap();
-        let tr = s.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(ids[0])).unwrap().props.sub("transform").unwrap().uid;
+        let tr = s.active_comp().unwrap().layer(artheffect_engine::project::LayerId(ids[0])).unwrap().props.sub("transform").unwrap().uid;
         (ids[0], ids[1], tr)
     };
     h.state_mut().ui.timeline.open_layers.insert(a);
     h.state_mut().ui.timeline.open_groups.insert(transform);
     h.run_steps(3);
-    let pos = |h: &Harness<'_, EffectcraftApp>, l: u64| {
+    let pos = |h: &Harness<'_, ArtheffectApp>, l: u64| {
         h.state()
             .session
             .active_comp()
             .unwrap()
-            .layer(effectcraft_engine::project::LayerId(l))
+            .layer(artheffect_engine::project::LayerId(l))
             .unwrap()
             .props
             .prop("transform/position")
@@ -738,7 +738,7 @@ fn typing_one_component_with_several_layers_selected_keeps_their_other_component
             .components()
     };
     let position =
-        h.state().session.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(a)).unwrap().props.prop("transform/position").unwrap().uid;
+        h.state().session.active_comp().unwrap().layer(artheffect_engine::project::LayerId(a)).unwrap().props.prop("transform/position").unwrap().uid;
     let p = center(&h, &format!("timeline.prop.{position}.value.2"));
     click(&mut h, p, 1);
     type_text(&mut h, "-300");

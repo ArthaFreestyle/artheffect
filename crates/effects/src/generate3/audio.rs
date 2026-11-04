@@ -128,7 +128,7 @@ fn draw_marks(b: &mut Buf, segs_core: &[Seg], thickness: f64, softness: f64, ins
     });
 }
 
-/// Audio Spectrum / Audio Waveform, shared with the GPU compositor (effectcraft-gpu `fx_gen2`):
+/// Audio Spectrum / Audio Waveform, shared with the GPU compositor (artheffect-gpu `fx_gen2`):
 /// the marks (the audio analysis runs on the CPU) and how `draw_marks` colours them.
 #[derive(Clone, Debug)]
 pub struct MarksPlan {

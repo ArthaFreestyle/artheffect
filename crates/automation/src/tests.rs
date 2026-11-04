@@ -106,7 +106,7 @@ fn initialize_and_list_tools() {
     let mut s = server();
     let r = rpc(&mut s, 1, "initialize", json!({"protocolVersion": "2025-03-26", "capabilities": {}, "clientInfo": {"name": "t", "version": "0"}}));
     assert_eq!(r["protocolVersion"], "2025-03-26");
-    assert_eq!(r["serverInfo"]["name"], "effectcraft");
+    assert_eq!(r["serverInfo"]["name"], "artheffect");
     assert!(r["capabilities"]["tools"].is_object());
     // Unknown revision: we answer with our latest.
     let r = rpc(&mut s, 2, "initialize", json!({"protocolVersion": "1999-01-01"}));
@@ -262,7 +262,7 @@ fn headless_workflow() {
 /// its error, and `evaluated` is the static value that renders (#163).
 #[test]
 fn expression_syntax_errors_reach_the_reply() {
-    let mut s = McpServer::new(Backend::headless(effectcraft_host::session()));
+    let mut s = McpServer::new(Backend::headless(artheffect_host::session()));
     call_json(&mut s, "execute_command", json!({"command": "comp.new", "params": {"name": "A", "width": 64, "height": 64}}));
     call_json(&mut s, "execute_command", json!({"command": "layer.newSolid", "params": {"name": "S", "color": "#ff0000", "width": 32, "height": 8}}));
     let at = |expr: &str| json!({"layer": "S", "path": "transform/rotation", "expression": expr});
@@ -330,7 +330,7 @@ fn autosave_test_dir(name: &str) -> std::path::PathBuf {
 }
 
 fn autosave_status(s: &mut McpServer) -> Value {
-    rpc(s, 1, "initialize", json!({}))["_meta"]["effectcraftAutoSave"].clone()
+    rpc(s, 1, "initialize", json!({}))["_meta"]["artheffectAutoSave"].clone()
 }
 
 #[test]
@@ -353,7 +353,7 @@ fn autosave_is_durable_before_reply_and_queries_do_not_rotate() {
     // The instructions carry the auto-save state as JSON, where a Windows path's backslashes
     // are escaped.
     assert!(init["instructions"].as_str().unwrap().contains(&Value::from(path).to_string()));
-    assert_eq!(init["_meta"]["effectcraftAutoSave"]["previousSessions"][0]["autosave"], path);
+    assert_eq!(init["_meta"]["artheffectAutoSave"]["previousSessions"][0]["autosave"], path);
     call_json(&mut restarted, "open_project", json!({"path": path}));
     assert_eq!(call_json(&mut restarted, "get_project", json!({}))["items"][0]["name"], "Durable");
     std::fs::remove_dir_all(dir).unwrap();
@@ -386,7 +386,7 @@ fn autosave_errors_preserve_tool_success_retry_and_fail_shutdown() {
 #[test]
 fn autosave_keeps_sessions_and_desktop_recovery_separate() {
     let dir = autosave_test_dir("isolated");
-    let desktop_save = dir.join(effectcraft_engine::autosave::AUTOSAVE_FOLDER).join("Untitled Project auto-save 1.ecproj");
+    let desktop_save = dir.join(artheffect_engine::autosave::AUTOSAVE_FOLDER).join("Untitled Project auto-save 1.ecproj");
     std::fs::create_dir_all(desktop_save.parent().unwrap()).unwrap();
     std::fs::write(&desktop_save, "desktop backup").unwrap();
     std::fs::write(dir.join("session.lock"), "desktop sentinel").unwrap();
@@ -404,7 +404,7 @@ fn autosave_keeps_sessions_and_desktop_recovery_separate() {
         assert!(json.contains(mine));
         assert!(!json.contains(other));
         let folder = std::path::Path::new(status["folder"].as_str().unwrap());
-        assert_eq!(effectcraft_engine::autosave::existing(folder, "Untitled Project").len(), 5);
+        assert_eq!(artheffect_engine::autosave::existing(folder, "Untitled Project").len(), 5);
     }
     assert_eq!(std::fs::read_to_string(desktop_save).unwrap(), "desktop backup");
     assert_eq!(std::fs::read_to_string(dir.join("session.lock")).unwrap(), "desktop sentinel");
@@ -694,7 +694,7 @@ fn bridge_connect_failure_can_be_retried_when_the_app_starts() {
 #[test]
 fn script_ui_and_history_tools() {
     let mut sess = Session::default();
-    effectcraft_script::install(&mut sess);
+    artheffect_script::install(&mut sess);
     let mut s = McpServer::new(Backend::headless(sess));
     let code = "var d = new Window('dialog', 'Ask'); var g = d.add('group'); g.add('button', undefined, 'OK', {name: 'ok'}); \
                 if (d.show() == 1) app.project.items.addComp('Answered', 64, 64, 1, 1, 24); 'done'";
@@ -720,7 +720,7 @@ fn script_ui_and_history_tools() {
 #[test]
 fn run_script_round_trip() {
     let mut sess = Session::default();
-    effectcraft_script::install(&mut sess);
+    artheffect_script::install(&mut sess);
     let mut s = McpServer::new(Backend::headless(sess));
     let r = call_json(
         &mut s,
@@ -780,7 +780,7 @@ fn every_engine_command_is_reachable_over_mcp() {
     }
     let listed = call_json(&mut s, "list_commands", json!({"schemas": true}));
     let listed: std::collections::HashMap<&str, &Value> = listed.as_array().unwrap().iter().map(|c| (c["id"].as_str().unwrap(), c)).collect();
-    let specs = effectcraft_engine::command_specs();
+    let specs = artheffect_engine::command_specs();
     assert_eq!(listed.len(), specs.len());
     for spec in specs {
         let c = listed.get(spec.id).unwrap_or_else(|| panic!("{} not listed", spec.id));
@@ -1061,7 +1061,7 @@ fn resources_match_tools_and_recover_after_parse_error() {
     assert!(bad["id"].is_null());
     assert_eq!(rpc(&mut s, 1, "ping", json!({})), json!({}));
     let list = rpc(&mut s, 2, "resources/list", json!({}));
-    for (uri, tool) in [("effectcraft://document", "doc_inspect"), ("effectcraft://commands", "command_list")] {
+    for (uri, tool) in [("artheffect://document", "doc_inspect"), ("artheffect://commands", "command_list")] {
         assert!(list["resources"].as_array().unwrap().iter().any(|r| r["uri"] == uri));
         let r = rpc(&mut s, 3, "resources/read", json!({"uri":uri}));
         assert_eq!(r["contents"][0]["mimeType"], "application/json");
@@ -1073,7 +1073,7 @@ fn resources_match_tools_and_recover_after_parse_error() {
 /// Rendering is a direct tool call, outside Session::execute's existing panic guard.
 #[test]
 fn render_panic_is_an_error_and_session_remains_usable() {
-    use effectcraft_engine::{
+    use artheffect_engine::{
         color::Label,
         project::{Footage, FootageKind, ItemId, ItemKind},
         raster::Image,
@@ -1124,7 +1124,7 @@ fn modern_clients_get_result_type() {
         (1, "tools/list", json!({"_meta": meta})),
         (2, "resources/list", json!({"_meta": meta})),
         (3, "resources/templates/list", json!({"_meta": meta})),
-        (4, "resources/read", json!({"_meta": meta, "uri": "effectcraft://document"})),
+        (4, "resources/read", json!({"_meta": meta, "uri": "artheffect://document"})),
         (5, "tools/call", json!({"_meta": meta, "name": "command_list", "arguments": {}})),
     ] {
         let r = rpc(&mut s, id, method, params);
@@ -1136,8 +1136,7 @@ fn modern_clients_get_result_type() {
     }
     let mut s = server();
     rpc(&mut s, 1, "initialize", json!({"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "t", "version": "1"}}));
-    for (id, method, params) in
-        [(2, "tools/list", json!({})), (3, "resources/list", json!({})), (4, "resources/read", json!({"uri": "effectcraft://document"}))]
+    for (id, method, params) in [(2, "tools/list", json!({})), (3, "resources/list", json!({})), (4, "resources/read", json!({"uri": "artheffect://document"}))]
     {
         let r = rpc(&mut s, id, method, params);
         let res = r.as_object().unwrap();
@@ -1147,7 +1146,7 @@ fn modern_clients_get_result_type() {
 
 #[test]
 fn render_job_state_recovers_a_poisoned_lock() {
-    let shared = std::sync::Arc::new(effectcraft_engine::render_queue::JobShared::default());
+    let shared = std::sync::Arc::new(artheffect_engine::render_queue::JobShared::default());
     let worker = shared.clone();
     let _ = std::thread::spawn(move || {
         let mut state = worker.state.lock().unwrap();
@@ -1162,21 +1161,21 @@ fn render_job_state_recovers_a_poisoned_lock() {
 /// one to clean up).
 struct SlowExporter;
 
-impl effectcraft_engine::Exporter for SlowExporter {
-    fn formats(&self) -> Vec<effectcraft_engine::project::render_queue::OutputFormat> {
-        effectcraft_engine::project::render_queue::OutputFormat::ALL.to_vec()
+impl artheffect_engine::Exporter for SlowExporter {
+    fn formats(&self) -> Vec<artheffect_engine::project::render_queue::OutputFormat> {
+        artheffect_engine::project::render_queue::OutputFormat::ALL.to_vec()
     }
-    fn export(&self, job: &effectcraft_engine::ExportJob, progress: &mut dyn FnMut(u64, u64) -> bool) -> Result<effectcraft_engine::ExportResult, String> {
+    fn export(&self, job: &artheffect_engine::ExportJob, progress: &mut dyn FnMut(u64, u64) -> bool) -> Result<artheffect_engine::ExportResult, String> {
         std::fs::write(job.path, b"partial").map_err(|e| e.to_string())?;
         let n = 2000;
         for k in 0..=n {
             if !progress(k, n) {
                 std::fs::remove_file(job.path).map_err(|e| e.to_string())?;
-                return Err(effectcraft_engine::render_queue::CANCELLED.into());
+                return Err(artheffect_engine::render_queue::CANCELLED.into());
             }
             std::thread::sleep(std::time::Duration::from_millis(2));
         }
-        Ok(effectcraft_engine::ExportResult { path: job.path.to_string(), frames: n, ..Default::default() })
+        Ok(artheffect_engine::ExportResult { path: job.path.to_string(), frames: n, ..Default::default() })
     }
 }
 
@@ -1185,7 +1184,7 @@ impl effectcraft_engine::Exporter for SlowExporter {
 /// the project without changing the running job, which renders the snapshot it started with.
 #[test]
 fn second_render_is_refused_and_edits_apply_during_a_render() {
-    let dir = std::env::temp_dir().join(format!("effectcraft-mcp-busy-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("artheffect-mcp-busy-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let (in_r, mut in_w) = std::io::pipe().unwrap();
     let (out_r, out_w) = std::io::pipe().unwrap();
@@ -1240,7 +1239,7 @@ fn second_render_is_refused_and_edits_apply_during_a_render() {
 /// and `notifications/cancelled` stops it, deletes the partial file and sends no response.
 #[test]
 fn render_progress_and_cancel() {
-    let dir = std::env::temp_dir().join(format!("effectcraft-mcp-progress-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("artheffect-mcp-progress-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let (in_r, mut in_w) = std::io::pipe().unwrap();
     let (out_r, out_w) = std::io::pipe().unwrap();
@@ -1361,11 +1360,11 @@ fn render_without_token_finishes_after_stdin_closes() {
 #[test]
 fn panicked_render_worker_finishes_with_an_error() {
     struct BrokenExporter;
-    impl effectcraft_engine::Exporter for BrokenExporter {
-        fn formats(&self) -> Vec<effectcraft_engine::project::render_queue::OutputFormat> {
-            effectcraft_engine::project::render_queue::OutputFormat::ALL.to_vec()
+    impl artheffect_engine::Exporter for BrokenExporter {
+        fn formats(&self) -> Vec<artheffect_engine::project::render_queue::OutputFormat> {
+            artheffect_engine::project::render_queue::OutputFormat::ALL.to_vec()
         }
-        fn export(&self, _: &effectcraft_engine::ExportJob, _: &mut dyn FnMut(u64, u64) -> bool) -> Result<effectcraft_engine::ExportResult, String> {
+        fn export(&self, _: &artheffect_engine::ExportJob, _: &mut dyn FnMut(u64, u64) -> bool) -> Result<artheffect_engine::ExportResult, String> {
             panic!("synthetic exporter failure");
         }
     }
@@ -1633,12 +1632,12 @@ fn blender_export_requires_an_absolute_path_in_a_write_root() {
 /// frame is rendered, and the file is untouched.
 #[test]
 fn render_frame_never_writes_over_a_file_the_project_reads() {
-    use effectcraft_engine::{
+    use artheffect_engine::{
         color::Label,
         project::{Footage, FootageKind, ItemKind},
     };
     use std::sync::Arc;
-    let dir = std::env::temp_dir().join(format!("effectcraft-mcp-overwrite-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("artheffect-mcp-overwrite-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let (clip, project) = (dir.join("clip.png"), dir.join("Project.ecproj"));
@@ -1680,14 +1679,14 @@ fn render_frame_never_writes_over_a_file_the_project_reads() {
 /// (`file.checkOutput`) before it writes anything.
 #[test]
 fn bridged_render_frame_asks_the_app_before_it_writes() {
-    use effectcraft_engine::project::{Footage, FootageKind};
+    use artheffect_engine::project::{Footage, FootageKind};
     struct Probe;
-    impl effectcraft_engine::Importer for Probe {
+    impl artheffect_engine::Importer for Probe {
         fn probe(&self, path: &str) -> Result<Footage, String> {
             Ok(Footage { path: path.to_string(), kind: FootageKind::Still, width: 4, height: 4, has_video: true, ..Default::default() })
         }
     }
-    let dir = std::env::temp_dir().join(format!("effectcraft-mcp-bridge-overwrite-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("artheffect-mcp-bridge-overwrite-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let clip = dir.join("clip.png");
@@ -1750,7 +1749,7 @@ fn automation_roots_confine_the_footage_a_project_names() {
     let p = |d: &std::path::Path, f: &str| d.join(f).to_string_lossy().into_owned();
     // A project in the read root showing `footage`, saved unconfined.
     let project = |name: &str, footage: &str| {
-        let mut s = McpServer::new(Backend::headless(effectcraft_host::session()));
+        let mut s = McpServer::new(Backend::headless(artheffect_host::session()));
         call_json(&mut s, "execute_command", json!({"command": "comp.new", "params": {"name": "C", "width": 8, "height": 8}}));
         let imported = call_json(&mut s, "execute_command", json!({"command": "file.import", "params": {"paths": [footage]}}));
         let item = imported["items"][0].as_u64().or_else(|| imported["item"].as_u64()).unwrap_or_else(|| panic!("{imported}"));
@@ -1784,7 +1783,7 @@ fn automation_roots_confine_the_footage_a_project_names() {
     projects.push(("relative", p(&read, "relative.ecproj")));
 
     let confined = || {
-        let mut s = McpServer::new(Backend::headless(effectcraft_host::session()));
+        let mut s = McpServer::new(Backend::headless(artheffect_host::session()));
         s.backend().confine(Confinement::new(std::slice::from_ref(&read), std::slice::from_ref(&write)).unwrap());
         s
     };
@@ -1794,7 +1793,7 @@ fn automation_roots_confine_the_footage_a_project_names() {
     assert!(shows_red(&mut s), "footage inside the read root");
     for (how, path) in &projects {
         // Unconfined, the project shows the outside file.
-        let mut s = McpServer::new(Backend::headless(effectcraft_host::session()));
+        let mut s = McpServer::new(Backend::headless(artheffect_host::session()));
         call_json(&mut s, "open_project", json!({"path": path}));
         assert!(shows_red(&mut s), "{how}: unconfined shows the footage");
         // Confined: opened, or imported into the open project.
@@ -1828,7 +1827,7 @@ fn automation_roots_check_relinked_footage_again() {
     let link_path = link.to_string_lossy().into_owned();
     let project = read.join("relink.ecproj").to_string_lossy().into_owned();
     {
-        let mut s = McpServer::new(Backend::headless(effectcraft_host::session()));
+        let mut s = McpServer::new(Backend::headless(artheffect_host::session()));
         call_json(&mut s, "execute_command", json!({"command": "comp.new", "params": {"name": "C", "width": 8, "height": 8}}));
         let imported = call_json(&mut s, "execute_command", json!({"command": "file.import", "params": {"paths": [link_path]}}));
         let item = imported["items"][0].as_u64().or_else(|| imported["item"].as_u64()).unwrap_or_else(|| panic!("{imported}"));
@@ -1842,7 +1841,7 @@ fn automation_roots_check_relinked_footage_again() {
         let png = base64::decode(c[0]["data"].as_str().unwrap()).unwrap();
         image::load_from_memory(&png).unwrap().to_rgba8().get_pixel(4, 4).0
     };
-    let mut s = McpServer::new(Backend::headless(effectcraft_host::session()));
+    let mut s = McpServer::new(Backend::headless(artheffect_host::session()));
     s.backend().confine(Confinement::new(std::slice::from_ref(&read), std::slice::from_ref(&write)).unwrap());
     call_json(&mut s, "open_project", json!({"path": project}));
     let px = pixel(&mut s);

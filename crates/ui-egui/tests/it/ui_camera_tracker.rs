@@ -4,18 +4,18 @@
 //! engine and track crates).
 
 use crate::gpu_test::RenderSerial;
-use effectcraft_engine::Session;
-use effectcraft_engine::effects::camera_tracker as ct;
-use effectcraft_engine::track::camtrack::{CameraSolve, ShotType, SolveMethod, SolvedFrame, SolvedPoint};
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
+use artheffect_engine::Session;
+use artheffect_engine::effects::camera_tracker as ct;
+use artheffect_engine::track::camtrack::{CameraSolve, ShotType, SolveMethod, SolvedFrame, SolvedPoint};
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::dock::PanelKind;
 use egui_kittest::Harness;
 use serde_json::json;
 
 const W: f64 = 640.0;
 const H: f64 = 360.0;
 
-fn app() -> (EffectcraftApp, u64, u64) {
+fn app() -> (ArtheffectApp, u64, u64) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Shot", "width": W as u32, "height": H as u32, "duration": 2, "frameRate": 30})).unwrap();
     let plate =
@@ -47,22 +47,22 @@ fn app() -> (EffectcraftApp, u64, u64) {
     };
     s.execute("prop.set", json!({"layer": plate, "path": "effects/#1/solve", "value": solve.to_json()})).unwrap();
     s.camera_pending.clear();
-    s.state.selected_props = vec![(effectcraft_engine::project::LayerId(plate), uid)];
+    s.state.selected_props = vec![(artheffect_engine::project::LayerId(plate), uid)];
     s.execute("layer.select", json!({"layers": [plate]})).unwrap();
-    s.state.selected_props = vec![(effectcraft_engine::project::LayerId(plate), uid)];
-    (EffectcraftApp::new(s), plate, uid)
+    s.state.selected_props = vec![(artheffect_engine::project::LayerId(plate), uid)];
+    (ArtheffectApp::new(s), plate, uid)
 }
 
-fn ids(h: &Harness<'_, EffectcraftApp>) -> Vec<String> {
+fn ids(h: &Harness<'_, ArtheffectApp>) -> Vec<String> {
     h.state().auto.previous.iter().chain(h.state().auto.elements.iter()).map(|e| e.id.clone()).collect()
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> egui::Rect {
+fn rect(h: &Harness<'_, ArtheffectApp>, id: &str) -> egui::Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     egui::Rect::from_min_size(egui::pos2(e.rect[0], e.rect[1]), egui::vec2(e.rect[2], e.rect[3]))
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, at: egui::Pos2, modifiers: egui::Modifiers) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, at: egui::Pos2, modifiers: egui::Modifiers) {
     h.input_mut().events.push(egui::Event::ModifiersChanged(modifiers));
     h.input_mut().events.push(egui::Event::PointerMoved(at));
     h.input_mut().events.push(egui::Event::PointerButton { pos: at, button: egui::PointerButton::Primary, pressed: true, modifiers });
@@ -83,9 +83,9 @@ fn deleting_viewer_track_points_preserves_the_effect_and_layer() {
     h.state_mut().ui.focused = PanelKind::Composition;
     h.input_mut().events.push(egui::Event::Key { key: egui::Key::Delete, physical_key: None, pressed: true, repeat: false, modifiers: Default::default() });
     h.run_steps(3);
-    let layer = h.state().session.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(plate)).unwrap();
+    let layer = h.state().session.active_comp().unwrap().layer(artheffect_engine::project::LayerId(plate)).unwrap();
     let effect = layer.props.find_group(uid).expect("tracker effect survived");
-    let params = effectcraft_engine::camera_track::static_params(effect);
+    let params = artheffect_engine::camera_track::static_params(effect);
     assert!(ct::deleted(&params).contains(&7));
 }
 
@@ -127,7 +127,7 @@ fn viewer_points_selection_and_effect_controls() {
     assert_eq!(sel, vec![0, 1, 2, 3, 4, 5]);
     // The right-click menu's Create Solid and Camera (via its command).
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "camera.createFromSolve", json!({"kind": "solid"})).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, "camera.createFromSolve", json!({"kind": "solid"})).unwrap();
     let comp = h.state().session.active_comp().unwrap();
     assert!(comp.layers.iter().any(|l| l.name == "3D Tracker Camera" && l.is_camera()));
     assert!(comp.layers.iter().any(|l| l.name.starts_with("Track Solid")));
@@ -153,7 +153,7 @@ fn viewer_points_selection_and_effect_controls() {
 
 #[test]
 fn blender_export_button_opens_python_dialog_and_writes_scene() {
-    use effectcraft_engine::project::{Footage, FootageKind, ItemKind, LayerId, LayerSource};
+    use artheffect_engine::project::{Footage, FootageKind, ItemKind, LayerId, LayerSource};
     let (mut a, plate, uid) = app();
     let cid = a.session.active_comp_id().unwrap();
     a.session
@@ -163,12 +163,12 @@ fn blender_export_button_opens_python_dialog_and_writes_scene() {
                 Default::default(),
                 None,
                 ItemKind::Footage(Footage {
-                    path: "/tmp/effectcraft-ui-synthetic.mp4".into(),
+                    path: "/tmp/artheffect-ui-synthetic.mp4".into(),
                     kind: FootageKind::Video,
                     width: W as u32,
                     height: H as u32,
                     has_video: true,
-                    duration: effectcraft_engine::time::Tick::from_seconds_f64(2.0),
+                    duration: artheffect_engine::time::Tick::from_seconds_f64(2.0),
                     ..Default::default()
                 }),
             );
@@ -177,14 +177,14 @@ fn blender_export_button_opens_python_dialog_and_writes_scene() {
         })
         .unwrap();
     a.session.camera_pending.clear();
-    let output = std::env::temp_dir().join(format!("effectcraft-ui-blender-{}.py", std::process::id()));
+    let output = std::env::temp_dir().join(format!("artheffect-ui-blender-{}.py", std::process::id()));
     let selected_path = output.clone();
     a.hooks.pick_save_file = Some(Box::new(move |name, ext| {
         assert!(name.ends_with(".py"));
         assert_eq!(ext, "py");
         Some(selected_path.to_string_lossy().into_owned())
     }));
-    let shot = std::env::var("EFFECTCRAFT_BLENDER_UI_SNAPSHOT").ok();
+    let shot = std::env::var("ARTHEFFECT_BLENDER_UI_SNAPSHOT").ok();
     let builder = Harness::builder().with_size(egui::vec2(1600.0, 1000.0));
     let builder = if shot.is_some() { builder.wgpu() } else { builder };
     let _device = shot.is_some().then(crate::gpu_test::lock);
@@ -215,8 +215,8 @@ fn effect_controls_show_how_many_frames_a_partial_solve_solved() {
     assert!(!ids(&h).contains(&line), "a full solve has no partial-solve line");
     let before = rect(&h, &export);
 
-    let g = h.state().session.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(plate)).unwrap().props.find_group(uid).unwrap();
-    let mut solve = ct::solve(&effectcraft_engine::camera_track::static_params(g)).unwrap().as_ref().clone();
+    let g = h.state().session.active_comp().unwrap().layer(artheffect_engine::project::LayerId(plate)).unwrap().props.find_group(uid).unwrap();
+    let mut solve = ct::solve(&artheffect_engine::camera_track::static_params(g)).unwrap().as_ref().clone();
     for f in solve.frames.iter_mut().skip(24) {
         f.solved = false;
     }
@@ -230,7 +230,7 @@ fn effect_controls_show_how_many_frames_a_partial_solve_solved() {
 }
 
 /// Drag with `button` from `from` to `to` in steps, then release.
-fn drag_with(h: &mut Harness<'_, EffectcraftApp>, button: egui::PointerButton, from: egui::Pos2, to: egui::Pos2) {
+fn drag_with(h: &mut Harness<'_, ArtheffectApp>, button: egui::PointerButton, from: egui::Pos2, to: egui::Pos2) {
     h.input_mut().events.push(egui::Event::PointerMoved(from));
     h.input_mut().events.push(egui::Event::PointerButton { pos: from, button, pressed: true, modifiers: Default::default() });
     h.step();
@@ -272,7 +272,7 @@ fn viewer_zooms_and_pans_over_the_track_points() {
     assert!(h.state().session.state.camera_points.is_empty(), "a pan selects no points");
     // Spacebar held: a primary drag from a point pans instead of drawing a marquee.
     let at = rect(&h, "viewer.cameraTracker.point.7").center();
-    let space = |h: &mut Harness<'_, EffectcraftApp>, pressed: bool| {
+    let space = |h: &mut Harness<'_, ArtheffectApp>, pressed: bool| {
         h.input_mut().events.push(egui::Event::Key { key: egui::Key::Space, physical_key: None, pressed, repeat: false, modifiers: Default::default() });
         h.step();
     };
@@ -285,7 +285,7 @@ fn viewer_zooms_and_pans_over_the_track_points() {
 }
 
 /// Step the UI until background frame renders have landed.
-fn settle(h: &mut Harness<'_, EffectcraftApp>) {
+fn settle(h: &mut Harness<'_, ArtheffectApp>) {
     for _ in 0..600 {
         h.step();
         if h.state().frames.inflight() == 0 && h.state().frames.last_ms.lock().map(|v| *v > 0.0).unwrap_or(false) {
@@ -310,7 +310,7 @@ fn snapshot_showcase_track() {
     s.execute("layer.select", json!({"layers": ["#1"]})).unwrap();
     s.execute("track.camera", json!({"layer": "#1", "wait": true})).unwrap();
     s.execute("time.set", json!({"time": 2.0})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).with_pixels_per_point(1.0).wgpu().build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).with_pixels_per_point(1.0).wgpu().build_eframe(|_| ArtheffectApp::new(s));
     h.state_mut().show_panel(PanelKind::Composition);
     settle(&mut h);
     let pts: Vec<String> = ids(&h).into_iter().filter(|i| i.starts_with("viewer.cameraTracker.point.")).collect();

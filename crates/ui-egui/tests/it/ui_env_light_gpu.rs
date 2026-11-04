@@ -1,15 +1,15 @@
 //! The Environment light through the app's GPU compositor (egui_kittest with wgpu): adding one
 //! visibly changes the viewer's GPU frames (#2436). Skips without a GPU adapter (CI).
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::Renderer;
-use effectcraft_ui_egui::EffectcraftApp;
+use artheffect_engine::Session;
+use artheffect_engine::project::Renderer;
+use artheffect_ui_egui::ArtheffectApp;
 use egui_kittest::Harness;
 use serde_json::json;
 
 use crate::ui_gpu::wait_for_compositor;
 
-fn settle(h: &mut Harness<'_, EffectcraftApp>) {
+fn settle(h: &mut Harness<'_, ArtheffectApp>) {
     for _ in 0..600 {
         h.step();
         if h.state().frames.inflight() == 0 && h.state().frames.last_ms.lock().map(|v| *v > 0.0).unwrap_or(false) {
@@ -45,11 +45,11 @@ fn same_adapter(name: String) -> eframe::egui_wgpu::WgpuSetup {
 #[test]
 fn environment_light_lights_the_scene_on_the_gpu() {
     let _device = crate::gpu_test::lock();
-    let Some(probe) = effectcraft_gpu::Gpu::headless() else {
+    let Some(probe) = artheffect_gpu::Gpu::headless() else {
         eprintln!("no GPU adapter: skipping");
         return;
     };
-    let adapter = effectcraft_engine::render::Accelerator::name(&probe);
+    let adapter = artheffect_engine::render::Accelerator::name(&probe);
     eprintln!("headless compositor adapter: {adapter}");
     let gl = adapter.ends_with("(Gl)");
     drop(probe);
@@ -57,7 +57,7 @@ fn environment_light_lights_the_scene_on_the_gpu() {
         .with_size(egui::vec2(1400.0, 900.0))
         .with_pixels_per_point(1.0)
         .wgpu_setup(same_adapter(adapter))
-        .build_eframe(|_| EffectcraftApp::new(Session::default()));
+        .build_eframe(|_| ArtheffectApp::new(Session::default()));
     // The project opens once the compositor (built on a worker thread) is attached, so the
     // frames compared below are GPU frames, not ones the CPU composited meanwhile (see ui_gpu.rs).
     wait_for_compositor(&mut h);

@@ -1,6 +1,6 @@
 use super::*;
 
-impl EffectcraftApp {
+impl ArtheffectApp {
     /// Feed this frame's share of the queued synthetic input (control channel `ui.click`,
     /// `ui.drag`…) into `raw_input`. Pointer events go one per frame so egui sees press → moves
     /// → release as a real gesture.
@@ -33,7 +33,7 @@ impl EffectcraftApp {
 
     /// Clear the single-pending-batch guard: a UI pass has applied the injected batch.
     ///
-    /// [`EffectcraftApp::draw`] calls this itself; harnesses that feed synthetic input
+    /// [`ArtheffectApp::draw`] calls this itself; harnesses that feed synthetic input
     /// themselves (the headless kittest tests) call it after each pass they ran.
     pub fn mark_synthetic_applied(&mut self) {
         self.synthetic_in_flight_events.clear();
@@ -51,7 +51,7 @@ impl EffectcraftApp {
     }
 }
 
-impl EffectcraftApp {
+impl ArtheffectApp {
     /// Take the pending synthetic input (from `ui.click`, `ui.key`, …). Hosts that don't call
     /// [`eframe::App::raw_input_hook`] (the headless test harness) feed these in themselves.
     pub fn take_synthetic_input(&mut self) -> Vec<egui::Event> {

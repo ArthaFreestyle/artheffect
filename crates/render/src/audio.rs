@@ -1,7 +1,7 @@
 //! Audio mixdown of a composition: every audible layer (footage with audio, precomps, and any
 //! layer with a sound-generating effect such as Tone) summed with its Audio Levels (dB, per
 //! channel), respecting in/out points, the Audio switch and solo. Layer audio effects
-//! (Effect > Audio, see [`effectcraft_effects::audio_fx`]) run on each layer's audio before
+//! (Effect > Audio, see [`artheffect_effects::audio_fx`]) run on each layer's audio before
 //! its levels; Backwards plays the layer's [in, out) span reversed.
 //!
 //! Callers mix in short blocks (one video frame, an audio device buffer, or a second of export).
@@ -15,10 +15,10 @@
 //! Time-stretched layers are resampled nearest-sample; reversed (negative stretch) layers are
 //! silent for now.
 
-use effectcraft_effects::Params;
-use effectcraft_effects::audio_fx;
-use effectcraft_project::{Comp, GroupKind, ItemId, ItemKind, Layer, LayerSource, Node, Project};
-use effectcraft_time::{TICKS_PER_SECOND, Tick};
+use artheffect_effects::Params;
+use artheffect_effects::audio_fx;
+use artheffect_project::{Comp, GroupKind, ItemId, ItemKind, Layer, LayerSource, Node, Project};
+use artheffect_time::{TICKS_PER_SECOND, Tick};
 
 use crate::{EvalCtx, ExprHost, FootageSource};
 
@@ -54,7 +54,7 @@ pub fn comp_has_audio(project: &Project, comp: ItemId) -> bool {
 }
 
 /// Enabled audio effects of a layer (in stack order) with their effect ids.
-fn audio_effect_groups(l: &Layer) -> impl Iterator<Item = (&str, &effectcraft_project::PropGroup)> {
+fn audio_effect_groups(l: &Layer) -> impl Iterator<Item = (&str, &artheffect_project::PropGroup)> {
     l.effects().filter(|_| l.switches.effects).into_iter().flat_map(|fx| fx.groups()).filter(|g| g.enabled).filter_map(|g| match &g.kind {
         GroupKind::Effect { effect } if audio_fx::is_audio_effect(effect) => Some((effect.as_str(), g)),
         _ => None,
@@ -95,7 +95,7 @@ fn param_step(rate: u32) -> i64 {
 }
 
 /// Does any property of the group change over time?
-fn animated(g: &effectcraft_project::PropGroup) -> bool {
+fn animated(g: &artheffect_project::PropGroup) -> bool {
     g.children.iter().any(|c| match c {
         Node::Prop(p) => p.is_animated() || p.has_expression(),
         Node::Group(sub) => animated(sub),
@@ -191,7 +191,7 @@ impl MixEnv<'_> {
     }
 
     /// Effect parameters at comp time `t`.
-    fn params(&self, l: &Layer, g: &effectcraft_project::PropGroup, t: Tick) -> Params {
+    fn params(&self, l: &Layer, g: &artheffect_project::PropGroup, t: Tick) -> Params {
         let ctx = self.ctx(t);
         let mut p = Params::default();
         for c in &g.children {
@@ -206,7 +206,7 @@ impl MixEnv<'_> {
     /// `i0 .. i0 + n`.
     fn layer_audio(&self, l: &Layer, i0: i64, n: usize) -> Vec<f32> {
         let t = sample_tick(i0, self.rate);
-        let fx: Vec<(&str, &effectcraft_project::PropGroup, Params)> = audio_effect_groups(l).map(|(id, g)| (id, g, self.params(l, g, t))).collect();
+        let fx: Vec<(&str, &artheffect_project::PropGroup, Params)> = audio_effect_groups(l).map(|(id, g)| (id, g, self.params(l, g, t))).collect();
         if fx.is_empty() {
             return self.layer_raw(l, i0, n, false);
         }
@@ -229,7 +229,7 @@ impl MixEnv<'_> {
 
     /// Run per-sample effect `id` over `buf` (comp samples from `b0`) in pieces of the parameter
     /// grid, each with the parameters at its first sample.
-    fn process_stepped(&self, l: &Layer, id: &str, g: &effectcraft_project::PropGroup, buf: &mut [f32], b0: i64) {
+    fn process_stepped(&self, l: &Layer, id: &str, g: &artheffect_project::PropGroup, buf: &mut [f32], b0: i64) {
         let step = param_step(self.rate);
         let frames = buf.len() / 2;
         let mut k = 0usize;
@@ -333,7 +333,7 @@ pub fn peak_summary(samples: &[f32], bin: usize) -> Vec<[f32; 4]> {
 
 /// Peak summary of a footage item's audio from source time 0 over `duration`, `bins_per_sec`
 /// entries per second (rendered at a low internal rate, fetched in one-second chunks).
-pub fn footage_peaks(footage: &dyn FootageSource, item: ItemId, f: &effectcraft_project::Footage, duration: Tick, bins_per_sec: u32) -> Vec<[f32; 4]> {
+pub fn footage_peaks(footage: &dyn FootageSource, item: ItemId, f: &artheffect_project::Footage, duration: Tick, bins_per_sec: u32) -> Vec<[f32; 4]> {
     let bins_per_sec = bins_per_sec.max(1);
     // Enough samples per bin to catch peaks of audible content, without decoding at full rate.
     let bin = (64usize).max(4000 / bins_per_sec as usize);
@@ -355,8 +355,8 @@ pub fn footage_peaks(footage: &dyn FootageSource, item: ItemId, f: &effectcraft_
 mod tests {
     use std::sync::Arc;
 
-    use effectcraft_project::{Footage, FootageKind, build};
-    use effectcraft_time::FrameRate;
+    use artheffect_project::{Footage, FootageKind, build};
+    use artheffect_time::FrameRate;
 
     use super::*;
     use crate::Image;
@@ -395,7 +395,7 @@ mod tests {
             color_profile: None,
             ..Default::default()
         };
-        let fid = p.add_item("x.wav", effectcraft_color::Label::SeaFoam, None, ItemKind::Footage(f));
+        let fid = p.add_item("x.wav", artheffect_color::Label::SeaFoam, None, ItemKind::Footage(f));
         let comp = Comp::new(64, 64, FrameRate::new(25, 1), Tick::from_seconds_f64(2.0));
         let mut l1 = build::layer(&mut p, &comp, "a", LayerSource::Footage { item: fid }, (0, 0), None);
         l1.in_point = Tick::from_seconds_f64(1.0);
@@ -403,11 +403,11 @@ mod tests {
         if let Some(g) = l2.props.sub_mut("audio")
             && let Some(pr) = g.get_mut("levels")
         {
-            pr.value = effectcraft_project::Value::Vec2([-6.0206, -96.0]);
+            pr.value = artheffect_project::Value::Vec2([-6.0206, -96.0]);
         }
         let mut comp = comp;
         comp.layers = vec![l1, l2].into();
-        let cid = p.add_item("C", effectcraft_color::Label::Sandstone, None, ItemKind::Comp(comp.into()));
+        let cid = p.add_item("C", artheffect_color::Label::Sandstone, None, ItemKind::Comp(comp.into()));
         assert!(comp_has_audio(&p, cid));
         let rate = 1000;
         let m = mix_comp(&p, &Dc, None, cid, Tick::from_seconds_f64(0.5), 1000, rate);
@@ -448,16 +448,16 @@ mod tests {
             duration: Tick::from_seconds_f64(10.0),
             ..Default::default()
         };
-        let fid = p.add_item("tone.wav", effectcraft_color::Label::SeaFoam, None, ItemKind::Footage(f));
+        let fid = p.add_item("tone.wav", artheffect_color::Label::SeaFoam, None, ItemKind::Footage(f));
         let base = Comp::new(64, 64, FrameRate::new(25, 1), Tick::from_seconds_f64(2.0));
         let tone = build::layer(&mut p, &base, "tone", LayerSource::Footage { item: fid }, (0, 0), None);
         let mut inner = base.clone();
         inner.layers = vec![tone].into();
-        let inner_id = p.add_item("Inner", effectcraft_color::Label::Sandstone, None, ItemKind::Comp(inner.into()));
+        let inner_id = p.add_item("Inner", artheffect_color::Label::Sandstone, None, ItemKind::Comp(inner.into()));
         let pre = build::layer(&mut p, &base, "pre", LayerSource::Comp { item: inner_id }, (64, 64), None);
         let mut outer = base.clone();
         outer.layers = vec![pre].into();
-        let outer_id = p.add_item("Outer", effectcraft_color::Label::Sandstone, None, ItemKind::Comp(outer.into()));
+        let outer_id = p.add_item("Outer", artheffect_color::Label::Sandstone, None, ItemKind::Comp(outer.into()));
         let rate = 8000;
         let t = Tick::from_seconds_f64(0.5);
         let direct = mix_comp(&p, &Tone, None, inner_id, t, 4000, rate);
@@ -478,13 +478,13 @@ mod tests {
             duration: Tick::from_seconds_f64(10.0),
             ..Default::default()
         };
-        let fid = p.add_item("tone.wav", effectcraft_color::Label::SeaFoam, None, ItemKind::Footage(f));
+        let fid = p.add_item("tone.wav", artheffect_color::Label::SeaFoam, None, ItemKind::Footage(f));
         let base = Comp::new(64, 64, FrameRate::new(25, 1), Tick::from_seconds_f64(2.0));
         let mut tone = build::layer(&mut p, &base, "tone", LayerSource::Footage { item: fid }, (0, 0), None);
         tone.stretch = stretch;
         let mut comp = base.clone();
         comp.layers = vec![tone].into();
-        let cid = p.add_item("C", effectcraft_color::Label::Sandstone, None, ItemKind::Comp(comp.into()));
+        let cid = p.add_item("C", artheffect_color::Label::Sandstone, None, ItemKind::Comp(comp.into()));
         let n = 2000usize;
         let t = Tick::from_seconds_f64(0.5);
         let m = mix_comp(&p, &Tone, None, cid, t, n, rate);

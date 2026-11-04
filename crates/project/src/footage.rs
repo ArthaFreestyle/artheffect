@@ -45,7 +45,7 @@ impl FieldOrder {
 }
 
 /// File extensions of the movie containers footage is imported from (FilmCraft reads them). The
-/// import and proxy file dialogs, the Media Browser and `effectcraft_media::is_importable` all go
+/// import and proxy file dialogs, the Media Browser and `artheffect_media::is_importable` all go
 /// by this list.
 pub const VIDEO_EXTENSIONS: &[&str] = &["mp4", "m4v", "mov", "mkv", "webm", "mxf", "avi"];
 
@@ -336,7 +336,7 @@ impl Footage {
     /// Source time as the footage's timecode: its frame `frame` from Start Timecode
     /// (`0:00:41:20`), as the Footage panel shows it.
     pub fn timecode(&self, frame: i64) -> String {
-        effectcraft_time::format_timecode_ae(frame.saturating_add(self.start_timecode.unwrap_or(0)), self.frame_rate, false)
+        artheffect_time::format_timecode_ae(frame.saturating_add(self.start_timecode.unwrap_or(0)), self.frame_rate, false)
     }
 
     /// The data format of data footage: `json`, `csv` or `tsv` (from the file extension).

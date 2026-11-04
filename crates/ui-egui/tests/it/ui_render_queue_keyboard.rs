@@ -4,28 +4,28 @@
 //! drop-downs have names and states; a drop-down opens from the keyboard and closes with the focus
 //! back on it; the Templates dialog is named.
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
+use artheffect_engine::Session;
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::dock::PanelKind;
 use egui::accesskit::Role;
 use egui::{Event, Key, Modifiers, Pos2, pos2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
 use serde_json::json;
 
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, ArtheffectApp> {
     let mut s = Session::default();
     for name in ["Alpha", "Beta", "Gamma"] {
         let comp = s.execute("comp.new", json!({"name": name, "width": 320, "height": 180, "duration": 4})).unwrap()["comp"].as_u64().unwrap();
         s.execute("renderQueue.add", json!({"comp": comp})).unwrap();
     }
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.state_mut().show_panel(PanelKind::RenderQueue);
     h.run_steps(4);
     h
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
+fn key(h: &mut Harness<'_, ArtheffectApp>, key: Key, modifiers: Modifiers) {
     for pressed in [true, false] {
         h.input_mut().events.push(Event::Key { key, physical_key: None, pressed, repeat: false, modifiers });
         h.step();
@@ -33,12 +33,12 @@ fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
     h.run_steps(3);
 }
 
-fn center(h: &Harness<'_, EffectcraftApp>, id: &str) -> Pos2 {
+fn center(h: &Harness<'_, ArtheffectApp>, id: &str) -> Pos2 {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).clone();
     pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0)
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, id: &str) {
     let p = center(h, id);
     h.input_mut().events.push(Event::PointerMoved(p));
     h.step();
@@ -49,15 +49,15 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
     h.run_steps(3);
 }
 
-fn focused(h: &Harness<'_, EffectcraftApp>) -> Option<(Role, String)> {
+fn focused(h: &Harness<'_, ArtheffectApp>) -> Option<(Role, String)> {
     h.root().children_recursive().find(|n| n.is_focused()).map(|n| (n.accesskit_node().role(), n.accesskit_node().label().unwrap_or_default()))
 }
 
-fn queue_len(h: &Harness<'_, EffectcraftApp>) -> usize {
+fn queue_len(h: &Harness<'_, ArtheffectApp>) -> usize {
     h.state().session.project.render_queue.len()
 }
 
-fn row_name(h: &Harness<'_, EffectcraftApp>, n: usize) -> String {
+fn row_name(h: &Harness<'_, ArtheffectApp>, n: usize) -> String {
     h.query_all_by_role(Role::TreeItem).map(|r| r.accesskit_node().label().unwrap_or_default()).find(|l| l.starts_with(&format!("{n}. "))).unwrap_or_default()
 }
 
@@ -96,7 +96,7 @@ fn arrows_home_end_right_left_enter_and_delete_work_the_rows() {
     h.get_by_role_and_label(Role::TreeItem, &row_name(&h, 1)).focus();
     h.run_steps(3);
     assert_eq!(focused(&h).map(|f| f.1), Some(row_name(&h, 1)));
-    let selected = |h: &Harness<'_, EffectcraftApp>| {
+    let selected = |h: &Harness<'_, ArtheffectApp>| {
         h.query_all_by_role(Role::TreeItem)
             .filter(|n| n.accesskit_node().is_selected() == Some(true))
             .map(|n| n.accesskit_node().label().unwrap_or_default())
@@ -185,7 +185,7 @@ fn the_check_box_and_the_buttons_work_from_the_keyboard() {
 fn the_templates_dialog_is_named() {
     let mut h = harness();
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "app.templates", json!({"kind": "renderSettings"})).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, "app.templates", json!({"kind": "renderSettings"})).unwrap();
     h.run_steps(4);
     assert!(h.query_by_role_and_label(Role::ComboBox, "Settings Name").is_some());
     assert!(h.query_by_role_and_label(Role::TextInput, "template name").is_some());

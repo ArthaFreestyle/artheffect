@@ -3,9 +3,9 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use effectcraft_media::{MediaPool, is_importable, probe_bytes};
-use effectcraft_project::{AlphaMode, Footage, FootageKind};
-use effectcraft_time::Tick;
+use artheffect_media::{MediaPool, is_importable, probe_bytes};
+use artheffect_project::{AlphaMode, Footage, FootageKind};
+use artheffect_time::Tick;
 
 /// A classic 2×2 TGA without a footer. True-colour pixels are stored BGR(A); RLE
 /// packets repeat each row's colour twice. `pixels` is always in top-down RGBA order.

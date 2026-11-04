@@ -1,6 +1,6 @@
 //! Wiggler, Smoother and Motion Sketch (`keys.wiggle`, `keys.smooth`, `motion.sketch`).
 
-use effectcraft_keyframe::evaluate;
+use artheffect_keyframe::evaluate;
 use serde_json::json;
 
 use crate::tests::timeline::{animate, prop, setup};
@@ -20,7 +20,7 @@ fn selection_command_skips_locked_keys(command: &str, path: &str, values: [serde
         .into_iter()
         .flat_map(|layer| {
             let pr = prop(&s, layer, path);
-            pr.keys.into_iter().map(move |key| crate::KeyRef { layer: effectcraft_project::LayerId(layer), prop: pr.uid, time: key.time })
+            pr.keys.into_iter().map(move |key| crate::KeyRef { layer: artheffect_project::LayerId(layer), prop: pr.uid, time: key.time })
         })
         .collect();
     s.execute("layer.setSwitch", json!({"layers": [locked], "switch": "locked", "value": true})).unwrap();

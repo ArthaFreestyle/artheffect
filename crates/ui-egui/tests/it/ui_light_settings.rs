@@ -1,28 +1,28 @@
 //! Light Settings dialog (Layer ▸ New ▸ Light, Layer Settings on a light): every light type the
 //! engine has, Environment included, and an existing light's type kept when it's reopened (#1588).
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::{Layer, LayerId, LayerSource, LightKind};
-use effectcraft_ui_egui::{Dialog, EffectcraftApp};
+use artheffect_engine::Session;
+use artheffect_engine::project::{Layer, LayerId, LayerSource, LightKind};
+use artheffect_ui_egui::{ArtheffectApp, Dialog};
 use egui_kittest::{Harness, kittest::Queryable as _};
 use serde_json::{Value, json};
 
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, ArtheffectApp> {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Lights", "width": 640, "height": 360, "duration": 2})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.step();
     h
 }
 
 /// An automation element's rect in the last frame drawn (a dialog settles its place in its
 /// first frames, so the frame before can be stale).
-fn element(h: &Harness<'_, EffectcraftApp>, id: &str) -> Option<effectcraft_ui_egui::automation::Element> {
+fn element(h: &Harness<'_, ArtheffectApp>, id: &str) -> Option<artheffect_ui_egui::automation::Element> {
     let auto = &h.state().auto;
     auto.elements.iter().chain(auto.previous.iter()).find(|e| e.id == id).cloned()
 }
 
-fn click_id(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click_id(h: &mut Harness<'_, ArtheffectApp>, id: &str) {
     let [x, y, w, hh] = element(h, id).unwrap_or_else(|| panic!("{id} is registered")).rect;
     let p = egui::pos2(x + w / 2.0, y + hh / 2.0);
     h.input_mut().events.push(egui::Event::PointerMoved(p));
@@ -33,47 +33,47 @@ fn click_id(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
     h.run_steps(3);
 }
 
-fn invoke(h: &mut Harness<'_, EffectcraftApp>, id: &str, params: Value) {
+fn invoke(h: &mut Harness<'_, ArtheffectApp>, id: &str, params: Value) {
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, id, params).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, id, params).unwrap();
     h.run_steps(2);
 }
 
 /// Picks the dialog's Light Type `kind` from its menu.
-fn choose(h: &mut Harness<'_, EffectcraftApp>, kind: LightKind) {
+fn choose(h: &mut Harness<'_, ArtheffectApp>, kind: LightKind) {
     click_id(h, "dialog.light.type");
     let i = LightKind::ALL.iter().position(|k| *k == kind).unwrap();
     click_id(h, &format!("dialog.light.typeItem.{i}"));
 }
 
-fn ok(h: &mut Harness<'_, EffectcraftApp>) {
+fn ok(h: &mut Harness<'_, ArtheffectApp>) {
     click_id(h, "dialog.light.ok");
     assert_eq!(h.state().dialog, None);
 }
 
-fn layer(h: &Harness<'_, EffectcraftApp>, id: u64) -> Layer {
+fn layer(h: &Harness<'_, ArtheffectApp>, id: u64) -> Layer {
     h.state().session.active_comp().unwrap().layer(LayerId(id)).unwrap().clone()
 }
 
-fn kind(h: &Harness<'_, EffectcraftApp>, id: u64) -> LightKind {
+fn kind(h: &Harness<'_, ArtheffectApp>, id: u64) -> LightKind {
     match layer(h, id).source {
         LayerSource::Light { kind } => kind,
         other => panic!("not a light: {other:?}"),
     }
 }
 
-fn last_layer(h: &Harness<'_, EffectcraftApp>) -> u64 {
+fn last_layer(h: &Harness<'_, ArtheffectApp>) -> u64 {
     h.state().session.active_comp().unwrap().layers.iter().map(|l| l.id.0).max().unwrap()
 }
 
 /// Opens Light Settings for an existing light, as Layer Settings does.
-fn reopen(h: &mut Harness<'_, EffectcraftApp>, id: u64) {
+fn reopen(h: &mut Harness<'_, ArtheffectApp>, id: u64) {
     invoke(h, "layer.settings", json!({"layer": id}));
     assert_eq!(h.state().dialog, Some(Dialog::LightSettings));
 }
 
 /// An Environment light lit from a solid, its image turned 30°.
-fn environment_light(h: &mut Harness<'_, EffectcraftApp>) -> (u64, u64) {
+fn environment_light(h: &mut Harness<'_, ArtheffectApp>) -> (u64, u64) {
     let s = &mut h.state_mut().session;
     let sky = s.execute("layer.newSolid", json!({"width": 256, "height": 128, "name": "Sky"})).unwrap()["layer"].as_u64().unwrap();
     let env = s.execute("layer.newLight", json!({"kind": "Environment", "name": "Env", "intensity": 80})).unwrap()["layer"].as_u64().unwrap();

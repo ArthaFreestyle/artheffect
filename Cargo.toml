@@ -8,7 +8,7 @@ version = "0.21.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 rust-version = "1.95"
-repository = "https://github.com/storytold/effectcraft"
+repository = "https://github.com/ArthaFreestyle/artheffect"
 
 [workspace.dependencies]
 craft-pdf = { git = "https://github.com/storytold/craft-libs", rev = "92d392cff132eaf53e13afff77f38b5c11b73aa0", version = "=0.1.0", default-features = false, features = ["read"] }
@@ -18,39 +18,39 @@ craft-ecproj-format = { version = "0.1.0", git = "https://github.com/storytold/c
 # craft-update: app-specific pretend versions apply to startup and manual checks.
 craft-update = { git = "https://github.com/storytold/craft-libs", version = "=0.1.0", rev = "c5a1cbfb5f9049f9270955caffb5bee5997aebf7", features = ["egui"] }
 # internal
-effectcraft-time = { path = "crates/time" }
-effectcraft-geom = { path = "crates/geom" }
-effectcraft-color = { path = "crates/color" }
-effectcraft-raster = { path = "crates/raster" }
-effectcraft-path = { path = "crates/path" }
-effectcraft-keyframe = { path = "crates/keyframe" }
-effectcraft-project = { path = "crates/project" }
-effectcraft-text = { path = "crates/text" }
-effectcraft-effects = { path = "crates/effects" }
-effectcraft-track = { path = "crates/track" }
-effectcraft-segment = { path = "crates/segment" }
-effectcraft-sam2 = { path = "crates/sam2" }
-effectcraft-model = { path = "crates/model" }
-effectcraft-render = { path = "crates/render" }
-effectcraft-gpu = { path = "crates/gpu" }
-effectcraft-media = { path = "crates/media" }
-effectcraft-export = { path = "crates/export" }
-effectcraft-expr = { path = "crates/expr" }
-effectcraft-lottie = { path = "crates/lottie" }
-effectcraft-interchange = { path = "crates/interchange" }
-effectcraft-pdf = { path = "crates/pdf" }
-effectcraft-psd = { path = "crates/psd" }
-effectcraft-vp9enc = { path = "crates/vp9enc" }
-effectcraft-svg = { path = "crates/svg" }
-effectcraft-engine = { path = "crates/engine" }
-effectcraft-host = { path = "crates/host" }
-effectcraft-ui-egui = { path = "crates/ui-egui" }
-effectcraft-automation = { path = "crates/automation" }
-effectcraft-opusenc = { path = "crates/opusenc" }
-effectcraft-script = { path = "crates/script" }
-effectcraft-hevcenc = { path = "crates/hevcenc" }
-effectcraft-av1enc = { path = "crates/av1enc" }
-effectcraft-plugin = { path = "crates/plugin" }
+artheffect-time = { path = "crates/time" }
+artheffect-geom = { path = "crates/geom" }
+artheffect-color = { path = "crates/color" }
+artheffect-raster = { path = "crates/raster" }
+artheffect-path = { path = "crates/path" }
+artheffect-keyframe = { path = "crates/keyframe" }
+artheffect-project = { path = "crates/project" }
+artheffect-text = { path = "crates/text" }
+artheffect-effects = { path = "crates/effects" }
+artheffect-track = { path = "crates/track" }
+artheffect-segment = { path = "crates/segment" }
+artheffect-sam2 = { path = "crates/sam2" }
+artheffect-model = { path = "crates/model" }
+artheffect-render = { path = "crates/render" }
+artheffect-gpu = { path = "crates/gpu" }
+artheffect-media = { path = "crates/media" }
+artheffect-export = { path = "crates/export" }
+artheffect-expr = { path = "crates/expr" }
+artheffect-lottie = { path = "crates/lottie" }
+artheffect-interchange = { path = "crates/interchange" }
+artheffect-pdf = { path = "crates/pdf" }
+artheffect-psd = { path = "crates/psd" }
+artheffect-vp9enc = { path = "crates/vp9enc" }
+artheffect-svg = { path = "crates/svg" }
+artheffect-engine = { path = "crates/engine" }
+artheffect-host = { path = "crates/host" }
+artheffect-ui-egui = { path = "crates/ui-egui" }
+artheffect-automation = { path = "crates/automation" }
+artheffect-opusenc = { path = "crates/opusenc" }
+artheffect-script = { path = "crates/script" }
+artheffect-hevcenc = { path = "crates/hevcenc" }
+artheffect-av1enc = { path = "crates/av1enc" }
+artheffect-plugin = { path = "crates/plugin" }
 
 # foundation
 thiserror = "2"
@@ -95,10 +95,10 @@ filmcraft-isobmff = { git = "https://github.com/storytold/filmcraft", rev = "09a
 # container headers read for AAC channel layouts (crates/media)
 filmcraft-matroska = { git = "https://github.com/storytold/filmcraft", rev = "09aaf9bf15d510eda1c413c0ccabb1d7e08b41c5" }
 filmcraft-mpegts = { git = "https://github.com/storytold/filmcraft", rev = "09aaf9bf15d510eda1c413c0ccabb1d7e08b41c5" }
-# decoder used as the round-trip oracle of effectcraft-opusenc (crates/export dev-dependency)
+# decoder used as the round-trip oracle of artheffect-opusenc (crates/export dev-dependency)
 filmcraft-opus = { git = "https://github.com/storytold/filmcraft", rev = "09aaf9bf15d510eda1c413c0ccabb1d7e08b41c5" }
 filmcraft-vp9 = { git = "https://github.com/storytold/filmcraft", rev = "09aaf9bf15d510eda1c413c0ccabb1d7e08b41c5" }
-# decoders used as the round-trip oracles of effectcraft-hevcenc / effectcraft-av1enc (dev-dependencies only)
+# decoders used as the round-trip oracles of artheffect-hevcenc / artheffect-av1enc (dev-dependencies only)
 filmcraft-hevc = { git = "https://github.com/storytold/filmcraft", rev = "09aaf9bf15d510eda1c413c0ccabb1d7e08b41c5" }
 filmcraft-av1 = { git = "https://github.com/storytold/filmcraft", rev = "09aaf9bf15d510eda1c413c0ccabb1d7e08b41c5" }
 # timeline interchange (EDL, FCP7 XML, FCPXML, OTIO) for Premiere Pro interop (crates/interchange only)
@@ -168,40 +168,40 @@ inherits = "dev"
 debug = true
 
 # Pixel hot loops: keep debug builds interactive.
-[profile.dev.package.effectcraft-raster]
+[profile.dev.package.artheffect-raster]
 opt-level = 3
 
-[profile.dev.package.effectcraft-render]
+[profile.dev.package.artheffect-render]
 opt-level = 3
 
-[profile.dev.package.effectcraft-gpu]
+[profile.dev.package.artheffect-gpu]
 opt-level = 3
 
-[profile.dev.package.effectcraft-effects]
+[profile.dev.package.artheffect-effects]
 opt-level = 3
 
-[profile.dev.package.effectcraft-track]
+[profile.dev.package.artheffect-track]
 opt-level = 3
 
-[profile.dev.package.effectcraft-path]
+[profile.dev.package.artheffect-path]
 opt-level = 3
 
-[profile.dev.package.effectcraft-media]
+[profile.dev.package.artheffect-media]
 opt-level = 3
 
-[profile.dev.package.effectcraft-opusenc]
+[profile.dev.package.artheffect-opusenc]
 opt-level = 3
 
-[profile.dev.package.effectcraft-export]
+[profile.dev.package.artheffect-export]
 opt-level = 3
 
-[profile.dev.package.effectcraft-vp9enc]
+[profile.dev.package.artheffect-vp9enc]
 opt-level = 3
 
-[profile.dev.package.effectcraft-hevcenc]
+[profile.dev.package.artheffect-hevcenc]
 opt-level = 3
 
-[profile.dev.package.effectcraft-av1enc]
+[profile.dev.package.artheffect-av1enc]
 opt-level = 3
 
 # FilmCraft codec hot loops (same settings as FilmCraft's own workspace).

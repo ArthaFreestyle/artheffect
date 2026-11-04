@@ -23,7 +23,7 @@ macro_rules! page {
 }
 
 page!(General {
-    /// Interface language: `system` (the operating system's, where EffectCraft has it, else
+    /// Interface language: `system` (the operating system's, where Artheffect has it, else
     /// English), or a language code from `LANGUAGES`.
     language: String = "system".into(),
     /// Levels of Undo (1–99).
@@ -74,7 +74,7 @@ page!(AutoSave {
     enabled: bool = true,
     interval_minutes: u32 = 20,
     max_versions: u32 = 5,
-    /// `nextToProject` (an "EffectCraft Auto-Save" folder beside the project) or `custom`.
+    /// `nextToProject` (an "Artheffect Auto-Save" folder beside the project) or `custom`.
     location: String = "nextToProject".into(),
     folder: String = String::new(),
     save_on_render_start: bool = false,
@@ -223,7 +223,7 @@ page!(
     /// Settings ▸ Roto Brush.
     RotoPrefs {
         /// The segmentation model Roto Brush 2.0 / 3.0 use: `classical` (built in) or a model id
-        /// from `effectcraft_segment::MODELS` (once installed).
+        /// from `artheffect_segment::MODELS` (once installed).
         model: String = "classical".into(),
     }
 );
@@ -232,7 +232,7 @@ page!(
     /// Settings ▸ Face Tracking.
     FacePrefs {
         /// The model Track Mask ▸ Face Tracking uses: `classical` (built in) or a model id from
-        /// `effectcraft_segment::MODELS` (once installed).
+        /// `artheffect_segment::MODELS` (once installed).
         model: String = "classical".into(),
     }
 );

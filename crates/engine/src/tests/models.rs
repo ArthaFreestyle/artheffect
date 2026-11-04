@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use effectcraft_segment::Task;
+use artheffect_segment::Task;
 use serde_json::json;
 
 use crate::Session;
@@ -90,22 +90,22 @@ fn models_are_listed_chosen_and_verified() {
     }
     assert!(s.models.face().is_none());
     assert_eq!(crate::prefs::page_id("Face Tracking"), Some("face"));
-    // With the real weights (EFFECTCRAFT_MOBILESAM=path/to/mobile_sam.pt): install, load, use.
-    if let Ok(path) = std::env::var("EFFECTCRAFT_MOBILESAM") {
+    // With the real weights (ARTHEFFECT_MOBILESAM=path/to/mobile_sam.pt): install, load, use.
+    if let Ok(path) = std::env::var("ARTHEFFECT_MOBILESAM") {
         s.execute_checked("roto.model.install", json!({"path": path})).unwrap();
         wait_loaded(&mut s, Task::Mask);
         assert_eq!(s.models.status(Task::Mask).active.as_deref(), Some("mobilesam"));
         // Roto Brush 3.0 (the default version) now segments with it.
-        let params = crate::effects::Params { values: [("version".to_string(), effectcraft_keyframe::Value::Enum(2))].into_iter().collect() };
+        let params = crate::effects::Params { values: [("version".to_string(), artheffect_keyframe::Value::Enum(2))].into_iter().collect() };
         assert_eq!(crate::effects::roto::model_for(&params).map(|m| m.info().id), Some("mobilesam"));
         s.execute_checked("roto.model.select", json!({"id": "classical"})).unwrap();
         assert!(crate::effects::roto::model_for(&params).is_none());
     }
     #[cfg(not(target_arch = "wasm32"))]
     verify_installed_sam2_sizes(&mut s);
-    // EFFECTCRAFT_FACE_LANDMARKER=path/to/face_landmarker.task: installed with its notice,
+    // ARTHEFFECT_FACE_LANDMARKER=path/to/face_landmarker.task: installed with its notice,
     // loaded for face tracking, dropped when the classic tracker is chosen, removed.
-    if let Ok(path) = std::env::var("EFFECTCRAFT_FACE_LANDMARKER") {
+    if let Ok(path) = std::env::var("ARTHEFFECT_FACE_LANDMARKER") {
         let r = s.execute_checked("face.model.install", json!({"path": path})).unwrap();
         assert_eq!(r["id"], "mediapipe-face");
         let dir = s.models_dir().unwrap();
@@ -123,14 +123,14 @@ fn models_are_listed_chosen_and_verified() {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn verify_installed_sam2_sizes(s: &mut Session) {
-    // The SAM 2.1 sizes, each from its own file (EFFECTCRAFT_SAM2, _SAM2_SMALL, _SAM2_BASE_PLUS, _SAM2_LARGE =
+    // The SAM 2.1 sizes, each from its own file (ARTHEFFECT_SAM2, _SAM2_SMALL, _SAM2_BASE_PLUS, _SAM2_LARGE =
     // path/to/model.safetensors of facebook/sam2.1-hiera-*): installed with its notice, loaded (verified, native
     // only) and used by Roto Brush 3.0, then dropped and removed.
     for (var, id) in [
-        ("EFFECTCRAFT_SAM2", "sam2.1-hiera-tiny"),
-        ("EFFECTCRAFT_SAM2_SMALL", "sam2.1-hiera-small"),
-        ("EFFECTCRAFT_SAM2_BASE_PLUS", "sam2.1-hiera-base-plus"),
-        ("EFFECTCRAFT_SAM2_LARGE", "sam2.1-hiera-large"),
+        ("ARTHEFFECT_SAM2", "sam2.1-hiera-tiny"),
+        ("ARTHEFFECT_SAM2_SMALL", "sam2.1-hiera-small"),
+        ("ARTHEFFECT_SAM2_BASE_PLUS", "sam2.1-hiera-base-plus"),
+        ("ARTHEFFECT_SAM2_LARGE", "sam2.1-hiera-large"),
     ] {
         let Ok(path) = std::env::var(var) else { continue };
         let r = s.execute_checked("roto.model.install", json!({"path": path})).unwrap();
@@ -141,7 +141,7 @@ fn verify_installed_sam2_sizes(s: &mut Session) {
         s.execute_checked("roto.model.select", json!({"id": id})).unwrap();
         wait_loaded(s, Task::Mask);
         assert_eq!(s.models.status(Task::Mask).active.as_deref(), Some(id), "{var}");
-        let params = crate::effects::Params { values: [("version".to_string(), effectcraft_keyframe::Value::Enum(2))].into_iter().collect() };
+        let params = crate::effects::Params { values: [("version".to_string(), artheffect_keyframe::Value::Enum(2))].into_iter().collect() };
         assert_eq!(crate::effects::roto::model_for(&params).map(|m| m.info().id), Some(id));
         // the list says it is installed, and exactly one size is recommended
         let list = s.execute_checked("roto.models", json!({})).unwrap();
@@ -159,13 +159,13 @@ fn verify_installed_sam2_sizes(s: &mut Session) {
 /// and a model that does not track use is never unloaded.
 #[test]
 fn an_idle_roto_model_is_unloaded() {
-    use effectcraft_segment::{Loaded, MaskModel, ModelInfo, Prompt};
+    use artheffect_segment::{Loaded, MaskModel, ModelInfo, Prompt};
     struct Fake(Option<f64>);
     impl MaskModel for Fake {
         fn info(&self) -> &'static ModelInfo {
-            &effectcraft_segment::SAM2_TINY
+            &artheffect_segment::SAM2_TINY
         }
-        fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &Prompt) -> effectcraft_segment::Result<Vec<f32>> {
+        fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &Prompt) -> artheffect_segment::Result<Vec<f32>> {
             Err("no weights".into())
         }
         fn idle_secs(&self) -> Option<f64> {
@@ -195,13 +195,13 @@ fn an_idle_roto_model_is_unloaded() {
 /// A model that finishes loading after the choice changed is dropped, not activated.
 #[test]
 fn a_load_for_an_old_choice_does_not_activate() {
-    use effectcraft_segment::{Loaded, MaskModel, ModelInfo, Prompt};
+    use artheffect_segment::{Loaded, MaskModel, ModelInfo, Prompt};
     struct Fake;
     impl MaskModel for Fake {
         fn info(&self) -> &'static ModelInfo {
-            &effectcraft_segment::SAM2_TINY
+            &artheffect_segment::SAM2_TINY
         }
-        fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &Prompt) -> effectcraft_segment::Result<Vec<f32>> {
+        fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &Prompt) -> artheffect_segment::Result<Vec<f32>> {
             Err("no weights".into())
         }
     }
@@ -228,7 +228,7 @@ fn a_load_for_an_old_choice_does_not_activate() {
 fn reloading_for_a_stroke_does_not_block_or_retry_a_failed_load() {
     super::roto::hold_roto_cache_test_lock();
     let (mut s, d) = session("reload-failed");
-    let info = effectcraft_segment::info("mobilesam").unwrap();
+    let info = artheffect_segment::info("mobilesam").unwrap();
     let dir = s.models_dir().unwrap();
     std::fs::create_dir_all(&dir).unwrap();
     // the right size, the wrong content: found as installed, then fails to load
@@ -254,16 +254,16 @@ fn reloading_for_a_stroke_does_not_block_or_retry_a_failed_load() {
     let _ = std::fs::remove_dir_all(d);
 }
 
-/// With `EFFECTCRAFT_DOWNLOAD_SIZE=mobilesam` (or another downloadable registry id): the in-app
+/// With `ARTHEFFECT_DOWNLOAD_SIZE=mobilesam` (or another downloadable registry id): the in-app
 /// download verifies and loads the file. SAM 2 must refuse until a storytold mirror is available.
 /// Skipped without the variable: downloadable entries need the network and large files.
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn downloading_a_size_installs_and_loads_it() {
-    let Ok(id) = std::env::var("EFFECTCRAFT_DOWNLOAD_SIZE") else { return };
+    let Ok(id) = std::env::var("ARTHEFFECT_DOWNLOAD_SIZE") else { return };
     crate::tests::roto::hold_roto_cache_test_lock();
     let (mut s, d) = session("download");
-    let info = effectcraft_segment::info(&id).unwrap();
+    let info = artheffect_segment::info(&id).unwrap();
     if info.url.is_empty() {
         assert!(s.execute_checked("roto.model.download", json!({"id": id, "wait": true})).unwrap_err().to_string().contains("Install from File"));
         return;

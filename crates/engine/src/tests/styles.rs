@@ -46,7 +46,7 @@ fn add_remove_show_all_with_undo() {
     assert_eq!(styles_of(&s, a).len(), 2);
     s.execute("layer.style.removeAll", json!({})).unwrap();
     assert!(styles_of(&s, a).is_empty());
-    let layer = s.active_comp().unwrap().layer(effectcraft_project::LayerId(a)).unwrap().clone();
+    let layer = s.active_comp().unwrap().layer(artheffect_project::LayerId(a)).unwrap().clone();
     assert!(layer.layer_styles().is_none());
     s.execute("edit.undo", json!({})).unwrap();
     assert_eq!(styles_of(&s, a).len(), 2);
@@ -63,7 +63,7 @@ fn add_remove_show_all_with_undo() {
     s.execute("layer.style.removeAll", json!({})).unwrap();
     s.execute("layer.style.colorOverlay", json!({})).unwrap();
     s.execute("layer.style.remove", json!({"layer": a, "style": "Color Overlay"})).unwrap();
-    assert!(s.active_comp().unwrap().layer(effectcraft_project::LayerId(a)).unwrap().layer_styles().is_none());
+    assert!(s.active_comp().unwrap().layer(artheffect_project::LayerId(a)).unwrap().layer_styles().is_none());
     // Convert to Editable Styles is unavailable without PSD styles.
     assert!(!s.is_enabled("layer.style.convertToEditable"));
 }
@@ -103,7 +103,7 @@ fn styles_render_and_round_trip() {
     let cid = s.active_comp_id().unwrap();
     // Cached session render == uncached render, and the stroke shows outside the 40×40 square.
     let img = s.render(cid, s.time(), Default::default());
-    let r = effectcraft_render::render_frame(&s.project, cid, s.time(), 1.0);
+    let r = artheffect_render::render_frame(&s.project, cid, s.time(), 1.0);
     assert_eq!(img.data, r.data);
     assert!(img.get(123, 50)[0] > 0.98 && img.get(123, 50)[1] < 0.02, "{:?}", img.get(123, 50));
     // Change the colour through a command: the cache must not serve stale pixels.
@@ -113,7 +113,7 @@ fn styles_render_and_round_trip() {
     // Serde round trip keeps styles and the comp's Global Light.
     s.execute("layer.style.globalLight", json!({"angle": 33})).unwrap();
     let json = serde_json::to_string(&*s.project).unwrap();
-    let back: effectcraft_project::Project = serde_json::from_str(&json).unwrap();
+    let back: artheffect_project::Project = serde_json::from_str(&json).unwrap();
     assert_eq!(back, *s.project);
     assert_eq!(back.comp(cid).unwrap().global_light.angle.value.as_f64(), 33.0);
 }
@@ -127,7 +127,7 @@ fn blending_options_alone_create_the_group_in_one_undo_step() {
     let undo = s.history.undo.len();
     let r = s.execute("layer.style.add", json!({"layers": [a], "style": "blendingOptions", "merge": "bo"})).unwrap();
     assert_eq!(r["styles"][0]["style"], "blendingOptions", "{r}");
-    let layer = s.active_comp().unwrap().layer(effectcraft_project::LayerId(a)).unwrap().clone();
+    let layer = s.active_comp().unwrap().layer(artheffect_project::LayerId(a)).unwrap().clone();
     let g = layer.layer_styles().expect("the group is created");
     assert!(g.sub("blendingOptions").is_some());
     assert!(styles_of(&s, a).is_empty(), "no style is added with it");
@@ -135,14 +135,14 @@ fn blending_options_alone_create_the_group_in_one_undo_step() {
     s.execute("prop.set", json!({"layer": a, "path": "layerStyles/blendingOptions/advancedBlending/fillOpacity", "value": 30, "merge": "bo"})).unwrap();
     assert_eq!(s.history.undo.len(), undo + 1, "creating the group and setting the value are one step");
     // The other layer is untouched, and Global Light is the comp's.
-    assert!(s.active_comp().unwrap().layer(effectcraft_project::LayerId(b)).unwrap().layer_styles().is_none());
+    assert!(s.active_comp().unwrap().layer(artheffect_project::LayerId(b)).unwrap().layer_styles().is_none());
     let gl = s.execute("prop.get", json!({"layer": a, "path": "layerStyles/blendingOptions/globalLightAngle"})).unwrap();
     assert!(gl.to_string().contains("120"), "{gl}");
     s.execute("edit.undo", json!({})).unwrap();
-    assert!(s.active_comp().unwrap().layer(effectcraft_project::LayerId(a)).unwrap().layer_styles().is_none(), "one undo removes the group");
+    assert!(s.active_comp().unwrap().layer(artheffect_project::LayerId(a)).unwrap().layer_styles().is_none(), "one undo removes the group");
     // By display name too.
     s.execute("layer.style.add", json!({"layers": [a], "style": "Blending Options"})).unwrap();
-    assert!(s.active_comp().unwrap().layer(effectcraft_project::LayerId(a)).unwrap().layer_styles().is_some());
+    assert!(s.active_comp().unwrap().layer(artheffect_project::LayerId(a)).unwrap().layer_styles().is_some());
 }
 
 /// Removing the last style keeps a Layer Styles group whose Blending Options were changed (a
@@ -163,5 +163,5 @@ fn removing_the_last_style_keeps_changed_blending_options() {
     s.execute("layer.style.add", json!({"layers": [b], "style": "blendingOptions"})).unwrap();
     s.execute("layer.style.dropShadow", json!({"layers": [b]})).unwrap();
     s.execute("layer.style.remove", json!({"layer": b, "style": "dropShadow"})).unwrap();
-    assert!(s.active_comp().unwrap().layer(effectcraft_project::LayerId(b)).unwrap().layer_styles().is_none());
+    assert!(s.active_comp().unwrap().layer(artheffect_project::LayerId(b)).unwrap().layer_styles().is_none());
 }

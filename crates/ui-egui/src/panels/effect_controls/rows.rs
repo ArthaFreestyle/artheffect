@@ -1,7 +1,7 @@
 use super::common::{Actions, DIAL_ROW, PARAM_NAME_X, ROW, TREE_INDENT, gesture_key};
 use super::{
-    Align2, Color32, EffectcraftApp, EvalCtx, FxPick, GroupKind, Icon, Layer, Node, ParamUi, PropGroup, Property, Rect, Sense, Stroke, Tokens, Value, fw,
-    icons, json, pos2, vec2, widgets,
+    Align2, ArtheffectApp, Color32, EvalCtx, FxPick, GroupKind, Icon, Layer, Node, ParamUi, PropGroup, Property, Rect, Sense, Stroke, Tokens, Value, fw, icons,
+    json, pos2, vec2, widgets,
 };
 
 fn triangle(p: &egui::Painter, c: egui::Pos2, left: bool, col: Color32) {
@@ -17,7 +17,7 @@ struct KeyNav {
 }
 
 /// ◀ ◆ ▶ at the right end of an animated parameter's row.
-fn key_navigator(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, nav: KeyNav, prop: &Property, r: Rect, actions: &mut Actions) {
+fn key_navigator(app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, nav: KeyNav, prop: &Property, r: Rect, actions: &mut Actions) {
     let KeyNav { layer_id, on_key } = nav;
     let t = app.tokens;
     let cy = r.center().y;
@@ -56,7 +56,7 @@ fn key_navigator(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter,
 
 /// Toggle a viewer pick (crosshair / eyedropper) for a parameter (also the Timeline's colour
 /// eyedroppers).
-pub(crate) fn toggle_pick(app: &mut EffectcraftApp, kind: &str, layer: &Layer, prop: &Property) {
+pub(crate) fn toggle_pick(app: &mut ArtheffectApp, kind: &str, layer: &Layer, prop: &Property) {
     let pick = FxPick { kind: kind.into(), layer: layer.id.0, prop: prop.uid, name: prop.name.clone() };
     if app.ui.fx_pick.as_ref() == Some(&pick) {
         app.ui.fx_pick = None;
@@ -112,7 +112,7 @@ impl PropCx<'_> {
         actions.push(("prop.set".into(), json!({"layer": layer.id.0, "prop": uid, "value": v, "merge": merge, "selected": true, "offset": scrub})))
     }
 
-    fn twirl_open(&self, app: &mut EffectcraftApp, ui: &mut egui::Ui) {
+    fn twirl_open(&self, app: &mut ArtheffectApp, ui: &mut egui::Ui) {
         let PropCx { swr, cy, uid, prop, t, .. } = self;
         let (cy, uid) = (*cy, *uid);
         let open = app.ui.fx_slider_open.contains(&uid);
@@ -132,7 +132,7 @@ impl PropCx<'_> {
 /// value fields of a vector, one per dimension, for the pick whip.
 #[allow(clippy::too_many_arguments)]
 fn prop_row(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -235,7 +235,7 @@ fn prop_row(
     dims
 }
 
-fn value_mask(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
+fn value_mask(app: &mut ArtheffectApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
     let Value::Scalar(v) = value else {
         return;
     };
@@ -258,7 +258,7 @@ fn value_mask(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: &
     }
 }
 
-fn value_angle(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
+fn value_angle(app: &mut ArtheffectApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
     let Value::Scalar(v) = value else {
         return;
     };
@@ -272,7 +272,7 @@ fn value_angle(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: 
     cx.twirl_open(app, ui);
 }
 
-fn value_scalar(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
+fn value_scalar(app: &mut ArtheffectApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
     let Value::Scalar(v) = value else {
         return;
     };
@@ -304,7 +304,7 @@ fn value_scalar(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value:
     }
 }
 
-fn value_vector(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) -> Vec<Rect> {
+fn value_vector(app: &mut ArtheffectApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) -> Vec<Rect> {
     let mut dims = vec![];
     let PropCx { t, uid, cy, vx, layer, prop, .. } = *cx;
     let c = value.components();
@@ -349,7 +349,7 @@ fn value_vector(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value:
     dims
 }
 
-fn value_color(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
+fn value_color(app: &mut ArtheffectApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
     let Value::Color(c) = value else {
         return;
     };
@@ -375,7 +375,7 @@ fn value_color(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: 
     }
 }
 
-fn value_toggle(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
+fn value_toggle(app: &mut ArtheffectApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
     let Value::Bool(b) = value else {
         return;
     };
@@ -388,7 +388,7 @@ fn value_toggle(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value:
     app.auto.add(&format!("effectControls.prop.{uid}.value"), cr, &prop.name);
 }
 
-fn value_popup(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
+fn value_popup(app: &mut ArtheffectApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
     let Value::Enum(i) = value else {
         return;
     };
@@ -407,7 +407,7 @@ fn value_popup(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: 
     }
 }
 
-fn value_layer_ref(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
+fn value_layer_ref(app: &mut ArtheffectApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
     let Value::Layer(l) = value else {
         return;
     };
@@ -420,9 +420,9 @@ fn value_layer_ref(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, val
         }
         app.auto.add(&format!("effectControls.prop.{uid}.value"), dr, &prop.name);
         // Source / Masks / Effects & Masks (the hidden companion parameter).
-        if let Some(src) = group.get(&effectcraft_engine::effects::layer_source_id(&prop.match_id)) {
+        if let Some(src) = group.get(&artheffect_engine::effects::layer_source_id(&prop.match_id)) {
             let si = src.value.as_enum() as usize;
-            let opts: Vec<String> = effectcraft_engine::effects::LAYER_SOURCE_OPTIONS.iter().map(|s| s.to_string()).collect();
+            let opts: Vec<String> = artheffect_engine::effects::LAYER_SOURCE_OPTIONS.iter().map(|s| s.to_string()).collect();
             let sr = Rect::from_min_size(pos2(dr.max.x + 6.0, cy - 9.0), vec2(((r.max.x - dr.max.x) - 64.0).clamp(70.0, 120.0), 18.0));
             let spop = egui::Id::unique(("ec-lspop", uid));
             if widgets::dropdown(ui, sr, opts.get(si).map(String::as_str).unwrap_or(""), &t, egui::Id::unique(("ec-ls", uid))).clicked() {
@@ -436,7 +436,7 @@ fn value_layer_ref(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, val
     }
 }
 
-fn value_extractor(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
+fn value_extractor(app: &mut ArtheffectApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
     let Value::Str(s) = value else {
         return;
     };
@@ -445,7 +445,7 @@ fn value_extractor(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, val
     crate::panels::fx_editors::channel_popup(app, ui, layer, prop, s, dr, actions);
 }
 
-fn value_file(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
+fn value_file(app: &mut ArtheffectApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
     let Value::Str(s) = value else {
         return;
     };
@@ -472,7 +472,7 @@ fn value_file(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: &
     } else if s.contains('\n') {
         prop.name.clone()
     } else {
-        effectcraft_engine::sequence::file_name(s)
+        artheffect_engine::sequence::file_name(s)
     };
     let nr = Rect::from_min_max(pos2(br.max.x + 8.0, r.min.y), pos2(r.max.x - 8.0, r.max.y));
     let np = p.with_clip_rect(nr.intersect(p.clip_rect()));
@@ -484,7 +484,7 @@ fn value_file(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: &
     app.auto.add(&format!("effectControls.prop.{uid}.value"), nr, &shown);
 }
 
-fn value_text(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
+fn value_text(app: &mut ArtheffectApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value, actions: &mut Actions) {
     let Value::Str(s) = value else {
         return;
     };
@@ -522,7 +522,7 @@ fn value_text(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &PropCx, value: &
     }
 }
 
-fn value_gradient(app: &mut EffectcraftApp, cx: &PropCx, value: &Value) {
+fn value_gradient(app: &mut ArtheffectApp, cx: &PropCx, value: &Value) {
     let Value::Gradient(g) = value else {
         return;
     };
@@ -547,7 +547,7 @@ fn shown_dims(layer: &Layer, prop: &Property, value: &Value) -> usize {
 }
 
 /// Colour of a gradient at `f` (colour stops only).
-fn gradient_at(g: &effectcraft_engine::keyframe::Gradient, f: f64) -> Color32 {
+fn gradient_at(g: &artheffect_engine::keyframe::Gradient, f: f64) -> Color32 {
     let stops = &g.colors;
     let c = if stops.is_empty() {
         [0.0, 0.0, 0.0, 1.0]
@@ -567,7 +567,7 @@ fn gradient_at(g: &effectcraft_engine::keyframe::Gradient, f: f64) -> Color32 {
 /// The twirled-open slider under a slider param: track, knob and the slider range's ends.
 #[allow(clippy::too_many_arguments)]
 fn slider_row(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -607,7 +607,7 @@ fn slider_row(
 
 /// The twirled-open angle dial under an angle param.
 #[allow(clippy::too_many_arguments)]
-fn dial_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, layer: &Layer, prop: &Property, ectx: &EvalCtx, r: Rect, x0: f32, actions: &mut Actions) {
+fn dial_row(app: &mut ArtheffectApp, ui: &mut egui::Ui, layer: &Layer, prop: &Property, ectx: &EvalCtx, r: Rect, x0: f32, actions: &mut Actions) {
     let t = app.tokens;
     let Value::Scalar(v) = ectx.value(layer, prop) else { return };
     let uid = prop.uid;
@@ -623,7 +623,7 @@ fn dial_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, layer: &Layer, prop: &P
 }
 
 /// The effect instance a row belongs to, for conditional visibility
-/// ([`effectcraft_engine::effects::catalog::param_shown`]): effect id, the instance's root
+/// ([`artheffect_engine::effects::catalog::param_shown`]): effect id, the instance's root
 /// group and the spec-id path of the group being drawn (`""` or `cameraPosition/`).
 pub(super) struct FxScope<'a> {
     pub(super) effect: &'a str,
@@ -649,12 +649,12 @@ impl<'a> FxScope<'a> {
             }
             None
         };
-        effectcraft_engine::effects::catalog::param_shown(self.effect, &format!("{}{m}", self.path), &value)
+        artheffect_engine::effects::catalog::param_shown(self.effect, &format!("{}{m}", self.path), &value)
     }
 }
 
 /// Twirl `g` closed (it was `open`) or open; with `all` (Alt/Cmd-click) every group under it follows.
-pub(super) fn toggle_closed(app: &mut EffectcraftApp, g: &PropGroup, open: bool, all: bool) {
+pub(super) fn toggle_closed(app: &mut ArtheffectApp, g: &PropGroup, open: bool, all: bool) {
     fn walk(g: &PropGroup, out: &mut Vec<u64>) {
         for sg in g.groups() {
             out.push(sg.uid);
@@ -681,7 +681,7 @@ pub(super) fn toggle_closed(app: &mut EffectcraftApp, g: &PropGroup, open: bool,
 /// drops are registered for each visible property; edits go on `actions`.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn group_rows(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -728,7 +728,7 @@ pub(super) fn group_rows(
             }
             Node::Group(sg) => {
                 // Paint strokes live in the Timeline only (AE's Paint shows Paint on Transparent).
-                if effectcraft_engine::effects::paint::is_paint(g) || !fx.shown(layer, ectx, &sg.match_id) {
+                if artheffect_engine::effects::paint::is_paint(g) || !fx.shown(layer, ectx, &sg.match_id) {
                     continue;
                 }
                 *y += ROW;

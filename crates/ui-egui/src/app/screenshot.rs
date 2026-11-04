@@ -1,4 +1,4 @@
-use super::{DrawGeometry, EffectcraftApp, PendingShot, Sender, ShotTarget, control, json};
+use super::{ArtheffectApp, DrawGeometry, PendingShot, Sender, ShotTarget, control, json};
 
 /// How long a screenshot request waits for a frame, from admission (app clock seconds).
 pub(crate) const SCREENSHOT_TIMEOUT_S: f64 = 8.0;
@@ -37,7 +37,7 @@ fn shot_image_matches(image: &egui::ColorImage, rect: egui::Rect, ppp: f32) -> b
     (got - want).abs() <= 0.02 * want.max(1.0)
 }
 
-impl EffectcraftApp {
+impl ArtheffectApp {
     /// The geometry of the last completed UI pass, if one ran.
     pub fn draw_geometry(&self) -> Option<DrawGeometry> {
         self.draw_geom
@@ -338,18 +338,18 @@ impl EffectcraftApp {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{Footage, FootageKind, ItemKind};
+    use artheffect_engine::Session;
+    use artheffect_engine::project::{Footage, FootageKind, ItemKind};
     use std::sync::Arc;
 
     #[test]
     fn queued_screenshots_recheck_sources_when_the_capture_completes() {
-        let dir = std::env::temp_dir().join(format!("effectcraft-pending-shot-protection-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("artheffect-pending-shot-protection-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         for kind in ["footage", "project", "free"] {
             let path = dir.join(format!("{kind}.png"));
             let text = path.to_string_lossy().into_owned();
-            let mut app = EffectcraftApp::new(Session::default());
+            let mut app = ArtheffectApp::new(Session::default());
             let ctx = egui::Context::default();
             let geom = DrawGeometry { rect: egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(2.0, 2.0)), ppp: 1.0, epoch: 0 };
             app.draw_geom = Some(geom);
@@ -365,7 +365,7 @@ mod tests {
                 "footage" => {
                     std::fs::write(&path, b"SOURCE FOOTAGE").unwrap();
                     let footage = Footage { path: text.clone(), kind: FootageKind::Still, ..Default::default() };
-                    Arc::make_mut(&mut app.session.project).add_item("clip", effectcraft_engine::color::Label::None, None, ItemKind::Footage(footage));
+                    Arc::make_mut(&mut app.session.project).add_item("clip", artheffect_engine::color::Label::None, None, ItemKind::Footage(footage));
                     Some(std::fs::read(&path).unwrap())
                 }
                 "project" => {

@@ -5,15 +5,15 @@
 
 use std::sync::Arc;
 
-use effectcraft_engine::Session;
+use artheffect_engine::Session;
 use serde_json::{Value, json};
 
 use crate::run_code;
 
 fn session() -> Session {
-    let mut s = Session { expr: Some(Arc::new(effectcraft_expr::Expressions)), ..Default::default() };
+    let mut s = Session { expr: Some(Arc::new(artheffect_expr::Expressions)), ..Default::default() };
     crate::install(&mut s);
-    s.config = Some(Arc::new(effectcraft_engine::config::MemoryConfig::default()));
+    s.config = Some(Arc::new(artheffect_engine::config::MemoryConfig::default()));
     s
 }
 

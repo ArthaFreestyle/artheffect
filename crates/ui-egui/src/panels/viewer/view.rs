@@ -1,12 +1,12 @@
 use super::tools::draw_rigs;
-use super::{Align2, Color32, EffectcraftApp, EvalCtx, Rect, Sense, Stroke, StrokeKind, Tokens, View3D, ViewerMap, json, pos2, three_d, vec2, widgets};
+use super::{Align2, ArtheffectApp, Color32, EvalCtx, Rect, Sense, Stroke, StrokeKind, Tokens, View3D, ViewerMap, json, pos2, three_d, vec2, widgets};
 
 /// Draw the extra views of a 2- or 4-view layout and return the main view's rectangle.
 pub(super) fn aux_views(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
-    comp: &effectcraft_engine::project::Comp,
-    cid: effectcraft_engine::project::ItemId,
+    comp: &artheffect_engine::project::Comp,
+    cid: artheffect_engine::project::ItemId,
     full: Rect,
     bg: Color32,
 ) -> Rect {
@@ -76,12 +76,8 @@ pub(super) fn aux_views(
         let tex = match cached {
             Some((k, tex)) if k == key => tex,
             _ => {
-                let opts = effectcraft_engine::render::RenderOpts {
-                    scale,
-                    view: (comp.has_3d() && !through_active).then_some(cam),
-                    draft: true,
-                    ..Default::default()
-                };
+                let opts =
+                    artheffect_engine::render::RenderOpts { scale, view: (comp.has_3d() && !through_active).then_some(cam), draft: true, ..Default::default() };
                 let img = app.session.render(cid, t, opts);
                 let tex = crate::frames::load_fitted(&ctx, format!("viewer-aux-{i}"), crate::frames::to_color_image(&img), egui::TextureOptions::LINEAR);
                 ctx.data_mut(|d| d.insert_temp(id, (key, tex.clone())));
@@ -120,7 +116,7 @@ pub(super) fn aux_views(
 
 /// The view selector in the top-left corner of pane `pane` (1 to 3) of a multi-view layout, a
 /// popup of every 3D view like the toolbar's 3D View menu. Returns the view chosen this frame.
-fn pane_selector(app: &mut EffectcraftApp, ui: &mut egui::Ui, pane: usize, area: Rect, current: View3D) -> Option<View3D> {
+fn pane_selector(app: &mut ArtheffectApp, ui: &mut egui::Ui, pane: usize, area: Rect, current: View3D) -> Option<View3D> {
     let t = app.tokens;
     let r = Rect::from_min_size(area.min + vec2(6.0, 6.0), vec2(124.0, 20.0));
     let pid = egui::Id::unique(("viewer-pane-view", pane));
@@ -150,7 +146,7 @@ fn pane_selector(app: &mut EffectcraftApp, ui: &mut egui::Ui, pane: usize, area:
 
 /// View ▸ Split with New Locked Viewer: the locked viewer on the left of the Composition panel
 /// (its comp and 3D view stay put whatever comp is active). Returns the main viewer's rectangle.
-pub(super) fn locked_pane(app: &mut EffectcraftApp, ui: &mut egui::Ui, full: Rect, bg: Color32) -> Rect {
+pub(super) fn locked_pane(app: &mut ArtheffectApp, ui: &mut egui::Ui, full: Rect, bg: Color32) -> Rect {
     let Some(lv) = app.session.state.locked_viewer else { return full };
     let Some(comp) = app.session.project.comp_arc(lv.comp) else { return full };
     let name = app.session.project.item(lv.comp).map(|i| i.name.clone()).unwrap_or_default();
@@ -169,7 +165,7 @@ pub(super) fn locked_pane(app: &mut EffectcraftApp, ui: &mut egui::Ui, full: Rec
     let t = app.session.time_of(lv.comp);
     let cam = (lv.view != View3D::ActiveCamera && comp.has_3d())
         .then(|| app.session.state.views3d.get(&lv.comp).cloned().unwrap_or_default().cam(lv.view, comp.width as f64, comp.height as f64).state());
-    let dc = effectcraft_engine::viewer::DisplayColor::of(&app.session);
+    let dc = artheffect_engine::viewer::DisplayColor::of(&app.session);
     // The display conversion's inputs, keyed as in the main viewer's texture caches.
     let dc_key = format!("{cam:?}{}", crate::panels::viewer_tools::display_key(app, dc.is_some()));
     let key = {
@@ -183,7 +179,7 @@ pub(super) fn locked_pane(app: &mut EffectcraftApp, ui: &mut egui::Ui, full: Rec
     let tex = match cached {
         Some((k, tex)) if k == key => tex,
         _ => {
-            let opts = effectcraft_engine::render::RenderOpts { scale, view: cam, ..Default::default() };
+            let opts = artheffect_engine::render::RenderOpts { scale, view: cam, ..Default::default() };
             let img = app.session.render(lv.comp, t, opts);
             let mut ci = crate::frames::to_color_image(&img);
             if let Some(dc) = dc {

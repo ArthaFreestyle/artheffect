@@ -18,7 +18,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 use harfrust::{Direction, Feature, Tag, UnicodeBuffer};
 use unicode_bidi::{BidiInfo, Level};
 
-use effectcraft_keyframe::{OpenType, text_doc::paragraph_ranges};
+use artheffect_keyframe::{OpenType, text_doc::paragraph_ranges};
 
 use crate::fonts::{self, FaceId, Resolved, VMetrics};
 

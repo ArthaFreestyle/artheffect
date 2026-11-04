@@ -2,7 +2,7 @@
 //! machine's GPU, against the candle CPU matmul the encoder uses today? Candle has no AMD/Vulkan
 //! backend; this measures what hand-written wgpu kernels could reach on the shapes SAM 2 needs.
 //!
-//! `cargo run --release -p effectcraft-sam2 --example gpu_matmul`
+//! `cargo run --release -p artheffect-sam2 --example gpu_matmul`
 
 use std::time::Instant;
 

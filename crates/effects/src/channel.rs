@@ -1,9 +1,9 @@
 //! Channel effects: channel routing (Set/Shift Channels, Channel Combiner, Set Matte), morphology
 //! (Minimax), per-channel arithmetic, solid compositing and un-matting.
 
-use effectcraft_color::{BlendMode, blend_pixel, hsl_to_rgb, luminance, rgb_to_hsl};
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
+use artheffect_color::{BlendMode, blend_pixel, hsl_to_rgb, luminance, rgb_to_hsl};
+use artheffect_keyframe::Value;
+use artheffect_project::ParamUi;
 use rayon::prelude::*;
 
 use crate::util::{Plane, SRC_NAMES, Src, join, layer_or_self, morph_plane, pick, premul, src_at, unpremul};
@@ -51,7 +51,7 @@ fn set_channels(ctx: &EffectCtx, mut b: Buf) -> Buf {
 
 /// Shift Channels' Take … From menu. After Effects' ten options come first, in its order, so a
 /// project or script that sets 10 ("Full Off" there) turns the channel off here too; "Half On" is
-/// an EffectCraft extra and sits last.
+/// an Artheffect extra and sits last.
 const SHIFT_ORDER: [Src; 11] =
     [Src::Alpha, Src::Red, Src::Green, Src::Blue, Src::Luminance, Src::Hue, Src::Lightness, Src::Saturation, Src::Full, Src::Off, Src::Half];
 const SHIFT_NAMES: [&str; 11] = ["Alpha", "Red", "Green", "Blue", "Luminance", "Hue", "Lightness", "Saturation", "Full On", "Full Off", "Half On"];
@@ -509,7 +509,7 @@ pub fn specs() -> Vec<EffectSpec> {
 mod tests {
     use super::*;
     use crate::{Params, apply, find};
-    use effectcraft_raster::Image;
+    use artheffect_raster::Image;
 
     fn run(id: &str, over: &[(&str, Value)], img: Image) -> Image {
         let s = find(id).unwrap();

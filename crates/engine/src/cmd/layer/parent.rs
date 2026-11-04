@@ -4,14 +4,14 @@ use super::{Comp, EngineError, ItemId, KV, Layer, LayerId, PropGroup, Result, Se
 pub(crate) struct ParentFix {
     pub layer: LayerId,
     /// Maps Position from the old parent's space into the new one's.
-    m: effectcraft_geom::Mat3,
+    m: artheffect_geom::Mat3,
     /// Added to Rotation.
     rotation: f64,
     /// Multiply Scale.
     scale: [f64; 2],
     /// 3D AV layers retain their world-space anchor, including Z. Cameras and lights also
     /// re-express their Point of Interest.
-    position_3d: Option<effectcraft_geom::Mat4>,
+    position_3d: Option<artheffect_geom::Mat4>,
     /// A uniform relative parent transform re-expresses static Orientation and Scale.
     pose_3d: Option<Pose3d>,
 }
@@ -20,7 +20,7 @@ pub(crate) struct ParentFix {
 #[derive(Clone, Copy)]
 struct Pose3d {
     /// Rotation that Orientation is re-expressed under: `Orientation' = correction * Orientation`.
-    correction: effectcraft_geom::Mat4,
+    correction: artheffect_geom::Mat4,
     /// Uniform scale factor, multiplied into Scale (negative for a mirrored parent).
     factor: f64,
 }
@@ -34,7 +34,7 @@ impl ParentFix {
             // unit changes even when the child's Orientation cannot be re-expressed.
             let position_speed = uniform_rotation(m).map(|(_, factor)| factor.abs());
             let map_position = |v: &KV| {
-                let q = m.apply(effectcraft_geom::Vec3::from(v.as_vec3()));
+                let q = m.apply(artheffect_geom::Vec3::from(v.as_vec3()));
                 KV::Vec3([q.x, q.y, q.z])
             };
             // Read all separated axes before writing any of them.
@@ -42,26 +42,26 @@ impl ParentFix {
             if tr.get("positionX").is_some() {
                 let axes = names.map(|name| tr.get(name).cloned());
                 let current = axes.each_ref().map(|pr| pr.as_ref().map(|pr| pr.value.as_f64()).unwrap_or(0.0));
-                let q = m.apply(effectcraft_geom::Vec3::from(current));
+                let q = m.apply(artheffect_geom::Vec3::from(current));
                 for (i, name) in names.into_iter().enumerate() {
                     if let Some(pr) = tr.get_mut(name) {
                         pr.value = KV::Scalar([q.x, q.y, q.z].get(i).copied().unwrap_or(0.0));
                         for key in &mut pr.keys {
                             let p = axes.each_ref().map(|axis| axis.as_ref().map(|axis| axis.value_at(key.time).as_f64()).unwrap_or(0.0));
-                            let q = m.apply(effectcraft_geom::Vec3::from(p));
+                            let q = m.apply(artheffect_geom::Vec3::from(p));
                             key.value = KV::Scalar([q.x, q.y, q.z].get(i).copied().unwrap_or(0.0));
                         }
                     }
                 }
             }
             // Position and a camera's or light's Point of Interest are both points in the parent's space.
-            let map_point = |pr: &mut effectcraft_project::Property| {
+            let map_point = |pr: &mut artheffect_project::Property| {
                 pr.value = map_position(&pr.value);
                 for key in &mut pr.keys {
                     key.value = map_position(&key.value);
                     // Spatial tangents are vectors, so the parent's translation is excluded.
                     for tangent in [&mut key.spatial_in, &mut key.spatial_out] {
-                        let v = m.apply_vec(effectcraft_geom::Vec3::from(*tangent));
+                        let v = m.apply_vec(artheffect_geom::Vec3::from(*tangent));
                         *tangent = [v.x, v.y, v.z];
                     }
                 }
@@ -101,7 +101,7 @@ impl ParentFix {
             }
             return;
         }
-        let map = |pr: &mut effectcraft_project::Property, f: &dyn Fn(&KV) -> KV| {
+        let map = |pr: &mut artheffect_project::Property, f: &dyn Fn(&KV) -> KV| {
             pr.value = f(&pr.value);
             for key in &mut pr.keys {
                 key.value = f(&key.value);
@@ -112,15 +112,15 @@ impl ParentFix {
             // Separated dimensions: X and Y move together, key by key at the same times.
             // Everything is read before anything is written.
             let [x, y] = [tr.get("positionX"), tr.get("positionY")].map(|p| p.map(|p| p.value.as_f64()).unwrap_or(0.0));
-            let q = m.apply(effectcraft_geom::vec2(x, y));
+            let q = m.apply(artheffect_geom::vec2(x, y));
             let keys_x: Vec<(Tick, f64)> = tr.get("positionX").map(|p| p.keys.iter().map(|k| (k.time, k.value.as_f64())).collect()).unwrap_or_default();
             let keys_y: Vec<(Tick, f64)> = tr.get("positionY").map(|p| p.keys.iter().map(|k| (k.time, k.value.as_f64())).collect()).unwrap_or_default();
             let at = |keys: &[(Tick, f64)], name: &str, t: Tick, tr: &PropGroup| {
                 keys.iter().find(|k| k.0 == t).map(|k| k.1).unwrap_or_else(|| tr.get(name).map(|p| p.value_at(t).as_f64()).unwrap_or(0.0))
             };
             let (xs, ys): (Vec<f64>, Vec<f64>) = (
-                keys_x.iter().map(|&(t, x)| m.apply(effectcraft_geom::vec2(x, at(&keys_y, "positionY", t, tr))).x).collect(),
-                keys_y.iter().map(|&(t, y)| m.apply(effectcraft_geom::vec2(at(&keys_x, "positionX", t, tr), y)).y).collect(),
+                keys_x.iter().map(|&(t, x)| m.apply(artheffect_geom::vec2(x, at(&keys_y, "positionY", t, tr))).x).collect(),
+                keys_y.iter().map(|&(t, y)| m.apply(artheffect_geom::vec2(at(&keys_x, "positionX", t, tr), y)).y).collect(),
             );
             for (name, value, vals) in [("positionX", q.x, xs), ("positionY", q.y, ys)] {
                 if let Some(pr) = tr.get_mut(name) {
@@ -133,7 +133,7 @@ impl ParentFix {
         } else if let Some(pr) = tr.get_mut("position") {
             map(pr, &|v| {
                 let c = v.as_vec3();
-                let q = m.apply(effectcraft_geom::vec2(c[0], c[1]));
+                let q = m.apply(artheffect_geom::vec2(c[0], c[1]));
                 KV::Vec3([q.x, q.y, c[2]])
             });
         }
@@ -152,8 +152,8 @@ impl ParentFix {
 
 /// The rotation and signed scale factor of a uniform parent transform's linear part (negative for a
 /// mirrored parent). `None` for a non-uniform or degenerate transform.
-fn uniform_rotation(m: effectcraft_geom::Mat4) -> Option<(effectcraft_geom::Mat4, f64)> {
-    use effectcraft_geom::{Mat4, vec3};
+fn uniform_rotation(m: artheffect_geom::Mat4) -> Option<(artheffect_geom::Mat4, f64)> {
+    use artheffect_geom::{Mat4, vec3};
     let a = m.0;
     let columns = [vec3(a[0][0], a[1][0], a[2][0]), vec3(a[0][1], a[1][1], a[2][1]), vec3(a[0][2], a[1][2], a[2][2])];
     let magnitude = columns[0].x.hypot(columns[0].y).hypot(columns[0].z);
@@ -176,7 +176,7 @@ fn uniform_rotation(m: effectcraft_geom::Mat4) -> Option<(effectcraft_geom::Mat4
 }
 
 /// The turn (degrees) of a rotation about Z alone, or `None` for any other rotation.
-fn z_only_turn(correction: effectcraft_geom::Mat4) -> Option<f64> {
+fn z_only_turn(correction: artheffect_geom::Mat4) -> Option<f64> {
     let m = correction.0;
     let about_z = [m[0][2], m[1][2], m[2][0], m[2][1]].iter().all(|v| v.abs() < 1e-9) && (m[2][2] - 1.0).abs() < 1e-9;
     about_z.then(|| m[1][0].atan2(m[0][0]).to_degrees())
@@ -202,8 +202,8 @@ fn nearest_euler(euler: [f64; 3], reference: [f64; 3]) -> [f64; 3] {
 }
 
 /// The Euler Orientation of `correction * Orientation(o)`, in the form nearest `reference`.
-fn reexpress_euler(correction: effectcraft_geom::Mat4, o: [f64; 3], reference: [f64; 3]) -> [f64; 3] {
-    let world = correction * effectcraft_geom::Mat4::orientation(effectcraft_geom::Vec3::from(o));
+fn reexpress_euler(correction: artheffect_geom::Mat4, o: [f64; 3], reference: [f64; 3]) -> [f64; 3] {
+    let world = correction * artheffect_geom::Mat4::orientation(artheffect_geom::Vec3::from(o));
     nearest_euler(euler_zyx(world.0), reference)
 }
 
@@ -214,7 +214,7 @@ const BAKE_MAX_DEPTH: u32 = 10;
 const BAKE_MAX_KEYS: usize = 4096;
 
 /// The angle (degrees) between two rotations.
-fn rotation_angle(a: effectcraft_geom::Mat4, b: effectcraft_geom::Mat4) -> f64 {
+fn rotation_angle(a: artheffect_geom::Mat4, b: artheffect_geom::Mat4) -> f64 {
     let trace: f64 = (0..3).flat_map(|i| (0..3).map(move |j| (i, j))).map(|(i, j)| a.0[i][j] * b.0[i][j]).sum();
     ((trace - 1.0) / 2.0).clamp(-1.0, 1.0).acos().to_degrees()
 }
@@ -223,15 +223,15 @@ fn rotation_angle(a: effectcraft_geom::Mat4, b: effectcraft_geom::Mat4) -> f64 {
 /// between them drifts from `correction * Orientation(authored)` by more than the tolerance. `out`
 /// never grows past `budget` keys: what the whole property may still add, not what one segment may.
 fn bake_between(
-    correction: effectcraft_geom::Mat4,
-    authored: &effectcraft_project::Property,
+    correction: artheffect_geom::Mat4,
+    authored: &artheffect_project::Property,
     (ta, ea): (Tick, [f64; 3]),
     (tb, eb): (Tick, [f64; 3]),
     depth: u32,
     budget: usize,
-    out: &mut Vec<effectcraft_keyframe::Keyframe>,
+    out: &mut Vec<artheffect_keyframe::Keyframe>,
 ) {
-    use effectcraft_geom::{Mat4, Vec3};
+    use artheffect_geom::{Mat4, Vec3};
     if depth == 0 || tb.0 - ta.0 < 2 || out.len() >= budget {
         return;
     }
@@ -254,7 +254,7 @@ fn bake_between(
     if out.len() >= budget {
         return;
     }
-    out.push(effectcraft_keyframe::Keyframe::new(tm, KV::Vec3(em)));
+    out.push(artheffect_keyframe::Keyframe::new(tm, KV::Vec3(em)));
     bake_between(correction, authored, (tm, em), (tb, eb), depth - 1, budget, out);
 }
 
@@ -262,7 +262,7 @@ fn bake_between(
 /// value and every key. For any other correction a static value is converted directly; keys are
 /// converted, and keys are added between them wherever the Euler blend between two keys would drift
 /// from the exact rotation (the segments become linear, with the original easing baked in).
-fn reexpress_orientation(correction: effectcraft_geom::Mat4, pr: &mut effectcraft_project::Property) {
+fn reexpress_orientation(correction: artheffect_geom::Mat4, pr: &mut artheffect_project::Property) {
     if let Some(turn) = z_only_turn(correction) {
         // No turn (an identity correction) leaves every authored value as it is.
         if turn.abs() <= 1e-12 {
@@ -297,8 +297,8 @@ fn reexpress_orientation(correction: effectcraft_geom::Mat4, pr: &mut effectcraf
         converted.push(n);
         prev = Some((o, n));
     }
-    use effectcraft_keyframe::Interp;
-    let mut keys: Vec<effectcraft_keyframe::Keyframe> = vec![];
+    use artheffect_keyframe::Interp;
+    let mut keys: Vec<artheffect_keyframe::Keyframe> = vec![];
     let mut after_baked_segment = false;
     for (i, key) in authored.keys.iter().enumerate() {
         let mut k = key.clone();
@@ -338,9 +338,9 @@ fn reexpress_orientation(correction: effectcraft_geom::Mat4, pr: &mut effectcraf
 
 /// Correction for a two-node rig's Orientation: after a uniform parent change its aim is
 /// `rotation * aim`, so the roll is re-expressed against that aim. `None` for a degenerate aim.
-fn aim_correction(rotation: effectcraft_geom::Mat4, aim: [f64; 3]) -> Option<effectcraft_geom::Mat4> {
-    use effectcraft_geom::vec3;
-    use effectcraft_render::three_d::camera::basis_rotation;
+fn aim_correction(rotation: artheffect_geom::Mat4, aim: [f64; 3]) -> Option<artheffect_geom::Mat4> {
+    use artheffect_geom::vec3;
+    use artheffect_render::three_d::camera::basis_rotation;
     let [x, y, z] = aim;
     let length = (x * x + y * y + z * z).sqrt();
     if !length.is_finite() || length <= 1e-9 {
@@ -362,7 +362,7 @@ fn aim_correction(rotation: effectcraft_geom::Mat4, aim: [f64; 3]) -> Option<eff
 /// time.
 pub(crate) fn parent_fixes(s: &Session, cid: ItemId, ids: &[LayerId], parent: Option<LayerId>) -> Vec<ParentFix> {
     let Some(comp) = s.project.comp(cid) else { return vec![] };
-    let ectx = effectcraft_render::EvalCtx {
+    let ectx = artheffect_render::EvalCtx {
         project: &s.project,
         comp_id: cid,
         comp,
@@ -372,10 +372,10 @@ pub(crate) fn parent_fixes(s: &Session, cid: ItemId, ids: &[LayerId], parent: Op
         property_overrides: &[],
         media_overrides: &[],
     };
-    let space = |id: Option<LayerId>| -> effectcraft_geom::Mat3 {
-        id.and_then(|i| comp.layer(i)).filter(|l| !l.is_3d()).map(|l| ectx.layer_to_comp(l).0).unwrap_or(effectcraft_geom::Mat3::IDENTITY)
+    let space = |id: Option<LayerId>| -> artheffect_geom::Mat3 {
+        id.and_then(|i| comp.layer(i)).filter(|l| !l.is_3d()).map(|l| ectx.layer_to_comp(l).0).unwrap_or(artheffect_geom::Mat3::IDENTITY)
     };
-    let decompose = |m: &effectcraft_geom::Mat3| {
+    let decompose = |m: &artheffect_geom::Mat3| {
         let a = m.0;
         let sx = (a[0][0] * a[0][0] + a[1][0] * a[1][0]).sqrt();
         let det = a[0][0] * a[1][1] - a[0][1] * a[1][0];
@@ -396,16 +396,16 @@ pub(crate) fn parent_fixes(s: &Session, cid: ItemId, ids: &[LayerId], parent: Op
         })
         .collect();
     let space_3d = |id: Option<LayerId>| {
-        id.and_then(|id| comp.layer(id)).map_or(effectcraft_geom::Mat4::IDENTITY, |layer| {
+        id.and_then(|id| comp.layer(id)).map_or(artheffect_geom::Mat4::IDENTITY, |layer| {
             // Parent transforms do not inherit the parent's source pixel-aspect stretch.
             let world = ectx.world_matrix(layer);
             let par = ectx.par_ratio(layer);
             let a = layer.transform().map(|tr| ectx.v3(layer, tr, "anchor", [0.0; 3])).unwrap_or([0.0; 3]);
-            let anchor = effectcraft_geom::vec3(a[0], a[1], if layer.is_3d() { a[2] } else { 0.0 });
+            let anchor = artheffect_geom::vec3(a[0], a[1], if layer.is_3d() { a[2] } else { 0.0 });
             world
-                * effectcraft_geom::Mat4::translate(anchor)
-                * effectcraft_geom::Mat4::scale(effectcraft_geom::vec3(1.0 / par, 1.0, 1.0))
-                * effectcraft_geom::Mat4::translate(-anchor)
+                * artheffect_geom::Mat4::translate(anchor)
+                * artheffect_geom::Mat4::scale(artheffect_geom::vec3(1.0 / par, 1.0, 1.0))
+                * artheffect_geom::Mat4::translate(-anchor)
         })
     };
     if let Some(inv) = space_3d(parent).inverse().filter(|m| m.0.iter().flatten().all(|v| v.is_finite())) {
@@ -415,7 +415,7 @@ pub(crate) fn parent_fixes(s: &Session, cid: ItemId, ids: &[LayerId], parent: Op
             // down) would come out reversed: compensate none of it, so Position and Orientation stay
             // as authored instead of half-following the parent.
             let rig = layer.is_camera() || layer.is_light();
-            if rig && !effectcraft_render::three_d::camera::is_two_node(layer) && uniform_rotation(m).is_some_and(|(_, factor)| factor <= 0.0) {
+            if rig && !artheffect_render::three_d::camera::is_two_node(layer) && uniform_rotation(m).is_some_and(|(_, factor)| factor <= 0.0) {
                 continue;
             }
             if m.0.iter().flatten().all(|v| v.is_finite()) {
@@ -425,10 +425,10 @@ pub(crate) fn parent_fixes(s: &Session, cid: ItemId, ids: &[LayerId], parent: Op
                     let scale = tr.get("scale");
                     // Expression-driven values stay authored. Auto-orient replaces Orientation, except
                     // a two-node rig, whose roll is re-expressed against its new aim.
-                    let two_node = (layer.is_camera() || layer.is_light()) && effectcraft_render::three_d::camera::is_two_node(layer);
+                    let two_node = (layer.is_camera() || layer.is_light()) && artheffect_render::three_d::camera::is_two_node(layer);
                     if orientation.expr.is_some()
                         || scale.is_some_and(|scale| scale.expr.is_some())
-                        || (layer.auto_orient != effectcraft_project::AutoOrient::Off && !two_node)
+                        || (layer.auto_orient != artheffect_project::AutoOrient::Off && !two_node)
                     {
                         return None;
                     }
@@ -462,7 +462,7 @@ pub(crate) fn parent_fixes(s: &Session, cid: ItemId, ids: &[LayerId], parent: Op
                     }
                     Some(Pose3d { correction, factor })
                 });
-                fixes.push(ParentFix { layer: layer.id, m: effectcraft_geom::Mat3::IDENTITY, rotation: 0.0, scale: [1.0; 2], position_3d: Some(m), pose_3d });
+                fixes.push(ParentFix { layer: layer.id, m: artheffect_geom::Mat3::IDENTITY, rotation: 0.0, scale: [1.0; 2], position_3d: Some(m), pose_3d });
             }
         }
     }
@@ -604,12 +604,12 @@ mod parent_chain_tests {
             let world = |s: &Session| {
                 let cid = s.active_comp_id().unwrap();
                 let comp = s.active_comp().unwrap();
-                let ctx = effectcraft_render::EvalCtx::new(&s.project, cid, comp, s.time());
-                ctx.world_matrix(comp.layer(LayerId(c)).unwrap()).apply(effectcraft_geom::Vec3::ZERO)
+                let ctx = artheffect_render::EvalCtx::new(&s.project, cid, comp, s.time());
+                ctx.world_matrix(comp.layer(LayerId(c)).unwrap()).apply(artheffect_geom::Vec3::ZERO)
             };
             let before = world(&s);
             s.execute("layer.setParent", json!({"layers":[c],"parent":a,"compensate":compensate})).unwrap();
-            let expected = if compensate { before } else { before + effectcraft_geom::vec3(100.0, 200.0, 0.0) };
+            let expected = if compensate { before } else { before + artheffect_geom::vec3(100.0, 200.0, 0.0) };
             assert!((world(&s) - expected).length() < 1e-9);
             assert_eq!(s.active_comp().unwrap().layer(LayerId(c)).unwrap().parent, Some(LayerId(a)));
             assert_eq!(s.history.undo.len(), 1);

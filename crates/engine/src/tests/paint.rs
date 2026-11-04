@@ -1,7 +1,7 @@
 //! Paint and Puppet commands: undoable edits, options, rendering through the session.
 
-use effectcraft_render::RenderOpts;
-use effectcraft_time::Tick;
+use artheffect_render::RenderOpts;
+use artheffect_time::Tick;
 use serde_json::{Value, json};
 
 use crate::Session;
@@ -19,8 +19,8 @@ fn px(s: &Session, t: f64, x: i64, y: i64) -> [f32; 4] {
     s.render(cid, Tick::from_seconds_f64(t), RenderOpts::default()).get(x, y)
 }
 
-fn layer(s: &Session, id: u64) -> effectcraft_project::Layer {
-    s.active_comp().unwrap().layer(effectcraft_project::LayerId(id)).unwrap().clone()
+fn layer(s: &Session, id: u64) -> artheffect_project::Layer {
+    s.active_comp().unwrap().layer(artheffect_project::LayerId(id)).unwrap().clone()
 }
 
 #[test]
@@ -32,7 +32,7 @@ fn brush_stroke_is_an_undoable_effect() {
     let l = layer(&s, id);
     let g = l.props.find_group(fx).unwrap();
     assert_eq!(g.name, "Paint");
-    assert_eq!(effectcraft_effects::paint::strokes(g).count(), 1);
+    assert_eq!(artheffect_effects::paint::strokes(g).count(), 1);
     assert_eq!(g.groups().next().unwrap().name, "Brush 1");
     // Layer (10..90, 30) → comp (60..140, 50).
     assert_eq!(px(&s, 0.0, 100, 50), [1.0, 0.0, 0.0, 1.0]);
@@ -148,7 +148,7 @@ fn paint_options_and_presets() {
 
 fn pin_count(s: &Session, id: u64) -> usize {
     let l = layer(s, id);
-    l.effects().unwrap().groups().map(effectcraft_effects::puppet::pin_count).sum()
+    l.effects().unwrap().groups().map(artheffect_effects::puppet::pin_count).sum()
 }
 
 #[test]
@@ -242,7 +242,7 @@ fn a_pin_where_the_deformed_layer_is_empty_creates_nothing() {
     let (cid, t) = (s.active_comp_id().unwrap(), Tick::from_seconds_f64(1.0));
     let before = s.render(cid, t, RenderOpts::default());
     let revision = s.revision;
-    let lid = effectcraft_project::LayerId(id);
+    let lid = artheffect_project::LayerId(id);
     // The solid's top, which the pins have carried 40 px down; and well off it.
     for at in [[50, 10], [300, 300]] {
         assert!(!crate::commands::puppet::places_pin(&s, cid, lid, [at[0] as f64, at[1] as f64], t), "{at:?}");
@@ -299,7 +299,7 @@ fn puppet_pin_kinds_and_mesh_options() {
     let l = layer(&s, id);
     let names: Vec<String> = {
         let fx = l.effects().unwrap().groups().next().unwrap();
-        effectcraft_effects::puppet::meshes(fx).flat_map(|m| effectcraft_effects::puppet::pins(m).map(|p| p.name.clone())).collect()
+        artheffect_effects::puppet::meshes(fx).flat_map(|m| artheffect_effects::puppet::pins(m).map(|p| p.name.clone())).collect()
     };
     assert_eq!(names, ["Puppet Pin 1", "Starch 1", "Puppet Pin 2", "Overlap 1", "Puppet Pin 3"]);
     assert!(s.execute("puppet.movePin", json!({"layer": id, "pin": "Puppet Pin 2", "position": [1, 1]})).is_err(), "bend pins have no position");
@@ -308,7 +308,7 @@ fn puppet_pin_kinds_and_mesh_options() {
     s.execute("puppet.mesh", json!({"layer": id, "density": 80, "expansion": 5})).unwrap();
     let l = layer(&s, id);
     let fx = l.effects().unwrap().groups().next().unwrap();
-    let m = effectcraft_effects::puppet::meshes(fx).next().unwrap();
+    let m = artheffect_effects::puppet::meshes(fx).next().unwrap();
     assert_eq!(m.get("density").unwrap().value.as_f64(), 80.0);
     assert_eq!(m.get("expansion").unwrap().value.as_f64(), 5.0);
     // Renders, deterministically.
@@ -329,7 +329,7 @@ fn puppet_pins_select_and_delete_without_touching_the_layer() {
     // A new pin is selected: Delete removes it, and the layer stays.
     assert_eq!(s.execute("edit.clear", json!({})).unwrap(), json!({"removed": 1}));
     assert_eq!(pin_count(&s, id), 2);
-    assert!(s.active_comp().unwrap().layer(effectcraft_project::LayerId(id)).is_some());
+    assert!(s.active_comp().unwrap().layer(artheffect_project::LayerId(id)).is_some());
     // Click, Shift-click (toggle) and add by name.
     let sel = |s: &mut Session, q: Value| s.execute("puppet.selectPins", q).unwrap()["pins"].clone();
     assert_eq!(sel(&mut s, json!({"layer": id, "pins": [a, b]})), json!([a, b]));
@@ -417,8 +417,8 @@ fn expr_of(s: &Session, layer: u64, uid: u64) -> String {
     l.props.find(uid).and_then(|p| p.expr.as_ref()).map(|e| e.text.clone()).unwrap_or_default()
 }
 
-fn layer_of(s: &Session, id: u64) -> effectcraft_project::Layer {
-    s.active_comp().unwrap().layer(effectcraft_project::LayerId(id)).unwrap().clone()
+fn layer_of(s: &Session, id: u64) -> artheffect_project::Layer {
+    s.active_comp().unwrap().layer(artheffect_project::LayerId(id)).unwrap().clone()
 }
 
 #[test]
@@ -486,7 +486,7 @@ fn project_with_paint_and_puppet_round_trips() {
     s.execute("paint.stroke", json!({"layer": id, "points": [[10, 30, 0.5], [90, 30, 1.0]], "durationMode": "writeOn"})).unwrap();
     s.execute("puppet.addPin", json!({"layer": id, "position": [10, 30]})).unwrap();
     let j = s.project.to_json();
-    let back = effectcraft_project::Project::from_json(&j).unwrap();
+    let back = artheffect_project::Project::from_json(&j).unwrap();
     assert_eq!(&back, s.project.as_ref());
     let v: Value = serde_json::from_str(&j).unwrap();
     assert!(v.to_string().contains("ec.paint.paint") && v.to_string().contains("ec.distort.puppet"));
@@ -501,7 +501,7 @@ fn liquify_stroke_adds_the_effect_and_warps() {
     assert_eq!(r["strokes"], 1);
     let l = layer(&s, id);
     let fx = l.effects().unwrap().groups().next().unwrap().clone();
-    assert!(matches!(&fx.kind, effectcraft_project::GroupKind::Effect { effect } if effect == "ec.distort.liquify"));
+    assert!(matches!(&fx.kind, artheffect_project::GroupKind::Effect { effect } if effect == "ec.distort.liquify"));
     // The warp pulls transparent pixels from outside the layer over its left edge.
     assert!(px(&s, 0.0, 55, 50)[3] < 0.9, "{:?}", px(&s, 0.0, 55, 50));
     // A second stroke goes into the same effect.

@@ -3,14 +3,14 @@
 //! otherwise they apply to the whole selected text layer.
 
 use crate::i18n::tr;
-use effectcraft_engine::keyframe::{BaselineOption, Composer, Direction, FigureStyle, FigureWidth, Justify, Kerning, LineJoin, TextDoc};
-use effectcraft_engine::render::EvalCtx;
+use artheffect_engine::keyframe::{BaselineOption, Composer, Direction, FigureStyle, FigureWidth, Justify, Kerning, LineJoin, TextDoc};
+use artheffect_engine::render::EvalCtx;
 use egui::{Align2, Rect, Sense, pos2, vec2};
 use serde_json::json;
 
 use crate::state::TextColorPick;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{ArtheffectApp, widgets};
 
 /// What the text panels act on: a text layer, a document whose base style and first paragraph
 /// show the selection's formatting, and the selected character range while editing.
@@ -33,11 +33,11 @@ impl TextTarget {
 }
 
 /// The edited text layer's selection, else the selected text layer's Source Text at the CTI.
-pub fn text_target(app: &EffectcraftApp) -> Option<TextTarget> {
+pub fn text_target(app: &ArtheffectApp) -> Option<TextTarget> {
     let comp = app.session.active_comp()?;
     let cid = app.session.active_comp_id()?;
     if let Some(e) = app.session.state.text_edit.clone()
-        && let Some(full) = effectcraft_engine::commands::text_edit::layer_doc(&app.session, e.layer)
+        && let Some(full) = artheffect_engine::commands::text_edit::layer_doc(&app.session, e.layer)
     {
         let r = e.range();
         let style = e.pending.clone().unwrap_or_else(|| if r.is_empty() { full.insertion_style(r.start) } else { full.style_at(r.start) });
@@ -56,7 +56,7 @@ pub fn text_target(app: &EffectcraftApp) -> Option<TextTarget> {
         .selected_layers
         .iter()
         .filter_map(|id| comp.layer(*id))
-        .find(|l| matches!(l.source, effectcraft_engine::project::LayerSource::Text))?;
+        .find(|l| matches!(l.source, artheffect_engine::project::LayerSource::Text))?;
     let ectx = EvalCtx {
         project: &app.session.project,
         comp_id: cid,
@@ -67,13 +67,13 @@ pub fn text_target(app: &EffectcraftApp) -> Option<TextTarget> {
         property_overrides: &[],
         media_overrides: &[],
     };
-    effectcraft_engine::render::text::source_text(&ectx, layer).map(|d| TextTarget { layer: layer.id.0, doc: d, range: None })
+    artheffect_engine::render::text::source_text(&ectx, layer).map(|d| TextTarget { layer: layer.id.0, doc: d, range: None })
 }
 
 /// A small toggle button at `r` showing `label` (semibold 13 when `bold`, else 12), filled with
 /// the accent while `on`; returns whether it was clicked. It only reports the click: the caller
 /// decides the new state.
-fn toggle(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, r: Rect, id: &str, look: (&str, bool, bool)) -> bool {
+fn toggle(app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, r: Rect, id: &str, look: (&str, bool, bool)) -> bool {
     let (label, on, bold) = look;
     let t = app.tokens;
     let resp = ui.interact(r, egui::Id::unique(("text-toggle", id)), Sense::click());
@@ -104,7 +104,7 @@ struct Grid {
 }
 
 /// Numeric fields in AE's two-column grid (Kerning is a popup, at row 1 left).
-fn numeric_fields(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, g: Grid, doc: &TextDoc, actions: &mut Vec<serde_json::Value>) {
+fn numeric_fields(app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, g: Grid, doc: &TextDoc, actions: &mut Vec<serde_json::Value>) {
     let t = app.tokens;
     let Grid { x0, y, w, enabled } = g;
     let fields: [(&str, &str, f64, (f64, f64), &str); 10] = [
@@ -151,7 +151,7 @@ fn numeric_fields(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter
 }
 
 /// The stroke width's presets menu beside its value (`r`), as in After Effects.
-fn stroke_width_presets(app: &mut EffectcraftApp, ui: &mut egui::Ui, r: Rect, enabled: bool, actions: &mut Vec<serde_json::Value>) {
+fn stroke_width_presets(app: &mut ArtheffectApp, ui: &mut egui::Ui, r: Rect, enabled: bool, actions: &mut Vec<serde_json::Value>) {
     const PRESETS: [f64; 22] = [0.25, 0.5, 0.75, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0];
     let t = app.tokens;
     let br = Rect::from_min_size(pos2(r.max.x + 4.0, r.min.y + 2.0), vec2(16.0, 16.0));
@@ -171,7 +171,7 @@ fn stroke_width_presets(app: &mut EffectcraftApp, ui: &mut egui::Ui, r: Rect, en
 }
 
 /// Kerning: Metrics / Optical / a manual value (grid row 1, left).
-fn kerning_field(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, g: Grid, doc: &TextDoc, actions: &mut Vec<serde_json::Value>) {
+fn kerning_field(app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, g: Grid, doc: &TextDoc, actions: &mut Vec<serde_json::Value>) {
     let t = app.tokens;
     let Grid { x0, y, w, enabled } = g;
     let fy = y + 28.0;
@@ -202,7 +202,7 @@ fn kerning_field(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter,
 /// the whole layer, which is the layer's More Options > Fill & Stroke (`fill_stroke`, see
 /// [`layer_fill_stroke`]). Returns the layer order picked, if any.
 fn stroke_order_field(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     g: Grid,
     doc: &TextDoc,
@@ -239,7 +239,7 @@ fn stroke_order_field(
 }
 
 /// Line Join of the stroke: Miter / Round / Bevel (grid row 5, under the stroke width).
-fn line_join_field(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, g: Grid, doc: &TextDoc, actions: &mut Vec<serde_json::Value>) {
+fn line_join_field(app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, g: Grid, doc: &TextDoc, actions: &mut Vec<serde_json::Value>) {
     let Grid { x0, y, w, enabled } = g;
     let bw = (w - 2.0 * 4.0) / 3.0;
     for (i, (key, label, join)) in
@@ -254,7 +254,7 @@ fn line_join_field(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painte
 
 /// Sets the layer's More Options > Fill & Stroke to `v` together with the per-character order
 /// it changes, as one undo step.
-fn apply_layer_fill_stroke(app: &mut EffectcraftApp, ctx: &egui::Context, tt: &TextTarget, v: u32, actions: Vec<serde_json::Value>) {
+fn apply_layer_fill_stroke(app: &mut ArtheffectApp, ctx: &egui::Context, tt: &TextTarget, v: u32, actions: Vec<serde_json::Value>) {
     let set = json!({"command": "prop.set", "params": {"layer": tt.layer, "path": "text/moreOptions/fillStroke", "value": v}});
     let steps: Vec<serde_json::Value> =
         std::iter::once(set).chain(actions.into_iter().map(|a| json!({"command": "layer.setText", "params": tt.params(a)}))).collect();
@@ -265,9 +265,9 @@ fn apply_layer_fill_stroke(app: &mut EffectcraftApp, ctx: &egui::Context, tt: &T
 
 /// A text layer's More Options > Fill & Stroke in the active comp: 0 per character palette,
 /// 1 all fills over all strokes, 2 all strokes over all fills.
-fn layer_fill_stroke(app: &EffectcraftApp, layer: u64) -> u32 {
+fn layer_fill_stroke(app: &ArtheffectApp, layer: u64) -> u32 {
     let (Some(comp), Some(cid)) = (app.session.active_comp(), app.session.active_comp_id()) else { return 0 };
-    let Some(l) = comp.layer(effectcraft_engine::project::LayerId(layer)) else { return 0 };
+    let Some(l) = comp.layer(artheffect_engine::project::LayerId(layer)) else { return 0 };
     let Some(more) = l.props.sub("text").and_then(|t| t.sub("moreOptions")) else { return 0 };
     let ectx = EvalCtx { expr: app.session.expr.as_deref(), ..EvalCtx::new(&app.session.project, cid, comp, app.session.time()) };
     ectx.e(l, more, "fillStroke")
@@ -279,7 +279,7 @@ fn layer_fill_stroke(app: &EffectcraftApp, layer: u64) -> u32 {
 /// Without a text target the panel is inert — no edit is collected and it asks for a text layer.
 /// Edits are collected and, when a target exists, sent as `layer.setText` commands scoped to the
 /// edited range; failures show in `app.ui.status`.
-pub fn character(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn character(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let target = text_target(app);
@@ -307,7 +307,7 @@ pub fn character(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     }
     app.auto.add("character.style", sr, "Font style");
     // The family's own styles.
-    let styles: Vec<String> = if widgets::popup_is_open(ui, spop) { effectcraft_engine::font_styles(&doc.font) } else { vec![] };
+    let styles: Vec<String> = if widgets::popup_is_open(ui, spop) { artheffect_engine::font_styles(&doc.font) } else { vec![] };
     if let Some(st) = widgets::popup_menu(ui, spop, sr.left_bottom(), &styles, styles.iter().position(|s| *s == doc.style)).and_then(|i| styles.get(i)) {
         actions.push(json!({"style": st}));
     }
@@ -408,11 +408,11 @@ pub fn character(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         }
     }
     // Variable Font Axes: one value per axis of a variable font (`character.axis.<tag>`).
-    let resolved = effectcraft_engine::text::resolve(&doc.font, &doc.style);
+    let resolved = artheffect_engine::text::resolve(&doc.font, &doc.style);
     let face = resolved.face;
-    let axes = effectcraft_engine::text::variable::font_axes(face);
+    let axes = artheffect_engine::text::variable::font_axes(face);
     // A named instance (`Black`) sets the axes the text doesn't set itself.
-    let instance = effectcraft_engine::text::fonts::instance_variations(&resolved);
+    let instance = artheffect_engine::text::fonts::instance_variations(&resolved);
     if !axes.is_empty() {
         y += 26.0;
         p.text(pos2(x0, y + 7.0), Align2::LEFT_CENTER, tr("Variable Font Axes"), Tokens::semibold(11.0), t.text_dim);
@@ -467,13 +467,13 @@ pub fn character(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 /// The Character panel's OpenType popup: feature toggles (dimmed when the font lacks them),
 /// figure styles and the twenty stylistic sets. Every row is an automation target
 /// (`character.opentype.<key>`), and every change is a `layer.setText` attribute.
-fn opentype_popup(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: egui::Id, pos: egui::Pos2, doc: &TextDoc, actions: &mut Vec<serde_json::Value>) {
+fn opentype_popup(app: &mut ArtheffectApp, ui: &mut egui::Ui, id: egui::Id, pos: egui::Pos2, doc: &TextDoc, actions: &mut Vec<serde_json::Value>) {
     let open_id = id.with("open");
     if !ui.data(|d| d.get_temp::<bool>(open_id).unwrap_or(false)) {
         return;
     }
     let t = app.tokens;
-    let feats = effectcraft_engine::font_features(&doc.font, &doc.style);
+    let feats = artheffect_engine::font_features(&doc.font, &doc.style);
     let has = |tag: &str| feats.iter().any(|f| f == tag);
     let o = doc.opentype;
     let mut rects: Vec<(String, Rect, String)> = vec![];
@@ -601,7 +601,7 @@ pub fn paint_justify_glyph(p: &egui::Painter, r: Rect, j: Justify, c: egui::Colo
 /// paragraph direction (when the text engine allows it), the composer, and Roman hanging
 /// punctuation. Edits are queued and sent as `layer.setText` for the edited range when a text
 /// target exists; failures show in `app.ui.status`.
-pub fn paragraph(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn paragraph(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let target = text_target(app);
@@ -731,16 +731,16 @@ struct FontSearch {
 /// Shared font menu for Character and Properties: search, recent fonts and previews.
 /// Finish a font rescan started from the font menu and report how many faces it added.
 /// While the scan is still walking font folders, ask for another frame so the menu updates.
-pub(crate) fn poll_font_rescan(app: &mut EffectcraftApp, ctx: &egui::Context) {
-    if effectcraft_engine::text::fonts::rescan_busy() {
+pub(crate) fn poll_font_rescan(app: &mut ArtheffectApp, ctx: &egui::Context) {
+    if artheffect_engine::text::fonts::rescan_busy() {
         ctx.request_repaint_after(std::time::Duration::from_millis(100));
     }
-    if let Some(n) = effectcraft_engine::text::fonts::poll_rescan() {
+    if let Some(n) = artheffect_engine::text::fonts::poll_rescan() {
         app.ui.status = format!("{} +{n}", tr("Rescan Fonts"));
     }
 }
 
-pub(super) fn font_picker(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: egui::Id, rect: Rect, current: &str, auto: &str, enabled: bool) -> Option<String> {
+pub(super) fn font_picker(app: &mut ArtheffectApp, ui: &mut egui::Ui, id: egui::Id, rect: Rect, current: &str, auto: &str, enabled: bool) -> Option<String> {
     let state_id = id.with("search-state");
     app.auto.add(auto, rect, "Font family");
     if !widgets::popup_is_open(ui, id) || !enabled {
@@ -750,7 +750,7 @@ pub(super) fn font_picker(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: egui:
         }
         return None;
     }
-    let rows = effectcraft_engine::font_menu(&app.session.prefs);
+    let rows = artheffect_engine::font_menu(&app.session.prefs);
     let saved = ui.data(|d| d.get_temp::<FontSearch>(state_id));
     let fresh = saved.is_none();
     let mut state = saved.unwrap_or_default();
@@ -811,7 +811,7 @@ pub(super) fn font_picker(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: egui:
         // "Variable fonts only". The scan itself runs off the UI thread (`poll_font_rescan`).
         let rescan_h = 22.0;
         let (resc, _) = ui.allocate_exact_size(vec2(ui.available_width(), rescan_h), egui::Sense::hover());
-        if widgets::text_button(ui, resc, tr("Rescan Fonts"), false, &t, id.with("rescan")).clicked() && effectcraft_engine::text::fonts::start_rescan() {
+        if widgets::text_button(ui, resc, tr("Rescan Fonts"), false, &t, id.with("rescan")).clicked() && artheffect_engine::text::fonts::start_rescan() {
             app_ref.ui.status = format!("{}…", tr("Rescan Fonts"));
         }
         app_ref.auto.add(&format!("{auto}.rescan"), resc, "Rescan Fonts");
@@ -851,76 +851,70 @@ pub(super) fn font_picker(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: egui:
         let entered = if enter { filtered.get(state.selected).map(|r| r.family.clone()) } else { None };
         (app_ref, filtered, query.is_empty(), state.selected, changed || toggled, entered)
     };
-    let list = |ui: &mut egui::Ui,
-                (app, filtered, all, selected, restart, entered): (
-        &mut EffectcraftApp,
-        Vec<&effectcraft_engine::FontRow>,
-        bool,
-        usize,
-        bool,
-        Option<String>,
-    )| {
-        if restart {
-            ui.scroll_to_cursor(Some(egui::Align::TOP));
-        }
-        let mut chosen = entered;
-        if filtered.is_empty() {
-            let r = ui.label(tr("No matching fonts"));
-            app.auto.add(&format!("{auto}.empty"), r.rect, "No matching fonts");
-        }
-        let mut was_recent = false;
-        for (index, r) in filtered.iter().enumerate() {
-            if all && was_recent && !r.recent {
-                ui.separator();
+    let list =
+        |ui: &mut egui::Ui,
+         (app, filtered, all, selected, restart, entered): (&mut ArtheffectApp, Vec<&artheffect_engine::FontRow>, bool, usize, bool, Option<String>)| {
+            if restart {
+                ui.scroll_to_cursor(Some(egui::Align::TOP));
             }
-            was_recent = r.recent;
-            let row_width = ui.available_width();
-            let label_width = if preview { (row_width - 100.0).max(40.0) } else { row_width };
-            let resp = ui.add_sized([row_width, 24.0], egui::Button::selectable(index == selected, ""));
-            resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, ui.is_enabled(), index == selected, &r.display));
-            let label_rect = Rect::from_min_size(resp.rect.min + vec2(5.0, 0.0), vec2(label_width - 5.0, resp.rect.height()));
-            let name = drawn_font_name(ui.ctx(), r);
-            ui.painter().with_clip_rect(label_rect.intersect(ui.clip_rect())).text(
-                label_rect.left_center(),
-                Align2::LEFT_CENTER,
-                name,
-                Tokens::ui(12.0),
-                t.text,
-            );
-            if ui.is_rect_visible(resp.rect) {
-                app.auto.add(&format!("{auto}.option.{}", r.family), resp.rect, &r.display);
+            let mut chosen = entered;
+            if filtered.is_empty() {
+                let r = ui.label(tr("No matching fonts"));
+                app.auto.add(&format!("{auto}.empty"), r.rect, "No matching fonts");
             }
-            if index == selected && (fresh || up || down) {
-                resp.scroll_to_me(None);
-            }
-            if preview && ui.is_rect_visible(resp.rect) {
-                let key = egui::Id::unique(("font-preview", &r.family));
-                let lines: std::sync::Arc<Vec<Vec<[f32; 2]>>> = match ui.data(|d| d.get_temp(key)) {
-                    Some(l) => l,
-                    None => {
-                        let l = std::sync::Arc::new(effectcraft_engine::font_preview(&r.family, 14.0));
-                        ui.data_mut(|d| d.insert_temp(key, l.clone()));
-                        l
-                    }
-                };
-                // Scaled and placed to fit the row's preview column, and clipped to the row (#577).
-                let room = Rect::from_min_max(pos2(resp.rect.max.x - 95.0, resp.rect.min.y + 1.0), pos2(resp.rect.max.x - 6.0, resp.rect.max.y - 1.0));
-                if let Some((k, o)) = fit_preview(&lines, room, resp.rect.center().y + 5.0) {
-                    let painter = ui.painter().with_clip_rect(resp.rect.intersect(ui.clip_rect()));
-                    for poly in lines.iter() {
-                        let pts: Vec<egui::Pos2> =
-                            poly.iter().filter(|p| p[0].is_finite() && p[1].is_finite()).map(|p| (o + vec2(p[0], p[1]) * k).to_pos2()).collect();
-                        painter.add(egui::Shape::line(pts, egui::Stroke::new(1.0, t.text_dim)));
+            let mut was_recent = false;
+            for (index, r) in filtered.iter().enumerate() {
+                if all && was_recent && !r.recent {
+                    ui.separator();
+                }
+                was_recent = r.recent;
+                let row_width = ui.available_width();
+                let label_width = if preview { (row_width - 100.0).max(40.0) } else { row_width };
+                let resp = ui.add_sized([row_width, 24.0], egui::Button::selectable(index == selected, ""));
+                resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, ui.is_enabled(), index == selected, &r.display));
+                let label_rect = Rect::from_min_size(resp.rect.min + vec2(5.0, 0.0), vec2(label_width - 5.0, resp.rect.height()));
+                let name = drawn_font_name(ui.ctx(), r);
+                ui.painter().with_clip_rect(label_rect.intersect(ui.clip_rect())).text(
+                    label_rect.left_center(),
+                    Align2::LEFT_CENTER,
+                    name,
+                    Tokens::ui(12.0),
+                    t.text,
+                );
+                if ui.is_rect_visible(resp.rect) {
+                    app.auto.add(&format!("{auto}.option.{}", r.family), resp.rect, &r.display);
+                }
+                if index == selected && (fresh || up || down) {
+                    resp.scroll_to_me(None);
+                }
+                if preview && ui.is_rect_visible(resp.rect) {
+                    let key = egui::Id::unique(("font-preview", &r.family));
+                    let lines: std::sync::Arc<Vec<Vec<[f32; 2]>>> = match ui.data(|d| d.get_temp(key)) {
+                        Some(l) => l,
+                        None => {
+                            let l = std::sync::Arc::new(artheffect_engine::font_preview(&r.family, 14.0));
+                            ui.data_mut(|d| d.insert_temp(key, l.clone()));
+                            l
+                        }
+                    };
+                    // Scaled and placed to fit the row's preview column, and clipped to the row (#577).
+                    let room = Rect::from_min_max(pos2(resp.rect.max.x - 95.0, resp.rect.min.y + 1.0), pos2(resp.rect.max.x - 6.0, resp.rect.max.y - 1.0));
+                    if let Some((k, o)) = fit_preview(&lines, room, resp.rect.center().y + 5.0) {
+                        let painter = ui.painter().with_clip_rect(resp.rect.intersect(ui.clip_rect()));
+                        for poly in lines.iter() {
+                            let pts: Vec<egui::Pos2> =
+                                poly.iter().filter(|p| p[0].is_finite() && p[1].is_finite()).map(|p| (o + vec2(p[0], p[1]) * k).to_pos2()).collect();
+                            painter.add(egui::Shape::line(pts, egui::Stroke::new(1.0, t.text_dim)));
+                        }
                     }
                 }
+                if resp.clicked() {
+                    chosen = Some(r.family.clone());
+                }
+                resp.on_hover_text(name);
             }
-            if resp.clicked() {
-                chosen = Some(r.family.clone());
-            }
-            resp.on_hover_text(name);
-        }
-        chosen
-    };
+            chosen
+        };
     let chosen = menu.show_ui_with_header(header, list).flatten();
     if chosen.is_some() || !open || escape {
         ui.data_mut(|d| {
@@ -937,7 +931,7 @@ pub(super) fn font_picker(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: egui:
 /// Align panel: Align Layers to Selection / Composition, the six align buttons and the six
 /// Distribute Layers buttons. Buttons run `layer.align {edge, to}` and `layer.distribute
 /// {mode}` on the selected layers.
-pub fn align(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn align(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     let x0 = rect.min.x + 10.0;
@@ -1066,7 +1060,7 @@ fn align_glyph(p: &egui::Painter, r: Rect, op: &str, distribute: bool, t: &Token
 /// The name a font menu row draws: the font's own-language name when the interface fonts have a
 /// glyph for each of its characters, else its English family name. A Simplified Chinese name
 /// such as 微软雅黑 can have characters that the Han face of an English interface lacks.
-fn drawn_font_name<'a>(ctx: &egui::Context, row: &'a effectcraft_engine::FontRow) -> &'a str {
+fn drawn_font_name<'a>(ctx: &egui::Context, row: &'a artheffect_engine::FontRow) -> &'a str {
     if ctx.fonts_mut(|f| f.has_glyphs(&Tokens::ui(12.0), &row.display)) { &row.display } else { &row.family }
 }
 
@@ -1136,7 +1130,7 @@ mod tests {
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &Tokens::for_kind(Default::default()), "en");
         ctx.run_ui(Default::default(), |_| {}).textures_delta.clear();
-        let row = |display: &str| effectcraft_engine::FontRow { family: "Menu Name Test".into(), display: display.into(), recent: false, variable: false };
+        let row = |display: &str| artheffect_engine::FontRow { family: "Menu Name Test".into(), display: display.into(), recent: false, variable: false };
         // U+F1234 is in a private use plane that no interface font maps.
         assert_eq!(drawn_font_name(&ctx, &row("Menu \u{F1234}")), "Menu Name Test");
         assert_eq!(drawn_font_name(&ctx, &row("Nom du menu")), "Nom du menu");

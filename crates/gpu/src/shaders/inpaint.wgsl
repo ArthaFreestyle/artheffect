@@ -1,5 +1,5 @@
 // GPU Content-Aware Fill: the membrane (harmonic) fill and PatchMatch synthesis of
-// effectcraft_raster::inpaint, operation for operation (the CPU reference is the oracle; see
+// artheffect_raster::inpaint, operation for operation (the CPU reference is the oracle; see
 // crates/gpu/src/tests/inpaint.rs).
 //
 // Bindings are the shared ones (common.wgsl): `src` / `aux` are the input textures (an image, a
@@ -556,10 +556,10 @@ fn imp_hist(@builtin(global_invocation_id) gid: vec3<u32>) {
 
 // ---------------------------------------------------------------- block flow (flow completion)
 
-// The block matcher of effectcraft_raster::flow::block_flow(a, b, 8, 6), which the fill uses to
+// The block matcher of artheffect_raster::flow::block_flow(a, b, 8, 6), which the fill uses to
 // compute the motion between neighbouring membrane-filled frames before completing it inside the
 // holes (`FillBackend::flow`). `src` packs the two frames' luma planes at the current level:
-// .x is frame A's, .y is frame B's (`effectcraft_raster::flow::Plane::luma`). The kernels mirror
+// .x is frame A's, .y is frame B's (`artheffect_raster::flow::Plane::luma`). The kernels mirror
 // the CPU operation for operation, so the field matches the CPU's (crates/gpu/src/tests/inpaint.rs).
 
 // Plane::half of the packed pair: the clamped 2×2 average of each channel.

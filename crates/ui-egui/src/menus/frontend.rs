@@ -1,4 +1,4 @@
-use super::{EffectcraftApp, PanelKind, Resolution, Value, json};
+use super::{ArtheffectApp, PanelKind, Resolution, Value, json};
 
 /// Run an engine command and perform the frontend events it emitted right away.
 /// Commands that fill the internal clipboard.
@@ -6,15 +6,15 @@ const COPY_COMMANDS: &[&str] =
     &["edit.copy", "edit.cut", "edit.copyWithPropertyLinks", "edit.copyWithRelativePropertyLinks", "edit.copyExpressionOnly", "keys.copy", "effect.copy"];
 
 /// Text for the system clipboard: copied keyframes and values as After Effects keyframe text,
-/// for other applications (#1908), else a line naming what EffectCraft copied. The system
+/// for other applications (#1908), else a line naming what Artheffect copied. The system
 /// clipboard must hold something: with nothing on it, the windowing layer sends no paste event
-/// for Ctrl+V. Paste in EffectCraft uses its own clipboard either way.
-fn clipboard_text(s: &effectcraft_engine::Session) -> String {
+/// for Ctrl+V. Paste in Artheffect uses its own clipboard either way.
+fn clipboard_text(s: &artheffect_engine::Session) -> String {
     let st = &s.state;
     if let Some(text) = &st.keyframe_text {
         return text.clone();
     }
-    let n = |n: usize, one: &str, many: &str| format!("EffectCraft: {n} {}", if n == 1 { one } else { many });
+    let n = |n: usize, one: &str, many: &str| format!("Artheffect: {n} {}", if n == 1 { one } else { many });
     if st.clip_is_keys && !st.key_clipboard.is_empty() {
         n(st.key_clipboard.iter().map(|c| c.keys.len()).sum(), "keyframe", "keyframes")
     } else if !st.effect_clipboard.is_empty() {
@@ -24,13 +24,13 @@ fn clipboard_text(s: &effectcraft_engine::Session) -> String {
     } else if !st.mask_clipboard.is_empty() {
         n(st.mask_clipboard.len(), "mask", "masks")
     } else if st.link_clipboard.is_some() {
-        "EffectCraft: property links".into()
+        "Artheffect: property links".into()
     } else {
         n(st.clipboard.len(), "layer", "layers")
     }
 }
 
-pub(crate) fn run_engine(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, params: Value) -> Result<Value, String> {
+pub(crate) fn run_engine(app: &mut ArtheffectApp, ctx: &egui::Context, id: &str, params: Value) -> Result<Value, String> {
     // Events already queued belong to earlier invocations (`engine.execute` defers them).
     let queued = app.session.events.len();
     let mut r = app.session.execute(id, params).map_err(|e| e.to_string());
@@ -42,7 +42,7 @@ pub(crate) fn run_engine(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str
     let events = app.session.drain_events();
     for (index, ev) in events.into_iter().enumerate() {
         match ev {
-            effectcraft_engine::Event::Frontend { command, params } => {
+            artheffect_engine::Event::Frontend { command, params } => {
                 if let Err(e) = frontend(app, ctx, &command, params) {
                     app.ui.status = e.clone();
                     // A frontend-only command's own failure is the command's result (#696: a
@@ -65,7 +65,7 @@ fn toggle(slot: &mut bool, p: &Value) -> Value {
 }
 
 /// Perform a frontend command (from `Event::Frontend`).
-pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Value) -> Result<Value, String> {
+pub fn frontend(app: &mut ArtheffectApp, ctx: &egui::Context, id: &str, p: Value) -> Result<Value, String> {
     let now = app.now();
     let v = &mut app.ui.viewer;
     Ok(match id {
@@ -96,7 +96,7 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
         // Audio scrubbing: one frame of audio at `time` (default the current time).
         "playback.scrubAudio" => {
             let cid = app.session.active_comp_id().ok_or("no composition")?;
-            let t = p.get("time").and_then(Value::as_f64).map_or(app.session.time(), effectcraft_engine::time::Tick::from_seconds_f64);
+            let t = p.get("time").and_then(Value::as_f64).map_or(app.session.time(), artheffect_engine::time::Tick::from_seconds_f64);
             app.scrub_audio(cid, t, now);
             json!({"playing": app.scrub.is_some()})
         }
@@ -105,11 +105,11 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
         // Reveal Layer Source / Reveal Composition: show the Project panel on the item, opening
         // its folders and clearing the search so the row is visible.
         "project.reveal" => {
-            let ids: Vec<effectcraft_engine::project::ItemId> = p
+            let ids: Vec<artheffect_engine::project::ItemId> = p
                 .get("items")
                 .and_then(Value::as_array)
-                .map(|items| items.iter().filter_map(Value::as_u64).map(effectcraft_engine::project::ItemId).collect())
-                .or_else(|| p.get("item").and_then(Value::as_u64).map(|item| vec![effectcraft_engine::project::ItemId(item)]))
+                .map(|items| items.iter().filter_map(Value::as_u64).map(artheffect_engine::project::ItemId).collect())
+                .or_else(|| p.get("item").and_then(Value::as_u64).map(|item| vec![artheffect_engine::project::ItemId(item)]))
                 .unwrap_or_default();
             crate::panels::project::reveal(app, ctx, &ids);
             json!({"items": ids.iter().map(|item| item.0).collect::<Vec<_>>()})
@@ -129,7 +129,7 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
         }
         "app.settings" => {
             let page = p.get("page").and_then(Value::as_str).unwrap_or("general");
-            crate::panels::settings::open(app, effectcraft_engine::prefs::page_id(page).unwrap_or("general"));
+            crate::panels::settings::open(app, artheffect_engine::prefs::page_id(page).unwrap_or("general"));
             Value::Null
         }
         "app.gpuInfo" => {
@@ -138,7 +138,7 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
                 "GPU Information",
                 &format!(
                     "{}Layer cache: {} MB  •  Preview cache: {} MB.",
-                    effectcraft_engine::sysinfo::gpu_summary(&app.session),
+                    artheffect_engine::sysinfo::gpu_summary(&app.session),
                     app.session.layer_cache.budget() >> 20,
                     app.frames.budget() >> 20
                 ),
@@ -198,8 +198,8 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
             // The play button and Spacebar: `{shortcut?}` picks which Preview panel shortcut's
             // options to play with (default Spacebar).
             let sc = match p.get("shortcut").and_then(Value::as_str) {
-                Some(k) => effectcraft_engine::preview::PreviewShortcut::parse(k).ok_or_else(|| format!("unknown preview shortcut `{k}`"))?,
-                None => effectcraft_engine::preview::PreviewShortcut::Spacebar,
+                Some(k) => artheffect_engine::preview::PreviewShortcut::parse(k).ok_or_else(|| format!("unknown preview shortcut `{k}`"))?,
+                None => artheffect_engine::preview::PreviewShortcut::Spacebar,
             };
             app.toggle_play_with(now, sc);
             json!({"playing": app.playback.playing, "shortcut": sc.id()})
@@ -282,7 +282,7 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
                 "white" => Some([0xff, 0xff, 0xff]),
                 "custom" => Some(v.custom_pasteboard),
                 hex => {
-                    let c = effectcraft_engine::color::Rgba::from_hex(hex).ok_or_else(|| format!("unknown colour `{hex}`"))?;
+                    let c = artheffect_engine::color::Rgba::from_hex(hex).ok_or_else(|| format!("unknown colour `{hex}`"))?;
                     let rgb = [(c.r * 255.0).round() as u8, (c.g * 255.0).round() as u8, (c.b * 255.0).round() as u8];
                     v.custom_pasteboard = rgb;
                     Some(rgb)
@@ -471,7 +471,7 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
         "file.interpretFootage" => {
             // Import ▸ Interpret Unlabeled Alpha As: Ask User.
             if let Some(i) = p.get("item").and_then(Value::as_u64) {
-                app.session.state.project_selection = vec![effectcraft_engine::project::ItemId(i)];
+                app.session.state.project_selection = vec![artheffect_engine::project::ItemId(i)];
             }
             crate::panels::dialogs::open_form(app, "file.interpretFootage", &json!({}));
             Value::Null
@@ -518,7 +518,7 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
                 comp.as_ref().is_some_and(|c| {
                     targets
                         .iter()
-                        .filter_map(|l| c.layer(effectcraft_engine::project::LayerId(*l)))
+                        .filter_map(|l| c.layer(artheffect_engine::project::LayerId(*l)))
                         .any(|l| l.props.find(u).is_some() || l.props.find_group(u).is_some())
                 })
             };
@@ -541,7 +541,7 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
 }
 
 /// Commands that need a file or folder path: ask the host's file dialog when `params` lacks one.
-pub(super) fn file_dialog(app: &mut EffectcraftApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
+pub(super) fn file_dialog(app: &mut ArtheffectApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
     enum Ask {
         Folder,
         Import,
@@ -609,7 +609,7 @@ pub(super) fn file_dialog(app: &mut EffectcraftApp, id: &str, params: &Value) ->
         "png", "jpg", "jpeg", "gif", "webp", "tif", "tiff", "bmp", "exr", "dpx", "cin", "wav", "aif", "aiff", "mp3", "flac", "ogg", "opus", "svg", "pdf", "ai",
         "eps", "psd", "psb", "tga", "hdr", "gltf", "glb", "obj", "stl", "fbx", "json", "csv", "tsv",
     ];
-    let footage = |more: &[&'static str]| effectcraft_project::VIDEO_EXTENSIONS.iter().chain(more).copied().collect::<Vec<_>>();
+    let footage = |more: &[&'static str]| artheffect_project::VIDEO_EXTENSIONS.iter().chain(more).copied().collect::<Vec<_>>();
     // A host whose blocking dialogs are unsafe inside this frame shows the dialog without
     // blocking — macOS: the nested event loop re-entered winit's handler on a drag over the
     // window and aborted the app (#511); Linux: the desktop portal's answer never gets pumped,
@@ -676,7 +676,7 @@ fn picked_value(key: &str, paths: Vec<String>) -> Option<Value> {
 
 /// A file dialog shown without blocking ([`crate::Hooks::file_dialog_async`]) answered: run its
 /// command with the picked path (nothing when it was cancelled).
-pub(crate) fn dialog_answered(app: &mut EffectcraftApp, answer: crate::DialogAnswer) {
+pub(crate) fn dialog_answered(app: &mut ArtheffectApp, answer: crate::DialogAnswer) {
     let Some(v) = picked_value(answer.key, answer.paths) else { return };
     if let Err(e) = run_with_picked(app, &answer.command, answer.key, &answer.params, v) {
         app.ui.status = e;
@@ -684,7 +684,7 @@ pub(crate) fn dialog_answered(app: &mut EffectcraftApp, answer: crate::DialogAns
 }
 
 /// Run command `id` with the path picked for it in parameter `key`.
-fn run_with_picked(app: &mut EffectcraftApp, id: &str, key: &str, params: &Value, v: Value) -> Result<Value, String> {
+fn run_with_picked(app: &mut ArtheffectApp, id: &str, key: &str, params: &Value, v: Value) -> Result<Value, String> {
     let mut p = params.as_object().cloned().unwrap_or_default();
     p.insert(key.to_string(), v);
     // Picked files import in the background, with the Importing card showing progress (#270).

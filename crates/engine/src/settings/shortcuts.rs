@@ -4,7 +4,7 @@
 //! lists, is *bindable*: it has a binding key
 //! (the command id, plus its bound parameters for entries such as `app.settings
 //! {"page":"general"}`), a scope (application-wide or a panel) and default keys. The built-in
-//! preset "EffectCraft Default" is After Effects' default keyboard layout and is read-only; custom
+//! preset "Artheffect Default" is After Effects' default keyboard layout and is read-only; custom
 //! presets store only their differences from it. Editing the default preset first duplicates it
 //! (as After Effects asks you to "Save As" a custom set). The shortcut dispatcher and the menus
 //! read the active preset through [`ShortcutTable`].
@@ -24,7 +24,7 @@ use serde_json::{Value, json};
 /// Preset file in the config store.
 pub const SHORTCUTS_FILE: &str = "shortcuts.json";
 /// The built-in (read-only) preset.
-pub const DEFAULT_PRESET: &str = "EffectCraft Default";
+pub const DEFAULT_PRESET: &str = "Artheffect Default";
 /// Scope of application-wide shortcuts.
 pub const APP_SCOPE: &str = "Application";
 
@@ -533,7 +533,7 @@ impl Keymaps {
         } else {
             self.presets.iter().find(|p| p.name == name).ok_or_else(|| format!("no shortcut preset `{name}`"))?.overrides.clone()
         };
-        Ok(json!({"format": "effectcraft-shortcuts", "version": 1, "name": name, "base": DEFAULT_PRESET, "overrides": overrides}))
+        Ok(json!({"format": "artheffect-shortcuts", "version": 1, "name": name, "base": DEFAULT_PRESET, "overrides": overrides}))
     }
 
     /// Import an exported preset (renamed if the name is taken) and activate it.

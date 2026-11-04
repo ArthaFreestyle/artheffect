@@ -1,8 +1,8 @@
 //! Composition menu, part two: crop to region of interest / layer bounds, Scale Composition, Save
 //! Frame As ▸ File, Copy Frame to Clipboard, Responsive Design — Time.
 
-use effectcraft_project::Marker;
-use effectcraft_time::Tick;
+use artheffect_project::Marker;
+use artheffect_time::Tick;
 use serde_json::{Value, json};
 
 use super::{CommandSpec, always, b_p, bad, comp_id, f_p, has_comp, has_layers, layers_p, str_p};
@@ -16,10 +16,10 @@ fn has_roi(s: &Session) -> std::result::Result<(), String> {
 
 /// Crop the comp to `[x, y, w, h]`: the comp shrinks and every unparented layer moves by -x, -y
 /// (all position keys too) so nothing moves on screen.
-fn crop(s: &mut Session, cid: effectcraft_project::ItemId, r: [f64; 4], label: &str) -> Result<Value> {
+fn crop(s: &mut Session, cid: artheffect_project::ItemId, r: [f64; 4], label: &str) -> Result<Value> {
     let (x, y) = (r[0].round(), r[1].round());
     // At most 30,000 px a side, like any composition (#788).
-    let (w, h) = (effectcraft_project::limits::size_f64(r[2]), effectcraft_project::limits::size_f64(r[3]));
+    let (w, h) = (artheffect_project::limits::size_f64(r[2]), artheffect_project::limits::size_f64(r[3]));
     s.edit(label, None, |proj, st| {
         let c = proj.comp_mut(cid).ok_or(EngineError::NoComp)?;
         let (old_w, old_h) = (c.width, c.height);
@@ -50,10 +50,10 @@ fn crop_to_layers(s: &mut Session, p: &Value) -> Result<Value> {
     let (cid, ids) = layers_p(s, p)?;
     let t = s.time();
     let comp = s.project.comp(cid).ok_or(EngineError::NoComp)?;
-    let ctx = effectcraft_render::EvalCtx::new(&s.project, cid, comp, t);
+    let ctx = artheffect_render::EvalCtx::new(&s.project, cid, comp, t);
     let mut b = [f64::MAX, f64::MAX, f64::MIN, f64::MIN];
     for l in comp.layers.iter().filter(|l| ids.contains(&l.id)) {
-        let Some([x0, y0, x1, y1]) = effectcraft_render::content_bounds(&ctx, l) else { continue };
+        let Some([x0, y0, x1, y1]) = artheffect_render::content_bounds(&ctx, l) else { continue };
         let (m, _) = ctx.layer_to_comp(l);
         for (px, py) in [(x0, y0), (x1, y0), (x1, y1), (x0, y1)] {
             let v = m.0;
@@ -72,8 +72,8 @@ fn crop_to_layers(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 /// Multiply a property's value, every key, its spatial tangents and its speeds by `f`.
-fn scale_prop(pr: &mut effectcraft_project::Property, f: f64) {
-    use effectcraft_keyframe::Value as KV;
+fn scale_prop(pr: &mut artheffect_project::Property, f: f64) {
+    use artheffect_keyframe::Value as KV;
     let mul = |v: &KV| match v {
         KV::Scalar(x) => KV::Scalar(x * f),
         KV::Vec2(a) => KV::Vec2(a.map(|x| x * f)),
@@ -94,19 +94,19 @@ fn scale_prop(pr: &mut effectcraft_project::Property, f: f64) {
 /// Multiply only the Z of a 3D value (and of its keys and spatial tangents) by `f`. Speeds follow:
 /// a spatial side's speed by how much the path's direction there stretches, so the ease keeps
 /// its shape; a per-dimension one (Scale) by `f` for Z only.
-fn scale_prop_z(pr: &mut effectcraft_project::Property, f: f64) {
-    use effectcraft_keyframe::Value as KV;
+fn scale_prop_z(pr: &mut artheffect_project::Property, f: f64) {
+    use artheffect_keyframe::Value as KV;
     let stretch = |v: [f64; 3]| {
         let n = v[0].hypot(v[1]).hypot(v[2]);
         if n > 1e-12 && n.is_finite() { v[0].hypot(v[1]).hypot(v[2] * f) / n } else { 1.0 }
     };
-    let pos = |k: &effectcraft_project::Keyframe| k.value.as_vec3();
+    let pos = |k: &artheffect_project::Keyframe| k.value.as_vec3();
     let sub = |a: [f64; 3], b: [f64; 3]| [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
     let is_zero = |v: [f64; 3]| v.iter().all(|x| x.abs() <= 1e-12);
     // Read every side's direction before anything changes (auto tangents come from the neighbours).
     let sides: Vec<(f64, f64)> = (0..pr.keys.len())
         .map(|i| {
-            let (tin, tout) = effectcraft_keyframe::spatial_tangents(&pr.keys, i);
+            let (tin, tout) = artheffect_keyframe::spatial_tangents(&pr.keys, i);
             let here = pr.keys.get(i).map(pos).unwrap_or_default();
             let chord = |j: Option<usize>| j.and_then(|j| pr.keys.get(j)).map(|k| sub(pos(k), here)).unwrap_or_default();
             let tin = if is_zero(tin) { chord(i.checked_sub(1)) } else { tin };
@@ -164,7 +164,7 @@ fn scale_comp(s: &mut Session, p: &Value) -> Result<Value> {
         _ => return Err(bad(C, "pass `factor`, `width` or `height`")),
     };
     let (w, h) = ((ow * f).round(), (oh * f).round());
-    let max = f64::from(effectcraft_project::limits::MAX_SIZE);
+    let max = f64::from(artheffect_project::limits::MAX_SIZE);
     if !f.is_finite() || f <= 0.0 || !(4.0..=max).contains(&w) || !(4.0..=max).contains(&h) {
         return Err(bad(C, format!("the composition would be {w}×{h}: width and height run from 4 to 30,000 px")));
     }
@@ -177,7 +177,7 @@ fn scale_comp(s: &mut Session, p: &Value) -> Result<Value> {
         let chain: std::collections::HashMap<_, _> =
             c.layers.iter().map(|l| (l.id, (l.transform().is_some_and(|tr| tr.get("scale").is_some()), l.is_3d(), l.parent))).collect();
         // (X and Y carried, Z carried); bounded, as parent chains in a file can loop.
-        let carried = |mut cur: Option<effectcraft_project::LayerId>| {
+        let carried = |mut cur: Option<artheffect_project::LayerId>| {
             let (mut xy, mut z) = (false, false);
             for _ in 0..64 {
                 let Some(&(has_scale, three_d, up)) = cur.and_then(|id| chain.get(&id)) else { break };
@@ -240,8 +240,8 @@ pub(crate) fn encode_png(rgba: &[u8], w: u32, h: u32) -> std::result::Result<Vec
 /// Save Frame As ▸ File with `queue`: a Render Queue item for the current frame, from the Frame
 /// Default templates (Edit ▸ Templates).
 fn queue_frame(s: &mut Session, p: &Value) -> Result<Value> {
-    use effectcraft_project::render_queue::{Channels, RenderQueueItem, TimeSpan};
-    use effectcraft_project::render_templates::TemplateSlot;
+    use artheffect_project::render_queue::{Channels, RenderQueueItem, TimeSpan};
+    use artheffect_project::render_templates::TemplateSlot;
     let cid = comp_id(s, p)?;
     let comp = s.project.comp(cid).ok_or(EngineError::NoComp)?;
     let t = f_p(p, "time").map(Tick::from_seconds_f64).unwrap_or(s.time());
@@ -281,7 +281,7 @@ fn save_frame(s: &mut Session, p: &Value) -> Result<Value> {
     let t = f_p(p, "time").map(Tick::from_seconds_f64).unwrap_or(s.time());
     let scale = f_p(p, "scale").unwrap_or(1.0).clamp(0.01, 4.0);
     let bg = comp.background;
-    let img = s.render(cid, t, effectcraft_render::RenderOpts { scale, backend: effectcraft_render::Backend::Auto, ..Default::default() });
+    let img = s.render(cid, t, artheffect_render::RenderOpts { scale, backend: artheffect_render::Backend::Auto, ..Default::default() });
     let rgba = if b_p(p, "transparent") == Some(false) { img.to_rgba8_over(bg) } else { img.to_rgba8() };
     let png = encode_png(&rgba, img.width, img.height).map_err(|e| EngineError::Other(format!("PNG encoding failed: {e}")))?;
     s.write_output(&path, &png)?;
@@ -297,7 +297,7 @@ fn copy_frame(s: &mut Session, p: &Value) -> Result<Value> {
     let t = f_p(p, "time").map(Tick::from_seconds_f64).unwrap_or(s.time());
     let scale = f_p(p, "scale").unwrap_or(1.0).clamp(0.01, 4.0);
     let bg = comp.background;
-    let img = s.render(cid, t, effectcraft_render::RenderOpts { scale, backend: effectcraft_render::Backend::Auto, ..Default::default() });
+    let img = s.render(cid, t, artheffect_render::RenderOpts { scale, backend: artheffect_render::Backend::Auto, ..Default::default() });
     let (width, height) = (img.width, img.height);
     let rgba = img.to_rgba8_over(bg);
     let expected = (width as usize).checked_mul(height as usize).and_then(|n| n.checked_mul(4));

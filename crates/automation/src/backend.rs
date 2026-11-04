@@ -1,7 +1,7 @@
 //! Where tools run: an in-process session, or the desktop app over its control channel.
 
-use effectcraft_engine::Session;
-use effectcraft_engine::time::Tick;
+use artheffect_engine::Session;
+use artheffect_engine::time::Tick;
 use serde_json::{Value, json};
 
 use crate::confine::{ConfinedFootage, ConfinedServices, Confinement, Lookup};
@@ -186,4 +186,4 @@ fn no_comp(comp: Option<&Value>) -> Error {
 }
 
 pub const NEED_BRIDGE: &str =
-    "this tool drives the live app: start it with `effectcraft --control 9877` and run the MCP server as `effectcraft-cli mcp --bridge 9877`";
+    "this tool drives the live app: start it with `artheffect --control 9877` and run the MCP server as `artheffect-cli mcp --bridge 9877`";

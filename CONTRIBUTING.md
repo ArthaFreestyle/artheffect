@@ -1,4 +1,4 @@
-# Contributing to EffectCraft
+# Contributing to Artheffect
 
 Thanks for helping. Please read [AGENTS.md](AGENTS.md) first: its rules on assets and clean-room
 work apply to everyone, people and AI agents alike, and they are not negotiable.
@@ -24,7 +24,7 @@ whose `Libs` line names your system's `libasound` (usually `libasound.so.2`); ev
 that variable set.
 
 ```sh
-cargo run -p effectcraft -- --demo       # the desktop app, with the demo project
+cargo run -p artheffect -- --demo       # the desktop app, with the demo project
 cargo test --workspace
 cargo xtask ci                           # what every commit must pass
 ```
@@ -34,7 +34,7 @@ still name the file and line, but a debugger cannot show local variables. For an
 debugger session use the `dev-full` profile, which is the same build with full debug info:
 
 ```sh
-cargo run --profile dev-full -p effectcraft -- --demo
+cargo run --profile dev-full -p artheffect -- --demo
 ```
 
 ### Windows
@@ -49,13 +49,13 @@ opening links from the app. With MSYS2:
 ```powershell
 C:\msys64\usr\bin\pacman.exe -S --needed mingw-w64-x86_64-gcc
 $env:PATH = "C:\msys64\mingw64\bin;$env:PATH"
-cargo +stable-x86_64-pc-windows-gnu run -p effectcraft -- --demo
+cargo +stable-x86_64-pc-windows-gnu run -p artheffect -- --demo
 ```
 
 An older MinGW earlier on `PATH` can break the build: CodeBlocks' GCC 8.1 fails to link
 `boa_engine` ([#1882](https://github.com/storytold/effectcraft/issues/1882)).
 
-Rust's bundled LLD and self-contained libraries don't include every import library EffectCraft
+Rust's bundled LLD and self-contained libraries don't include every import library Artheffect
 needs, so on their own they stop with `unable to find library` for `-lshlwapi`, `-lktmw32`,
 `-lpropsys` and `-lversion` ([#1886](https://github.com/storytold/effectcraft/issues/1886)). To
 link that way, copy those four from mingw-w64 into a folder of its own and add that folder to the
@@ -105,5 +105,4 @@ rustflags = ["-C", "link-self-contained=yes", "-L", "native=C:/gnu-import-libs"]
 
 ## Talk to us
 
-Questions, ideas and bug reports are welcome on [Discord](https://discord.gg/artcraft) and in
-GitHub issues.
+Questions, ideas and bug reports are welcome in GitHub issues.

@@ -738,15 +738,15 @@ pub fn keyframe(
     painter: &Painter,
     center: Pos2,
     size: f32,
-    left: effectcraft_engine::keyframe::KeyHalf,
-    right: effectcraft_engine::keyframe::KeyHalf,
+    left: artheffect_engine::keyframe::KeyHalf,
+    right: artheffect_engine::keyframe::KeyHalf,
     fill: Color32,
 ) {
     painter.extend(keyframe_shapes(center, size, left, right, fill));
 }
 
 /// The screen rect a [`keyframe`] glyph covers, read off the shapes it draws.
-pub fn keyframe_bounds(center: Pos2, size: f32, left: effectcraft_engine::keyframe::KeyHalf, right: effectcraft_engine::keyframe::KeyHalf) -> Rect {
+pub fn keyframe_bounds(center: Pos2, size: f32, left: artheffect_engine::keyframe::KeyHalf, right: artheffect_engine::keyframe::KeyHalf) -> Rect {
     // Any opaque fill: a transparent shape would report no bounds.
     egui::Shape::Vec(keyframe_shapes(center, size, left, right, Color32::WHITE)).visual_bounding_rect()
 }
@@ -757,11 +757,11 @@ pub fn keyframe_bounds(center: Pos2, size: f32, left: effectcraft_engine::keyfra
 fn keyframe_shapes(
     center: Pos2,
     size: f32,
-    left: effectcraft_engine::keyframe::KeyHalf,
-    right: effectcraft_engine::keyframe::KeyHalf,
+    left: artheffect_engine::keyframe::KeyHalf,
+    right: artheffect_engine::keyframe::KeyHalf,
     fill: Color32,
 ) -> Vec<egui::Shape> {
-    use effectcraft_engine::keyframe::KeyHalf as H;
+    use artheffect_engine::keyframe::KeyHalf as H;
     let r = size / 2.0;
     let mut out = Vec::with_capacity(2);
     let mut half = |pts: Vec<Pos2>| out.push(PathShape::convex_polygon(pts, fill, Stroke::new(0.5, fill)).into());
@@ -800,7 +800,7 @@ fn keyframe_shapes(
 
 #[cfg(test)]
 mod tests {
-    use effectcraft_engine::keyframe::KeyHalf as H;
+    use artheffect_engine::keyframe::KeyHalf as H;
 
     /// The Selection arrow (and the Speaker and Sparkle) are concave; filled as one polygon they
     /// rendered as a broken fan. Each is drawn as convex pieces instead.

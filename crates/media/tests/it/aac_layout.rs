@@ -9,8 +9,8 @@ use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use effectcraft_media::{MediaPool, probe, probe_bytes};
-use effectcraft_time::Tick;
+use artheffect_media::{MediaPool, probe, probe_bytes};
+use artheffect_time::Tick;
 use filmcraft_aac::{AudioSpecificConfig, Encoder, EncoderConfig, ProgramConfig};
 
 const RATE: u32 = 48_000;
@@ -153,7 +153,7 @@ fn mkv_after(empty: Option<(Vec<u8>, u32)>, asc: Vec<u8>, channels: u32, units: 
 
 /// The fixture written to disk as `name`.
 fn write(name: &str, bytes: &[u8]) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("effectcraft-aac-layout-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("artheffect-aac-layout-{}", std::process::id()));
     std::fs::create_dir_all(&dir).expect("mkdir");
     let p = dir.join(name);
     std::fs::write(&p, bytes).expect("write");
@@ -173,7 +173,7 @@ fn amp(s: &[f32], side: usize, freq: u32) -> f64 {
 }
 
 /// Stereo of one second from 0.5 s in, through the media pool as footage reads it.
-fn mix(pool: &MediaPool, footage: &effectcraft_project::Footage) -> Vec<f32> {
+fn mix(pool: &MediaPool, footage: &artheffect_project::Footage) -> Vec<f32> {
     pool.audio_samples(footage, Tick::from_seconds_f64(0.5), RATE as usize, RATE)
 }
 

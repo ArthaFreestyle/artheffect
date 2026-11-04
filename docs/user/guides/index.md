@@ -1,6 +1,6 @@
 ---
 title: Guides
-description: Step-by-step guides for the main tasks in EffectCraft.
+description: Step-by-step guides for the main tasks in Artheffect.
 order: 20
 ---
 

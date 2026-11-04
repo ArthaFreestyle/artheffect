@@ -3,14 +3,14 @@
 //! layer isn't selected), else Fit All Graphs to View. It used to open on an empty 0–100 range
 //! or with the curves off-view.
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
+use artheffect_engine::Session;
+use artheffect_ui_egui::ArtheffectApp;
 use egui_kittest::Harness;
 use serde_json::json;
 
 /// A 20 s comp whose Box layer has Rotation keys 300° at 8 s and 720° at 12 s; the Timeline is
 /// zoomed in on 0–4 s, so neither key is in view. Returns the harness and Rotation's uid.
-fn harness(select_layer: bool) -> (Harness<'static, EffectcraftApp>, u64, u64) {
+fn harness(select_layer: bool) -> (Harness<'static, ArtheffectApp>, u64, u64) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Fit", "width": 320, "height": 180, "frameRate": 30, "duration": 20})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Box", "color": "#e04020", "width": 80, "height": 80})).unwrap();
@@ -20,22 +20,22 @@ fn harness(select_layer: bool) -> (Harness<'static, EffectcraftApp>, u64, u64) {
     }
     let uid = s.active_comp().unwrap().layer(id).unwrap().props.prop("transform/rotation").unwrap().uid;
     s.execute("layer.select", json!({"layers": if select_layer { vec![id.0] } else { vec![] }})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.state_mut().ui.timeline.pps = Some(300.0);
     h.state_mut().ui.timeline.start = 0.0;
     h.run_steps(3);
     (h, id.0, uid)
 }
 
-fn open_graph(h: &mut Harness<'_, EffectcraftApp>) {
+fn open_graph(h: &mut Harness<'_, ArtheffectApp>) {
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "timeline.graphEditor", json!({})).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, "timeline.graphEditor", json!({})).unwrap();
     h.run_steps(4);
     assert!(h.state().ui.timeline.graph_editor);
 }
 
 /// Every key of the property sits inside the plot, and the value range spans `lo..=hi`.
-fn assert_framed(h: &Harness<'_, EffectcraftApp>, uid: u64, keys: &[usize], lo: f64, hi: f64) {
+fn assert_framed(h: &Harness<'_, ArtheffectApp>, uid: u64, keys: &[usize], lo: f64, hi: f64) {
     let plot = h.state().auto.find("timeline.graph").expect("graph plot").rect;
     for i in keys {
         let k = h.state().auto.find(&format!("timeline.graph.key.{uid}.0.{i}")).unwrap_or_else(|| panic!("graph key {i} not drawn")).rect;
@@ -70,9 +70,9 @@ fn opening_the_graph_editor_with_no_keys_selected_fits_all_graphs() {
     assert_framed(&h, uid, &[0, 1], 300.0, 720.0);
 }
 
-fn open_graph_toggle_twice(h: &mut Harness<'_, EffectcraftApp>) {
+fn open_graph_toggle_twice(h: &mut Harness<'_, ArtheffectApp>) {
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "timeline.graphEditor", json!({})).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, "timeline.graphEditor", json!({})).unwrap();
     h.run_steps(2);
     assert!(!h.state().ui.timeline.graph_editor);
     open_graph(h);
@@ -94,11 +94,11 @@ fn locked_graph_keys_preserve_the_existing_selection_and_keyframes() {
         for (time, value) in [(9.0, 100.0), (11.0, 200.0)] {
             s.execute("prop.addKey", json!({"layer": locked, "path": "transform/rotation", "time": time, "value": value})).unwrap();
         }
-        let locked_id = effectcraft_engine::project::LayerId(locked);
+        let locked_id = artheffect_engine::project::LayerId(locked);
         let locked_uid = s.active_comp().unwrap().layer(locked_id).unwrap().props.prop("transform/rotation").unwrap().uid;
         s.execute("layer.setSwitch", json!({"layers": [locked], "switch": "locked", "value": true})).unwrap();
         s.execute("keys.select", json!({"keys": [{"layer": layer, "prop": uid, "time": 12.0}]})).unwrap();
-        s.state.selected_props = vec![(effectcraft_engine::project::LayerId(layer), uid), (locked_id, locked_uid)];
+        s.state.selected_props = vec![(artheffect_engine::project::LayerId(layer), uid), (locked_id, locked_uid)];
         let selection = s.state.selected_keys.clone();
         let before = s.project.clone();
         open_graph(&mut h);
@@ -145,7 +145,7 @@ fn an_unlocked_graph_keys_menu_edits_the_clicked_key() {
     assert_eq!(selected[0].time.seconds(), 8.0);
     h.get_by_label("Easy Ease").click();
     h.run_steps(3);
-    let prop = h.state().session.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(layer)).unwrap().props.find(uid).unwrap();
-    assert_eq!(prop.keys[0].out_interp, effectcraft_engine::keyframe::Interp::Bezier);
-    assert_eq!(prop.keys[1].out_interp, effectcraft_engine::keyframe::Interp::Linear);
+    let prop = h.state().session.active_comp().unwrap().layer(artheffect_engine::project::LayerId(layer)).unwrap().props.find(uid).unwrap();
+    assert_eq!(prop.keys[0].out_interp, artheffect_engine::keyframe::Interp::Bezier);
+    assert_eq!(prop.keys[1].out_interp, artheffect_engine::keyframe::Interp::Linear);
 }

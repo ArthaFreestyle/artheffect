@@ -1,6 +1,6 @@
-//! EffectCraft's panels and built-in workspaces in craft-ui's shared docking model
+//! Artheffect's panels and built-in workspaces in craft-ui's shared docking model
 //! ([`craft_ui::docking`]): splits, tab groups, After Effects' stacked panels and floating
-//! windows. craft-ui owns the layout model, its validation and every transaction; EffectCraft
+//! windows. craft-ui owns the layout model, its validation and every transaction; Artheffect
 //! owns the panel ids, the built-in workspaces and the decorations of its tabs (the comp tabs of
 //! the Timeline, label swatches and viewer locks).
 
@@ -407,7 +407,7 @@ fn workspace_root(name: &str) -> Node<PanelKind> {
     }
 }
 
-/// Queries on a workspace that EffectCraft's menus, commands and panels ask.
+/// Queries on a workspace that Artheffect's menus, commands and panels ask.
 pub trait WorkspaceExt {
     /// `p` is in the docked tree.
     fn is_docked(&self, p: PanelKind) -> bool;

@@ -2,7 +2,7 @@
 //! `layer.setText`, text.insert / delete / setSelection / moveCaret, the text clipboard and the
 //! paste-formatting commands, with undo / redo.
 
-use effectcraft_keyframe::{BaselineOption, Justify, Kerning, TextDoc};
+use artheffect_keyframe::{BaselineOption, Justify, Kerning, TextDoc};
 use serde_json::json;
 
 use crate::Session;
@@ -17,7 +17,7 @@ fn session(text: &str) -> (Session, u64) {
 }
 
 fn doc(s: &Session, t: u64) -> TextDoc {
-    layer_doc(s, effectcraft_project::LayerId(t)).unwrap()
+    layer_doc(s, artheffect_project::LayerId(t)).unwrap()
 }
 
 fn sel(s: &Session) -> (usize, usize) {
@@ -208,7 +208,7 @@ fn duplicate_during_a_text_edit_ends_the_edit() {
     s.execute("text.edit", json!({"layer": t, "caret": 5})).unwrap();
     let copy = s.execute("edit.duplicate", json!({"layers": [t]})).unwrap()[0].as_u64().unwrap();
     assert_ne!(copy, t, "the duplicate is created");
-    assert_eq!(s.state.selected_layers, vec![effectcraft_project::LayerId(copy)], "the copy is selected");
+    assert_eq!(s.state.selected_layers, vec![artheffect_project::LayerId(copy)], "the copy is selected");
     assert!(s.state.text_edit.is_none(), "the edit ended with the selection move (#2226)");
     assert_eq!(doc(&s, t).text, "Hello", "the original keeps its text");
     assert_eq!(doc(&s, copy).text, "Hello", "and the copy carries it");
@@ -343,14 +343,14 @@ fn ime_session_epoch_tracks_replaced_text_and_layer_restoration() {
 
 #[test]
 fn no_op_ime_deletion_keeps_a_static_plain_text_value_and_records_no_step() {
-    use effectcraft_keyframe::Value as KV;
+    use artheffect_keyframe::Value as KV;
     let (mut s, t) = session("abc");
     // Legacy/imported text can still be stored as a plain Str rather than a TextDoc.
     let cid = s.active_comp_id().unwrap();
     let pr = std::sync::Arc::make_mut(&mut s.project)
         .comp_mut(cid)
         .unwrap()
-        .layer_mut(effectcraft_project::LayerId(t))
+        .layer_mut(artheffect_project::LayerId(t))
         .unwrap()
         .props
         .prop_mut("text/sourceText")
@@ -362,7 +362,7 @@ fn no_op_ime_deletion_keeps_a_static_plain_text_value_and_records_no_step() {
     // A non-zero before count at the document start deletes nothing.
     s.execute("text.deleteSurrounding", json!({"before": 1, "after": 0})).unwrap();
 
-    let pr = s.active_comp().unwrap().layer(effectcraft_project::LayerId(t)).unwrap().props.prop("text/sourceText").unwrap();
+    let pr = s.active_comp().unwrap().layer(artheffect_project::LayerId(t)).unwrap().props.prop("text/sourceText").unwrap();
     assert!(matches!(&pr.value, KV::Str(_)), "a no-op keeps the static Str variant");
     assert!(pr.keys.is_empty());
     assert_eq!(undo_steps(&s), steps, "a no-op adds no undo step");
@@ -372,7 +372,7 @@ fn no_op_ime_deletion_keeps_a_static_plain_text_value_and_records_no_step() {
 fn no_op_ime_deletion_does_not_add_a_keyframe_to_animated_source_text() {
     let (mut s, t) = editing("abc", 0);
     animate_source(&mut s, t);
-    let lid = effectcraft_project::LayerId(t);
+    let lid = artheffect_project::LayerId(t);
     let keys = |s: &Session| s.active_comp().unwrap().layer(lid).unwrap().props.prop("text/sourceText").unwrap().keys.len();
     assert_eq!(keys(&s), 1, "one key from the stopwatch");
     s.execute("time.set", json!({"time": 1.0})).unwrap();
@@ -535,9 +535,9 @@ fn atomic_batch_rollback_after_a_cross_comp_editor_switch_bumps_the_epoch() {
     let original = s.active_comp_id().unwrap();
     // Give the other comp a layer with the same id and the same Source Text, so only the comp
     // and editor-session identity distinguishes the two editors.
-    let layer = s.active_comp().unwrap().layer(effectcraft_project::LayerId(t)).unwrap().clone();
+    let layer = s.active_comp().unwrap().layer(artheffect_project::LayerId(t)).unwrap().clone();
     let other = new_other_comp(&mut s);
-    let other_id = effectcraft_project::ItemId(other);
+    let other_id = artheffect_project::ItemId(other);
     std::sync::Arc::make_mut(&mut s.project).comp_mut(other_id).unwrap().layers.push(layer);
     s.execute("comp.open", json!({"comp": original.0})).unwrap();
     begin_edit_at(&mut s, t, 3);
@@ -727,7 +727,7 @@ fn deleting_the_cti_keyframe_first_replaces_the_document_then_the_last_key_is_a_
     animate_source(&mut s, t);
     add_source_key(&mut s, t, 1.0, "later");
     let owner = ime_owner(&s);
-    let lid = effectcraft_project::LayerId(t);
+    let lid = artheffect_project::LayerId(t);
     let pr = s.active_comp().unwrap().layer(lid).unwrap().props.prop("text/sourceText").unwrap();
     let uid = pr.uid;
     let times: Vec<_> = pr.keys.iter().map(|k| k.time).collect();
@@ -789,12 +789,12 @@ fn sync_related_times_replaces_the_edited_document_when_it_moves_the_active_comp
     add_source_key(&mut s, t, 1.0, "a");
     let outer = s.active_comp_id().unwrap();
     let r = s.execute("layer.precompose", json!({"layers": [t], "name": "Inner", "open": true})).unwrap();
-    let inner = effectcraft_project::ItemId(r["comp"].as_u64().unwrap());
+    let inner = artheffect_project::ItemId(r["comp"].as_u64().unwrap());
     assert_eq!(s.active_comp_id(), Some(inner));
 
     begin_edit_at(&mut s, t, 6);
     let owner = ime_owner(&s);
-    s.sync_related_times(outer, effectcraft_time::Tick::from_seconds_f64(1.0));
+    s.sync_related_times(outer, artheffect_time::Tick::from_seconds_f64(1.0));
 
     assert_text(&s, t, "a");
     assert_eq!(sel(&s), (1, 1), "the related time move clamps the selection");
@@ -806,7 +806,7 @@ fn applying_a_preset_that_writes_source_text_replaces_the_edited_document() {
     let (mut s, t) = editing("abc", 1);
     let owner = ime_owner(&s);
     let preset = json!({
-        "effectcraftAnimationPreset": 1,
+        "artheffectAnimationPreset": 1,
         "properties": [{"path": "text/sourceText", "value": {"t": "Text", "v": {"text": "replaced"}}, "keys": []}],
     });
     s.execute("anim.applyPreset", json!({"preset": preset, "layers": [t]})).unwrap();
@@ -874,9 +874,9 @@ fn removing_the_active_comp_does_not_retarget_its_text_editor() {
     for replacement in [false, true] {
         let (mut s, t) = session("original");
         let original = s.active_comp_id().unwrap();
-        let layer = s.active_comp().unwrap().layer(effectcraft_project::LayerId(t)).unwrap().clone();
+        let layer = s.active_comp().unwrap().layer(artheffect_project::LayerId(t)).unwrap().clone();
         let other = new_other_comp(&mut s);
-        let other_id = effectcraft_project::ItemId(other);
+        let other_id = artheffect_project::ItemId(other);
         std::sync::Arc::make_mut(&mut s.project).comp_mut(other_id).unwrap().layers.push(layer);
         s.execute("comp.open", json!({"comp": other})).unwrap();
         s.execute("comp.open", json!({"comp": original.0})).unwrap();
@@ -907,9 +907,9 @@ fn opentype_features_per_range_render_and_query() {
     assert!(!d.style_at(0).opentype.fractions);
     assert!(d.style_at(8).opentype.fractions && d.style_at(8).opentype.stylistic_set(1));
     // The laid-out glyphs change (frac turns 1/2 into a fraction).
-    let plain = effectcraft_text::layout_doc(&TextDoc { text: "1/2".into(), ..Default::default() });
-    let frac = effectcraft_text::layout_doc(&d.slice(7..10));
-    let ids = |l: &effectcraft_text::TextLayout| l.glyphs.iter().map(|g| g.gid).collect::<Vec<_>>();
+    let plain = artheffect_text::layout_doc(&TextDoc { text: "1/2".into(), ..Default::default() });
+    let frac = artheffect_text::layout_doc(&d.slice(7..10));
+    let ids = |l: &artheffect_text::TextLayout| l.glyphs.iter().map(|g| g.gid).collect::<Vec<_>>();
     assert_ne!(ids(&plain), ids(&frac));
     // Undo restores the uniform style.
     s.execute("edit.undo", json!({})).unwrap();
@@ -934,8 +934,8 @@ fn fonts_lists_bundled_and_installed_families() {
     assert_eq!(inter["origin"], "bundled");
     assert!(inter["styles"].as_array().unwrap().contains(&json!("Bold")));
     // Installed fonts are listed without any layer having asked for one.
-    use effectcraft_text::fonts::FontSource as _;
-    let installed = effectcraft_text::fonts::DirectorySource::system().faces();
+    use artheffect_text::fonts::FontSource as _;
+    let installed = artheffect_text::fonts::DirectorySource::system().faces();
     for face in &installed {
         assert!(fams.iter().any(|f| f["family"].as_str().unwrap().eq_ignore_ascii_case(&face.family)), "{} not listed", face.family);
     }
@@ -1011,8 +1011,8 @@ fn pinned_variable_font(family: &str) -> Vec<u8> {
 /// the font menu's rows carry the flag the filter uses.
 #[test]
 fn fonts_filter_variable_families() {
-    const FAMILY: &str = "EffectCraft Variable Filter Test";
-    assert_eq!(effectcraft_text::fonts::add_font_data(pinned_variable_font(FAMILY)).len(), 1);
+    const FAMILY: &str = "Artheffect Variable Filter Test";
+    assert_eq!(artheffect_text::fonts::add_font_data(pinned_variable_font(FAMILY)).len(), 1);
     let mut s = Session::default();
     let all = s.execute("text.fonts", json!({})).unwrap();
     let fams = all["families"].as_array().unwrap();
@@ -1060,17 +1060,17 @@ fn instanced_variable_font(family: &str, instances: &[(&str, f32)]) -> Vec<u8> {
 /// do) is laid out at the instance's axis values; an axis set on the text still wins.
 #[test]
 fn variable_font_named_instances_are_styles() {
-    const FAMILY: &str = "EffectCraft Named Instance Test";
-    assert_eq!(effectcraft_text::fonts::add_font_data(instanced_variable_font(FAMILY, &[("Light", 300.0), ("Regular", 400.0), ("Black", 900.0)])).len(), 1);
+    const FAMILY: &str = "Artheffect Named Instance Test";
+    assert_eq!(artheffect_text::fonts::add_font_data(instanced_variable_font(FAMILY, &[("Light", 300.0), ("Regular", 400.0), ("Black", 900.0)])).len(), 1);
     let (mut s, t) = session("Hi");
     let fonts = s.execute("text.fonts", json!({"query": FAMILY})).unwrap();
     assert_eq!(fonts["families"][0]["styles"], json!(["Light", "Regular", "Black"]), "{fonts}");
-    let wght = |s: &Session| -> Vec<Vec<(String, f32)>> { effectcraft_text::layout_doc(&doc(s, t)).glyphs.iter().map(|g| g.variations.clone()).collect() };
+    let wght = |s: &Session| -> Vec<Vec<(String, f32)>> { artheffect_text::layout_doc(&doc(s, t)).glyphs.iter().map(|g| g.variations.clone()).collect() };
     let black = vec![("wght".to_string(), 900.0)];
     s.execute("layer.setText", json!({"layer": t, "font": FAMILY, "style": "Black"})).unwrap();
     let by_style = wght(&s);
     assert!(!by_style.is_empty() && by_style.iter().all(|v| v == &black), "{by_style:?}");
-    s.execute("layer.setText", json!({"layer": t, "font": "EffectCraftNamedInstanceTest-Black", "style": "Regular"})).unwrap();
+    s.execute("layer.setText", json!({"layer": t, "font": "ArtheffectNamedInstanceTest-Black", "style": "Regular"})).unwrap();
     let by_ps = wght(&s);
     assert!(!by_ps.is_empty() && by_ps.iter().all(|v| v == &black), "{by_ps:?}");
     s.execute("layer.setText", json!({"layer": t, "variations": {"wght": 650}})).unwrap();
@@ -1229,7 +1229,7 @@ fn deselect_all_keeps_an_empty_type_tool_layer() {
     let (mut s, _keep) = session("Hello");
     let new = s.execute("layer.newText", json!({"text": "", "position": [80.0, 80.0], "edit": true})).unwrap()["layer"].as_u64().unwrap();
     assert!(
-        s.state.text_edit.as_ref().is_some_and(|e| e.created && e.layer == effectcraft_project::LayerId(new)),
+        s.state.text_edit.as_ref().is_some_and(|e| e.created && e.layer == artheffect_project::LayerId(new)),
         "the Type tool opens the edit on its new, empty layer"
     );
     let before = layer_count(&s);
@@ -1246,7 +1246,7 @@ fn duplicate_ends_an_edit_on_already_committed_text() {
     let (mut s, t) = editing("Hello", 5);
     let copy = s.execute("edit.duplicate", json!({})).unwrap()[0].as_u64().unwrap();
     assert!(s.state.text_edit.is_none(), "the open edit ends on a direct edit.duplicate");
-    assert_eq!(s.state.selected_layers, vec![effectcraft_project::LayerId(copy)], "and the copy is selected");
+    assert_eq!(s.state.selected_layers, vec![artheffect_project::LayerId(copy)], "and the copy is selected");
     assert_eq!(doc(&s, t).text, "Hello", "the committed text is kept on the original");
     assert_eq!(doc(&s, copy).text, "Hello", "and carried by the copy");
     s.execute("edit.undo", json!({})).unwrap();
@@ -1256,7 +1256,7 @@ fn duplicate_ends_an_edit_on_already_committed_text() {
 
 #[test]
 fn duplicate_during_an_edit_copies_the_layer_not_a_selected_property_group() {
-    use effectcraft_project::LayerId;
+    use artheffect_project::LayerId;
     // Opening the editor by command, as a Type-tool click does, keeps the property selection, so
     // an effect, shape item or text animator can still be selected while the user types.
     for what in ["effect", "shape item", "text animator"] {
@@ -1299,7 +1299,7 @@ fn duplicate_during_an_edit_copies_the_layer_not_a_selected_property_group() {
 
 #[test]
 fn duplicate_during_an_edit_leaves_no_key_or_vertex_selected_on_the_original() {
-    use effectcraft_project::LayerId;
+    use artheffect_project::LayerId;
     // Opening the editor keeps the keyframe and mask-vertex selection too. Once the copy takes the
     // selection, Clear deletes the copy, not a key or a vertex of the original.
     for what in ["keyframe", "mask vertex"] {
@@ -1334,7 +1334,7 @@ fn duplicate_during_an_edit_leaves_no_key_or_vertex_selected_on_the_original() {
 
 #[test]
 fn duplicate_during_an_edit_copies_the_edited_layer_after_another_is_selected() {
-    use effectcraft_project::LayerId;
+    use artheffect_project::LayerId;
     // An engine route (MCP, control channel, script) can select another layer while the edit
     // stays open. The implicit Duplicate still means the edited layer, as Clear does; a named
     // target keeps its meaning.
@@ -1363,7 +1363,7 @@ fn duplicate_during_an_edit_copies_the_edited_layer_after_another_is_selected() 
 
 #[test]
 fn duplicate_during_an_edit_with_nothing_selected_copies_the_edited_layer() {
-    use effectcraft_project::LayerId;
+    use artheffect_project::LayerId;
     // An engine route can also clear the selection while the edit stays open. Duplicate stays
     // available, since its unnamed target is the edited layer, not the selection.
     let (mut s, _) = editing("Hello", 5);
@@ -1390,7 +1390,7 @@ fn duplicate_ends_the_open_edit_and_selects_the_copy() {
     // same route as text.endEdit before the selection moves, so every route (menu, shortcut,
     // palette, MCP, script) leaves one final state.
     assert!(s.state.text_edit.is_none(), "Duplicate ends the open text edit, as Deselect All does");
-    assert_eq!(s.state.selected_layers, vec![effectcraft_project::LayerId(copy)], "and selects the copy");
+    assert_eq!(s.state.selected_layers, vec![artheffect_project::LayerId(copy)], "and selects the copy");
     assert_eq!(doc(&s, t).text, "Hello!", "the original keeps the typed text");
     assert_eq!(doc(&s, copy).text, "Hello!", "the copy carries it too");
     // The edit ending is no undoable step of its own (as with text.endEdit): undo takes the
@@ -1407,7 +1407,7 @@ fn duplicate_ends_the_open_edit_and_selects_the_copy() {
 
 #[test]
 fn duplicate_of_an_empty_type_tool_layer_ends_the_edit_and_copies_it() {
-    use effectcraft_project::LayerId;
+    use artheffect_project::LayerId;
     let (mut s, _keep) = session("Hello");
     let new = s.execute("layer.newText", json!({"text": "", "position": [80.0, 80.0], "edit": true})).unwrap()["layer"].as_u64().unwrap();
     assert!(s.state.text_edit.as_ref().is_some_and(|e| e.created && e.layer == LayerId(new)), "the Type tool opens the edit on its new, empty layer");

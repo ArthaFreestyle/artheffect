@@ -4,12 +4,12 @@
 
 use std::sync::{Arc, Mutex};
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::ItemId;
-use effectcraft_engine::time::Tick;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::audio::{AudioDevice, AudioFeed};
-use effectcraft_ui_egui::frames::{RemoteDone, RemoteFrame, RemoteFrames, RemoteJob};
+use artheffect_engine::Session;
+use artheffect_engine::project::ItemId;
+use artheffect_engine::time::Tick;
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::audio::{AudioDevice, AudioFeed};
+use artheffect_ui_egui::frames::{RemoteDone, RemoteFrame, RemoteFrames, RemoteJob};
 use egui::{Event, Modifiers, pos2};
 use egui_kittest::Harness;
 use serde_json::json;
@@ -57,7 +57,7 @@ impl RemoteFrames for GatedFrames {
 
 impl GatedFrames {
     /// Put `frames` in the cache, dropping every other queued frame (playback asks again).
-    fn render(&self, h: &mut Harness<'_, EffectcraftApp>, cid: ItemId, frames: &[i64]) {
+    fn render(&self, h: &mut Harness<'_, ArtheffectApp>, cid: ItemId, frames: &[i64]) {
         let scale = h.state().shown_series(cid).scale as f64 / 1000.0;
         for &f in frames {
             h.state().request_frame(cid, f, scale);
@@ -75,7 +75,7 @@ impl GatedFrames {
     }
 
     /// Drop everything queued without caching it (the warm-up passes request viewer frames).
-    fn discard(&self, h: &mut Harness<'_, EffectcraftApp>) {
+    fn discard(&self, h: &mut Harness<'_, ArtheffectApp>) {
         while h.state().frames.dispatch_remote() != 0 {}
         for (_, _, _, done) in std::mem::take(&mut *self.pending.lock().unwrap()) {
             done(Err("held back by the test renderer".into()));
@@ -84,12 +84,12 @@ impl GatedFrames {
 }
 
 /// A 2 s, 30 fps comp whose solid sounds a tone (Audio switch on).
-fn setup(audible: bool, fake: &Fake) -> (EffectcraftApp, ItemId) {
+fn setup(audible: bool, fake: &Fake) -> (ArtheffectApp, ItemId) {
     setup_long(audible, fake, 2.0)
 }
 
 /// A `duration`-second, 30 fps comp whose solid sounds a tone (Audio switch on).
-fn setup_long(audible: bool, fake: &Fake, duration: f64) -> (EffectcraftApp, ItemId) {
+fn setup_long(audible: bool, fake: &Fake, duration: f64) -> (ArtheffectApp, ItemId) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "A", "width": 64, "height": 36, "frameRate": 30, "duration": duration})).unwrap();
     let cid = s.active_comp_id().unwrap();
@@ -98,7 +98,7 @@ fn setup_long(audible: bool, fake: &Fake, duration: f64) -> (EffectcraftApp, Ite
         s.execute("effect.apply", json!({"layers": [l], "effect": "ec.audio.tone"})).unwrap();
         s.execute("layer.setSwitch", json!({"layers": [l], "switch": "audio", "value": true})).unwrap();
     }
-    let mut app = EffectcraftApp::new(s);
+    let mut app = ArtheffectApp::new(s);
     let f = fake.clone();
     app.hooks.audio_device = Some(Box::new(move |_| Some(Box::new(f.clone()) as Box<dyn AudioDevice>)));
     (app, cid)
@@ -167,21 +167,21 @@ fn cmd_dragging_the_current_time_scrubs_and_an_idle_scrub_closes() {
 }
 
 /// The comp's frame at the current time.
-fn frame(h: &Harness<'_, EffectcraftApp>, cid: ItemId) -> i64 {
+fn frame(h: &Harness<'_, ArtheffectApp>, cid: ItemId) -> i64 {
     let app = h.state();
     app.session.project.comp(cid).unwrap().frame_rate.frame_at(app.session.time())
 }
 
 /// The frame under the preview audio's first sample (its clock before the device pulls any).
-fn audio_frame(h: &Harness<'_, EffectcraftApp>, cid: ItemId) -> Option<i64> {
+fn audio_frame(h: &Harness<'_, ArtheffectApp>, cid: ItemId) -> Option<i64> {
     let app = h.state();
     let a = app.audio.as_ref()?;
-    Some(effectcraft_ui_egui::audio::frame_of_sample(a.clock(), a.rate, app.session.project.comp(cid).unwrap().frame_rate))
+    Some(artheffect_ui_egui::audio::frame_of_sample(a.clock(), a.rate, app.session.project.comp(cid).unwrap().frame_rate))
 }
 
 /// Step until the preview's sound starts (or 60 s pass, for a loaded machine), checking the
 /// playhead holds `first` meanwhile. Returns whether the sound started.
-fn until_sound(h: &mut Harness<'_, EffectcraftApp>, cid: ItemId, first: i64) -> bool {
+fn until_sound(h: &mut Harness<'_, ArtheffectApp>, cid: ItemId, first: i64) -> bool {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(60);
     while std::time::Instant::now() < deadline {
         step(h);
@@ -197,7 +197,7 @@ fn until_sound(h: &mut Harness<'_, EffectcraftApp>, cid: ItemId, first: i64) -> 
 
 /// One step with the app clock, which playback runs on, a step (1/30 s) further on: these tests
 /// count time in steps, however long a step takes on a loaded machine.
-fn step(h: &mut Harness<'_, EffectcraftApp>) {
+fn step(h: &mut Harness<'_, ArtheffectApp>) {
     h.state_mut().clock_mut().advance(1.0 / 30.0);
     h.step();
 }
@@ -318,7 +318,7 @@ fn audio_only_previews_start_at_once() {
     h.state_mut().use_manual_clock();
     h.run_steps(2);
     let now = h.state().now();
-    h.state_mut().play_with(now, effectcraft_engine::preview::PreviewShortcut::AltNumpad0);
+    h.state_mut().play_with(now, artheffect_engine::preview::PreviewShortcut::AltNumpad0);
     assert!(h.state().audio.is_some() && !h.state().playback.starting, "Video off: the sound starts at once");
     assert_eq!(audio_frame(&h, cid), Some(0));
 }
@@ -369,7 +369,7 @@ fn no_device_plays_the_picture_and_stop_ends_the_wait() {
 }
 
 /// Start a preview and step until it leaves its startup (or 60 s pass). Returns whether it did.
-fn until_started(h: &mut Harness<'_, EffectcraftApp>) -> bool {
+fn until_started(h: &mut Harness<'_, ArtheffectApp>) -> bool {
     let now = h.state().now();
     h.state_mut().play(now);
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(60);
@@ -417,7 +417,7 @@ fn startup_finishes_at_any_ram_preview_budget() {
 /// An audible 160×120 comp with a 3D layer and Draft 3D, Extended Viewer on: its viewer frames
 /// render the pasteboard too, larger than the comp. Returns the harness once the first frame has
 /// rendered, the comp, and that frame's size.
-fn extended_viewer(fake: &Fake) -> (Harness<'static, EffectcraftApp>, ItemId, [usize; 2]) {
+fn extended_viewer(fake: &Fake) -> (Harness<'static, ArtheffectApp>, ItemId, [usize; 2]) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "E", "width": 160, "height": 120, "frameRate": 30, "duration": 8})).unwrap();
     let cid = s.active_comp_id().unwrap();
@@ -427,7 +427,7 @@ fn extended_viewer(fake: &Fake) -> (Harness<'static, EffectcraftApp>, ItemId, [u
     s.execute("layer.setSwitch", json!({"layers": [l], "switch": "threeD", "value": true})).unwrap();
     s.execute("comp.setSwitch", json!({"switch": "draft3d", "value": true})).unwrap();
     s.prefs.three_d.extended_viewer = true;
-    let mut app = EffectcraftApp::new(s);
+    let mut app = ArtheffectApp::new(s);
     let f = fake.clone();
     app.hooks.audio_device = Some(Box::new(move |_| Some(Box::new(f.clone()) as Box<dyn AudioDevice>)));
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).with_step_dt(1.0 / 30.0).build_eframe(|_| app);

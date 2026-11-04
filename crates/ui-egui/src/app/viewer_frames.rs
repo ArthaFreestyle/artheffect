@@ -1,6 +1,6 @@
 use super::*;
 
-impl EffectcraftApp {
+impl ArtheffectApp {
     /// The size of the viewer frame's texture (CPU frames; fitted to the GPU's texture limit).
     pub fn viewer_texture_size(&self) -> Option<[usize; 2]> {
         self.viewer_tex.as_ref().map(|(t, _, _)| t.size())
@@ -161,7 +161,7 @@ impl EffectcraftApp {
             draft: self.ui.viewer.fast_preview || draft,
             view: self.session.view_camera(comp),
             roi,
-            backend: effectcraft_engine::render::Backend::Auto,
+            backend: artheffect_engine::render::Backend::Auto,
             nested_switches: self.session.prefs.general.switches_affect_nested_comps,
             draft_shadows: self.session.prefs.three_d.realtime_shadows,
             proxy: Default::default(),

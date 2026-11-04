@@ -4,10 +4,10 @@
 
 use std::sync::Arc;
 
-use effectcraft_project::{Footage, FootageKind, ItemId};
-use effectcraft_raster::channels3d::{crypto_float, crypto_hash};
-use effectcraft_raster::{AuxChannels, Image};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_project::{Footage, FootageKind, ItemId};
+use artheffect_raster::channels3d::{crypto_float, crypto_hash};
+use artheffect_raster::{AuxChannels, Image};
+use artheffect_time::{FrameRate, Tick};
 use serde_json::{Value, json};
 
 use crate::Session;
@@ -90,7 +90,7 @@ fn selection(s: &Session) -> String {
     let l = &s.active_comp().unwrap().layers[0];
     let g = l.effects().unwrap().groups().next().unwrap();
     match &g.prop("selection").unwrap().value {
-        effectcraft_keyframe::Value::Str(t) => t.clone(),
+        artheffect_keyframe::Value::Str(t) => t.clone(),
         v => panic!("{v:?}"),
     }
 }
@@ -117,7 +117,7 @@ fn picks_replace_add_and_remove_in_one_undo_step_each() {
     assert_eq!(r["selected"], false);
     // The text parses back to exactly the picked IDs.
     let manifest = aux_at(Tick::ZERO).manifests[0].1.clone();
-    let got = effectcraft_effects::selection_hashes(&selection(&s), Some(&manifest));
+    let got = artheffect_effects::selection_hashes(&selection(&s), Some(&manifest));
     assert_eq!(got, [COMMA, "star*", "ghost"].map(crypto_hash));
     assert_eq!(s.history.undo.len(), steps + 5);
     s.execute("edit.undo", json!({})).unwrap();
@@ -190,7 +190,7 @@ fn rendered_matte_of_pick(s: &mut Session, x: f64, y: f64, scale: f64) -> (Strin
     s.execute_checked("prop.set", json!({"path": format!("effects/#{fx}/matteOnly"), "value": true})).unwrap();
     let (cid, comp) = (s.active_comp_id().unwrap(), s.active_comp().unwrap());
     let layer = &comp.layers[0];
-    let ctx = effectcraft_render::EvalCtx {
+    let ctx = artheffect_render::EvalCtx {
         project: &s.project,
         comp_id: cid,
         comp,
@@ -200,7 +200,7 @@ fn rendered_matte_of_pick(s: &mut Session, x: f64, y: f64, scale: f64) -> (Strin
         property_overrides: &[],
         media_overrides: &[],
     };
-    let buf = s.renderer(effectcraft_render::RenderOpts { scale, ..Default::default() }).content_buf(&ctx, layer).unwrap();
+    let buf = s.renderer(artheffect_render::RenderOpts { scale, ..Default::default() }).content_buf(&ctx, layer).unwrap();
     let (px, py) = buf.to_px([x, y]);
     let m = buf.img.get(px.floor() as i64, py.floor() as i64)[0];
     (r["name"].as_str().unwrap_or("?").to_string(), m)
@@ -221,7 +221,7 @@ fn pick_at_scale_0_8_matches_the_native_buffer_the_effect_renders() {
 #[test]
 fn pick_on_a_proxy_matches_the_proxy_sized_buffer() {
     let mut s = session();
-    let item = *s.project.items.iter().find(|(_, i)| matches!(i.kind, effectcraft_project::ItemKind::Footage(_))).unwrap().0;
+    let item = *s.project.items.iter().find(|(_, i)| matches!(i.kind, artheffect_project::ItemKind::Footage(_))).unwrap().0;
     s.execute("file.setProxy", json!({"item": item.0, "path": "/renders/crypto_proxy.exr"})).unwrap();
     let (name, m) = rendered_matte_of_pick(&mut s, 6.5, 1.5, 1.0);
     assert!(m >= 0.5, "picked {name:?}, but the render gives it matte {m} there");
@@ -422,7 +422,7 @@ fn hover_latency() {
     cases.push(("3D precomp 1920x1080", s));
     for (name, mut s) in cases {
         let cid = s.active_comp_id().unwrap();
-        let _ = s.render(cid, Tick::ZERO, effectcraft_render::RenderOpts::default());
+        let _ = s.render(cid, Tick::ZERO, artheffect_render::RenderOpts::default());
         let ms: Vec<String> = (0..6)
             .map(|i| {
                 let t0 = std::time::Instant::now();
@@ -487,7 +487,7 @@ fn picks_match_the_render_at_1080p_4k_odd_sizes_and_on_proxies() {
         let xs = [36.6, 37.2, 0.4, wl / 2.0 + 0.3, wl - 0.6, wl - 37.4];
         let ys = [28.7, 29.1, hl - 0.5, hl / 3.0];
         let mut bad = mismatches(&mut s, &[1.0, 0.5, 0.33, 0.25], xs.iter().copied(), &ys);
-        let item = *s.project.items.iter().find(|(_, i)| matches!(i.kind, effectcraft_project::ItemKind::Footage(_))).unwrap().0;
+        let item = *s.project.items.iter().find(|(_, i)| matches!(i.kind, artheffect_project::ItemKind::Footage(_))).unwrap().0;
         s.execute("file.setProxy", json!({"item": item.0, "path": "/renders/cells_proxy.exr"})).unwrap();
         bad.extend(mismatches(&mut s, &[1.0, 0.5, 0.33, 0.25], xs.iter().copied(), &ys).into_iter().map(|b| format!("proxy {b}")));
         assert!(bad.is_empty(), "{w}x{h}: {} mismatches:\n{}", bad.len(), bad.join("\n"));
@@ -508,10 +508,10 @@ fn hover_probe_is_released_on_disarm_delete_open_and_footage_changes() {
         ("effect delete", |s| {
             s.execute_checked("effect.remove", json!({"effect": "Cryptomatte"})).unwrap();
         }),
-        ("open / new", |s| s.replace_project(effectcraft_project::Project::default(), None)),
+        ("open / new", |s| s.replace_project(artheffect_project::Project::default(), None)),
         ("footage change", |s| {
             let f = s.project.items.values().find_map(|i| match &i.kind {
-                effectcraft_project::ItemKind::Footage(f) => Some(f.clone()),
+                artheffect_project::ItemKind::Footage(f) => Some(f.clone()),
                 _ => None,
             });
             s.forget_decoded(&f.unwrap());
@@ -684,7 +684,7 @@ fn a_cancelled_build_stops_before_rendering_its_input() {
         ("newer request", |s| drop(s.crypto_probe_job(&json!({"effect": 1, "x": 0.5, "y": 1.5, "time": 1.5})).unwrap())),
         ("disarm", |s| s.drop_crypto_probe()),
         ("edit", |s| drop(s.execute_checked("prop.set", json!({"path": "effects/#1/matteOnly", "value": true})).unwrap())),
-        ("project switch", |s| s.replace_project(effectcraft_project::Project::default(), None)),
+        ("project switch", |s| s.replace_project(artheffect_project::Project::default(), None)),
     ];
     for (what, cancel) in [("not cancelled", None), ("newer request", Some(0)), ("disarm", Some(1)), ("edit", Some(2)), ("project switch", Some(3))] {
         let gate = Arc::new(Gate::default());

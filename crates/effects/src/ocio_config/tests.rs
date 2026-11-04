@@ -167,7 +167,7 @@ fn parses_spaces_roles_displays_and_converts() {
 /// The OCIO Color Space and Display Transform effects with Configuration ▸ Custom.
 #[test]
 fn effects_use_a_custom_config() {
-    use effectcraft_keyframe::Value;
+    use artheffect_keyframe::Value;
     let cfg = "ocio_profile_version: 1\nroles:\n  default: lin\ndisplays:\n  Monitor:\n    - !<View> {name: Video, colorspace: g2}\ncolorspaces:\n  - !<ColorSpace>\n    name: lin\n  - !<ColorSpace>\n    name: g2\n    to_reference: !<ExponentTransform> {value: [2, 2, 2, 1]}\n";
     let img = crate::Image::filled(2, 2, [0.5, 0.25, 1.0, 1.0]);
     let fx = |id: &str, extra: &[(&str, Value)]| {
@@ -204,7 +204,7 @@ fn effects_use_a_custom_config() {
 /// the scene through the default view transform, and a log space uses an
 /// AllocationTransform.
 fn blender_like(dir: &Path) -> Config {
-    use effectcraft_color::space::{invert, rgb_to_xyz};
+    use artheffect_color::space::{invert, rgb_to_xyz};
     let e_to_d65 = crate::ocio::bradford([1.0 / 3.0, 1.0 / 3.0], D65);
     let rows = |m: [[f64; 3]; 3], sep: &str, end: &str| m.iter().map(|r| format!("{}{sep}{}{sep}{}{end}", r[0], r[1], r[2])).collect::<Vec<_>>();
     std::fs::write(dir.join("luts/e_to_d65.spimtx"), rows(e_to_d65, " ", " 0\n").concat()).unwrap();

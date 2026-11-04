@@ -2,23 +2,23 @@
 //! own, which on desktop is an OS window that can go on another screen, and Move Panel to Main
 //! Window docks it again. The test harness embeds viewports, so these windows draw in the main
 //! window here, as on the web.
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::{PanelKind, WorkspaceExt as _};
-use effectcraft_ui_egui::dock_ui::sanitized_window_rect;
+use artheffect_engine::Session;
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::dock::{PanelKind, WorkspaceExt as _};
+use artheffect_ui_egui::dock_ui::sanitized_window_rect;
 use serde_json::json;
 
-fn invoke(app: &mut EffectcraftApp, ctx: &egui::Context, params: serde_json::Value) -> Result<serde_json::Value, String> {
-    effectcraft_ui_egui::menus::invoke(app, ctx, "window.panelWindow", params)
+fn invoke(app: &mut ArtheffectApp, ctx: &egui::Context, params: serde_json::Value) -> Result<serde_json::Value, String> {
+    artheffect_ui_egui::menus::invoke(app, ctx, "window.panelWindow", params)
 }
 
-fn native(app: &EffectcraftApp, panel: PanelKind) -> Option<[f32; 4]> {
+fn native(app: &ArtheffectApp, panel: PanelKind) -> Option<[f32; 4]> {
     app.ui.dock.layout.floating.iter().find(|w| w.contains(&panel)).and_then(|w| w.native)
 }
 
 #[test]
 fn panel_window_command_moves_a_docked_panel_into_its_own_window_and_back() {
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = ArtheffectApp::new(Session::default());
     let ctx = egui::Context::default();
     assert!(app.ui.dock.is_docked(PanelKind::Project));
     assert_eq!(invoke(&mut app, &ctx, json!({"panel": "Project", "window": true})).unwrap(), json!({"window": true}));
@@ -44,23 +44,23 @@ fn panel_window_command_moves_a_docked_panel_into_its_own_window_and_back() {
     }
     assert_eq!(app.ui.dock, before);
     // Docking it back into the main window ends its window.
-    effectcraft_ui_egui::menus::invoke(&mut app, &ctx, "window.dockPanel", json!({"panel": "Project", "anchor": "Timeline"})).unwrap();
+    artheffect_ui_egui::menus::invoke(&mut app, &ctx, "window.dockPanel", json!({"panel": "Project", "anchor": "Timeline"})).unwrap();
     assert!(!app.in_panel_window(PanelKind::Project));
     assert!(app.ui.dock.is_docked(PanelKind::Project));
 }
 
 #[test]
 fn panel_windows_survive_restart_with_hostile_places_made_safe() {
-    use effectcraft_engine::config::MemoryConfig;
+    use artheffect_engine::config::MemoryConfig;
     use std::sync::Arc;
     let store = Arc::new(MemoryConfig::default());
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = ArtheffectApp::new(Session { config: Some(store.clone()), ..Default::default() });
     let ctx = egui::Context::default();
     invoke(&mut app, &ctx, json!({"panel": "Project", "window": true})).unwrap();
     let hostile = [90_000.0, -99_000.0, 99_000.0, 0.5];
     app.apply_dock(craft_ui::docking::Action::SetNative { panel: PanelKind::Project, rect: Some(hostile) }).unwrap();
     eframe::App::on_exit(&mut app);
-    let restarted = EffectcraftApp::new(Session { config: Some(store), ..Default::default() });
+    let restarted = ArtheffectApp::new(Session { config: Some(store), ..Default::default() });
     assert_eq!(native(&restarted, PanelKind::Project), Some(sanitized_window_rect(hostile)));
     let [x, y, w, h] = sanitized_window_rect(hostile);
     assert!(x <= 100_000.0 && y >= -100_000.0 && (160.0..=16_384.0).contains(&w) && (100.0..=16_384.0).contains(&h));
@@ -71,16 +71,16 @@ fn panel_windows_survive_restart_with_hostile_places_made_safe() {
 fn a_click_on_a_floating_panel_does_nothing_while_a_dialog_is_open() {
     use egui::{Event, Modifiers, PointerButton, pos2, vec2};
     use egui_kittest::Harness;
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = ArtheffectApp::new(Session::default());
     app.ui.start_screen = false;
     app.apply_dock(craft_ui::docking::Action::Float { panel: PanelKind::Project, rect: [80.0, 120.0, 320.0, 240.0] }).unwrap();
     let mut h = Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(move |_| app);
     h.run_steps(3);
-    let close = |h: &Harness<'_, EffectcraftApp>| {
+    let close = |h: &Harness<'_, ArtheffectApp>| {
         let e = h.state().auto.elements.iter().find(|e| e.id.starts_with("panel.float.") && e.id.ends_with(".close")).expect("the floating window's ×");
         pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0)
     };
-    let click = |h: &mut Harness<'_, EffectcraftApp>, pos| {
+    let click = |h: &mut Harness<'_, ArtheffectApp>, pos| {
         h.event(Event::PointerMoved(pos));
         h.step();
         for pressed in [true, false] {
@@ -91,7 +91,7 @@ fn a_click_on_a_floating_panel_does_nothing_while_a_dialog_is_open() {
     };
     let at = close(&h);
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "app.settings", json!({"page": "general"})).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, "app.settings", json!({"page": "general"})).unwrap();
     h.run_steps(3);
     let before = h.state().ui.dock.clone();
     click(&mut h, at);

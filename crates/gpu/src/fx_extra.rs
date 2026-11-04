@@ -4,7 +4,7 @@
 //! Wipe's polygon are computed on the CPU in f64 as the CPU effect does; the kernels work
 //! relative to the shape's centre.
 
-use effectcraft_effects::EffectCtx;
+use artheffect_effects::EffectCtx;
 
 use crate::context::{Enc, Params};
 use crate::effects::{GBuf, gaussian_blur};
@@ -189,7 +189,7 @@ fn gaussian_legacy(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
         _ => (1.0, 1.0),
     };
     // Small sigmas use the CPU's sampled kernel (#1939).
-    if effectcraft_raster::gaussian_is_exact(s * kx, s * ky) {
+    if artheffect_raster::gaussian_is_exact(s * kx, s * ky) {
         return None;
     }
     if !ctx.adjustment {

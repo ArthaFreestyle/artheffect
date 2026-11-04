@@ -14,7 +14,7 @@ pub mod scopes;
 pub mod warp;
 pub mod yuv;
 
-use effectcraft_color::{BlendMode, blend_pixel};
+use artheffect_color::{BlendMode, blend_pixel};
 use rayon::prelude::*;
 
 pub use blur::{box_blur, directional_blur, gaussian_blur, gaussian_blur_exact, gaussian_is_exact, radial_blur};

@@ -1,4 +1,4 @@
-// Original work for EffectCraft; the maths follows the Hugging Face `transformers` SAM 2 video
+// Original work for Artheffect; the maths follows the Hugging Face `transformers` SAM 2 video
 // implementation (Apache-2.0, see NOTICE).
 //! Memory attention on the GPU: four layers of self-attention over the current frame and cross-attention to
 //! the memory bank, with axial rotary position encoding. The attention is one head of 256 channels; the

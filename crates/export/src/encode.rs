@@ -1,12 +1,12 @@
-//! Movie export: FilmCraft H.264, HEVC (`effectcraft-hevcenc`) and AV1 (`effectcraft-av1enc`)
+//! Movie export: FilmCraft H.264, HEVC (`artheffect-hevcenc`) and AV1 (`artheffect-av1enc`)
 //! → MP4 (+ AAC), ProRes and uncompressed `raw ` → MOV (+ PCM), muxed by
 //! FilmCraft's ISO BMFF / QuickTime writer.
 
 use std::io::Write;
 
-use effectcraft_project::render_queue::{AudioFormat, Channels, OutputFormat, ProResProfile};
-use effectcraft_project::{Comp, ProjectSettings};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_project::render_queue::{AudioFormat, Channels, OutputFormat, ProResProfile};
+use artheffect_project::{Comp, ProjectSettings};
+use artheffect_time::{FrameRate, Tick};
 use filmcraft_isobmff::{Brand, ColorInfo, FourCc, Mp4Writer, PcmConfig, SampleEntry, TrackConfig, WriteSample, WriterOptions};
 use rayon::prelude::*;
 
@@ -33,7 +33,7 @@ pub(crate) struct Codes {
 }
 
 pub(crate) fn output_codes(settings: &ProjectSettings, channels: Channels) -> Codes {
-    use effectcraft_project::ColorSpace as Space;
+    use artheffect_project::ColorSpace as Space;
     let output = settings.working_space.and(settings.output_space).filter(|_| channels != Channels::Alpha);
     let (primaries, transfer) = match output {
         None | Some(Space::Srgb | Space::Rec709) => (1, 1),
@@ -183,7 +183,7 @@ impl VideoEncoder for H264 {
     }
 }
 
-pub(crate) use effectcraft_raster::yuv::rgba_to_yuv420;
+pub(crate) use artheffect_raster::yuv::rgba_to_yuv420;
 
 // ---------------------------------------------------------------- ProRes
 
@@ -301,8 +301,8 @@ fn deinterleave(buf: &[f32], channels: usize) -> Vec<Vec<f32>> {
 
 /// The comp's audio over `n` samples from `start`, interleaved with the module's channel count
 /// (mono = the average of left and right).
-pub(crate) fn mix(cx: &Cx, start: effectcraft_time::Tick, n: usize, sr: u32) -> Vec<f32> {
-    let st = effectcraft_render::audio::mix_comp(&cx.project, cx.footage, cx.expr, cx.comp, start, n, sr);
+pub(crate) fn mix(cx: &Cx, start: artheffect_time::Tick, n: usize, sr: u32) -> Vec<f32> {
+    let st = artheffect_render::audio::mix_comp(&cx.project, cx.footage, cx.expr, cx.comp, start, n, sr);
     if cx.output.audio_channels == 1 { st.as_chunks::<2>().0.iter().map(|p| (p[0] + p[1]) * 0.5).collect() } else { st }
 }
 
@@ -353,7 +353,7 @@ pub(crate) async fn movie(job: &Cx<'_>, comp: &Comp, w: u32, h: u32, st: &mut St
     let brand = if matches!(fmt, OutputFormat::ProRes | OutputFormat::Uncompressed) { Brand::Mov } else { Brand::Mp4 };
     let batch = batch_size();
     let yuv = venc.takes_yuv420();
-    let render = |_: u64, img: effectcraft_raster::Image| -> Pixels {
+    let render = |_: u64, img: artheffect_raster::Image| -> Pixels {
         let px = job.pixels(&img, comp, channels, w, h);
         if yuv { Pixels::Yuv420(Yuv420::from_rgba(&px, w as usize, h as usize)) } else { Pixels::Rgba(px) }
     };
@@ -501,7 +501,7 @@ pub(crate) async fn movie(job: &Cx<'_>, comp: &Comp, w: u32, h: u32, st: &mut St
 
 #[cfg(test)]
 mod tests {
-    use effectcraft_raster::yuv::{UNIT8, round_pos};
+    use artheffect_raster::yuv::{UNIT8, round_pos};
 
     use super::*;
 

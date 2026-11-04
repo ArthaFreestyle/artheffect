@@ -5,8 +5,8 @@
 //! syntheses against the ground truth they are reconstructing, and check the GPU is not the
 //! worse of the two.
 
-use effectcraft_raster::Image;
-use effectcraft_raster::inpaint::{FillBackend, FillInput, FillOpts, fill_sequence_with, membrane_fill, patch_fill, psnr};
+use artheffect_raster::Image;
+use artheffect_raster::inpaint::{FillBackend, FillInput, FillOpts, fill_sequence_with, membrane_fill, patch_fill, psnr};
 
 use crate::tests::gpu;
 
@@ -18,7 +18,7 @@ fn background(w: u32, h: u32, dx: f32) -> Image {
         for x in 0..w {
             let fx = x as f32 + dx;
             let s = 0.5 + 0.3 * (fx * std::f32::consts::TAU / 10.0).sin();
-            let n = effectcraft_raster::hash_noise(((fx.floor() as i64).rem_euclid(20) / 4) as u32, (y % 20) / 4, 3);
+            let n = artheffect_raster::hash_noise(((fx.floor() as i64).rem_euclid(20) / 4) as u32, (y % 20) / 4, 3);
             img.set(x, y, [s, 0.3 + 0.4 * n, 0.6 - 0.3 * s * n, 1.0]);
         }
     }
@@ -173,7 +173,7 @@ fn edge_blend_takes_the_cpu_membrane() {
     let gt = background(w, h, 0.0);
     let hole = rect_hole(w, h, 30, 20, 14);
     let input = FillInput { frames: vec![cut(&gt, &hole); 4], holes: vec![hole.clone(); 4], references: vec![] };
-    let opts = FillOpts { method: effectcraft_raster::inpaint::FillMethod::EdgeBlend, ..Default::default() };
+    let opts = FillOpts { method: artheffect_raster::inpaint::FillMethod::EdgeBlend, ..Default::default() };
     let edge = fill_sequence_with(&input, &opts, g, &mut |_, _| true).expect("fill");
     for t in 1..4 {
         assert!(psnr(&edge[t], &edge[0], Some(&hole)) > 40.0, "frame {t}");
@@ -186,7 +186,7 @@ fn edge_blend_takes_the_cpu_membrane() {
 fn the_target_band_is_the_dilated_hole() {
     let (w, h) = (24u32, 18u32);
     let hole = rect_hole(w, h, 8, 6, 4);
-    let near = effectcraft_raster::inpaint::dilate(&hole, w as usize, h as usize, 3);
+    let near = artheffect_raster::inpaint::dilate(&hole, w as usize, h as usize, 3);
     assert!(near.iter().filter(|b| **b).count() > hole.iter().filter(|b| **b).count());
     assert!(near.iter().zip(&hole).all(|(n, h)| !*h || *n));
 }
@@ -209,7 +209,7 @@ fn flow_agrees_with_the_cpu() {
     let a = membrane_fill(&cut(&a_gt, &hole_a), &hole_a);
     let b = membrane_fill(&cut(&b_gt, &hole_b), &hole_b);
     assert!(crate::inpaint::flow_image(&g.ctx, &a, &b).is_some(), "the flow fell back to the CPU");
-    let cpu = effectcraft_raster::inpaint::CpuFill.flow(&a, &b, &hole_a, &hole_b);
+    let cpu = artheffect_raster::inpaint::CpuFill.flow(&a, &b, &hole_a, &hole_b);
     let dev = g.flow(&a, &b, &hole_a, &hole_b);
     assert_eq!((dev.cols, dev.rows, dev.block), (cpu.cols, cpu.rows, cpu.block));
     // The field is the CPU's to a float rounding: the luma is the CPU's (`luma_pair`), the
@@ -289,7 +289,7 @@ fn small_frames_get_a_zero_flow() {
 fn sequence_fill_with_the_device_flow_matches_the_cpu() {
     let Some(g) = gpu() else { return };
     let (w, h) = (96u32, 64u32);
-    let cpu = effectcraft_raster::inpaint::CpuFill;
+    let cpu = artheffect_raster::inpaint::CpuFill;
     for pan in [0.0f32, 2.0] {
         let mut frames = vec![];
         let mut holes = vec![];

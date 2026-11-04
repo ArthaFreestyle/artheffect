@@ -231,8 +231,8 @@ impl Tool {
 
 use super::*;
 /// The viewer's Resolution: each composition keeps its own in the project
-/// ([`effectcraft_engine::project::Comp::resolution`], `EffectcraftApp::viewer_res`).
-pub use effectcraft_engine::project::Resolution;
+/// ([`artheffect_engine::project::Comp::resolution`], `ArtheffectApp::viewer_res`).
+pub use artheffect_engine::project::Resolution;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
@@ -812,13 +812,13 @@ pub(crate) struct FrameWindow {
 #[derive(Clone, Copy)]
 pub(crate) struct PlaybackPass<'a> {
     pub(crate) ctx: &'a egui::Context,
-    pub(crate) comp: &'a effectcraft_engine::project::Comp,
+    pub(crate) comp: &'a artheffect_engine::project::Comp,
     pub(crate) cid: ItemId,
     pub(crate) scale: f64,
     pub(crate) now: f64,
-    pub(crate) frame_rate: effectcraft_engine::time::FrameRate,
+    pub(crate) frame_rate: artheffect_engine::time::FrameRate,
     pub(crate) series: FrameKey,
-    pub(crate) plan: Option<effectcraft_engine::preview::PreviewPlan>,
+    pub(crate) plan: Option<artheffect_engine::preview::PreviewPlan>,
     pub(crate) window: FrameWindow,
     pub(crate) cur: i64,
     pub(crate) video: bool,

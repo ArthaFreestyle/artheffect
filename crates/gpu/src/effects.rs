@@ -1,17 +1,17 @@
-//! GPU effects: the same steps as the CPU effects in `effectcraft-effects` (padding, blur
+//! GPU effects: the same steps as the CPU effects in `artheffect-effects` (padding, blur
 //! radii, parameter conversions), with the pixel loops as compute kernels.
 
-use effectcraft_effects::{Buf, EffectCtx};
-use effectcraft_raster::Sampling;
-use effectcraft_render::FxStep;
+use artheffect_effects::{Buf, EffectCtx};
+use artheffect_raster::Sampling;
+use artheffect_render::FxStep;
 
 use crate::context::{Enc, GpuImage, Params};
 use crate::ops;
 
-/// Effects with a GPU implementation (must equal `effectcraft_effects::GPU_EFFECTS`), plus the
+/// Effects with a GPU implementation (must equal `artheffect_effects::GPU_EFFECTS`), plus the
 /// expression controls (pass-throughs).
 pub fn supports(id: &str) -> bool {
-    effectcraft_effects::GPU_EFFECTS.contains(&id) || id.starts_with("ec.control.")
+    artheffect_effects::GPU_EFFECTS.contains(&id) || id.starts_with("ec.control.")
 }
 
 /// A layer buffer on the GPU (see [`Buf`]).
@@ -22,9 +22,9 @@ pub(crate) struct GBuf {
 }
 
 impl GBuf {
-    /// [`effectcraft_effects::Buf::cover`] on the device; `None` when it can't hold it.
+    /// [`artheffect_effects::Buf::cover`] on the device; `None` when it can't hold it.
     pub fn cover(&mut self, e: &mut Enc, size: [f64; 2]) -> Option<()> {
-        let Some((dx, dy, w, h)) = effectcraft_effects::cover_plan(self.offset, self.scale, size, self.img.width, self.img.height) else { return Some(()) };
+        let Some((dx, dy, w, h)) = artheffect_effects::cover_plan(self.offset, self.scale, size, self.img.width, self.img.height) else { return Some(()) };
         if !e.g.fits(w, h) {
             return None;
         }
@@ -60,7 +60,7 @@ impl GBuf {
 
     /// Buf::pad: grow by `pad` transparent pixels on every side.
     pub fn pad(&mut self, e: &mut Enc, pad: u32) -> Option<()> {
-        let pad = effectcraft_effects::pad_within_budget(self.img.width, self.img.height, pad);
+        let pad = artheffect_effects::pad_within_budget(self.img.width, self.img.height, pad);
         if pad == 0 {
             return Some(());
         }
@@ -127,7 +127,7 @@ pub(crate) fn run_chain(e: &mut Enc, chain: &[FxStep], buf: &Buf, levels: Option
 
 /// A layer buffer from deferred readback bytes (RGBA f32).
 fn readback_buf(r: crate::deferred::Readback) -> Option<Buf> {
-    let mut img = effectcraft_raster::Image::new(r.width, r.height);
+    let mut img = artheffect_raster::Image::new(r.width, r.height);
     let dst: &mut [u8] = bytemuck::cast_slice_mut(&mut img.data);
     (dst.len() == r.bytes.len()).then(|| dst.copy_from_slice(&r.bytes))?;
     Some(Buf { img, offset: r.offset, scale: r.scale })
@@ -152,7 +152,7 @@ impl<'e, 'g> GpuFx<'e, 'g> {
     }
 }
 
-impl effectcraft_render::FxTarget for GpuFx<'_, '_> {
+impl artheffect_render::FxTarget for GpuFx<'_, '_> {
     fn gpu(&mut self, steps: &[FxStep]) -> bool {
         let Some(b) = &self.b else { return false };
         let mut cur = GBuf { img: b.img.clone(), offset: b.offset, scale: b.scale };
@@ -191,11 +191,11 @@ impl effectcraft_render::FxTarget for GpuFx<'_, '_> {
         self.b = Some(b);
     }
 
-    /// [`effectcraft_effects::Buf::align`] on the device: a texture grown left/top, the old one
+    /// [`artheffect_effects::Buf::align`] on the device: a texture grown left/top, the old one
     /// copied in. A size the device can't allocate leaves the buffer as it is.
     fn align(&mut self, size: [f64; 2]) {
         let Some(b) = self.b.take() else { return };
-        let out = match effectcraft_effects::align_plan(b.offset, b.scale, size, b.img.width, b.img.height) {
+        let out = match artheffect_effects::align_plan(b.offset, b.scale, size, b.img.width, b.img.height) {
             Some((l, t)) if self.e.g.fits(b.img.width + l, b.img.height + t) => {
                 let img = self.e.image(b.img.width + l, b.img.height + t);
                 self.e.copy_into(&b.img, &img, l, t);
@@ -209,7 +209,7 @@ impl effectcraft_render::FxTarget for GpuFx<'_, '_> {
 
 fn apply(e: &mut Enc, id: &str, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
     // Controls the kernels do not implement render on the CPU.
-    if !effectcraft_effects::catalog::gpu_supported(id, ctx) {
+    if !artheffect_effects::catalog::gpu_supported(id, ctx) {
         return None;
     }
     match id {
@@ -222,8 +222,8 @@ fn apply(e: &mut Enc, id: &str, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
         "ec.perspective.dropshadow" => drop_shadow(e, ctx, b),
         "ec.distort.transform" => transform(e, ctx, b),
         "ec.color.curves" => curves(e, ctx, b),
-        "ec.color.huesaturation" if !effectcraft_effects::huesat_ranges_identity(ctx) => crate::fx_tone::hue_saturation(e, ctx, b),
-        "ec.color.levels" if !effectcraft_effects::levels_channels_identity(ctx) => crate::fx_tone::levels(e, ctx, b),
+        "ec.color.huesaturation" if !artheffect_effects::huesat_ranges_identity(ctx) => crate::fx_tone::hue_saturation(e, ctx, b),
+        "ec.color.levels" if !artheffect_effects::levels_channels_identity(ctx) => crate::fx_tone::levels(e, ctx, b),
         "ec.channel.invert" if (4..=11).contains(&ctx.params.e("channel")) => crate::fx_tone::invert(e, ctx, b),
         "ec.noise.fractal" if crate::fx_noise::fractal_extra(ctx) => crate::fx_noise::fractal(e, ctx, b, false),
         _ if id.starts_with("ec.control.") => Some(b),
@@ -313,7 +313,7 @@ fn gaussian(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
     }
     let (kx, ky) = dims_xy(ctx.params.e("dimensions"));
     // Small sigmas use the CPU's sampled kernel (#1939).
-    if effectcraft_raster::gaussian_is_exact(s * kx, s * ky) {
+    if artheffect_raster::gaussian_is_exact(s * kx, s * ky) {
         return None;
     }
     let repeat = ctx.params.b("repeatEdge");
@@ -370,7 +370,7 @@ fn directional(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
 
 fn glow(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
     // Other Glow Operations and the Arbitrary Map render on the CPU.
-    if ctx.params.e("colors") == 2 || effectcraft_effects::glow_operation(ctx) != effectcraft_color::BlendMode::Add {
+    if ctx.params.e("colors") == 2 || artheffect_effects::glow_operation(ctx) != artheffect_color::BlendMode::Add {
         return None;
     }
     let thr = ctx.params.f("threshold") as f32 / 100.0;
@@ -390,7 +390,7 @@ fn glow(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
     p.f[2] = cb;
     let bright = e.image(b.img.width, b.img.height);
     e.pixels("glow_bright", &p, &b.img, None, &bright, None);
-    let s = effectcraft_effects::glow_sigma(radius);
+    let s = artheffect_effects::glow_sigma(radius);
     let blurred = gaussian_blur(e, &bright, s * kx, s * ky, false);
     let mut p = Params::default();
     p.u[0][0] = ctx.params.e("operation").min(2);
@@ -433,27 +433,27 @@ fn drop_shadow(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
 
 fn transform(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
     // Motion blur (shutter angle) renders on the CPU.
-    if ctx.env.host.is_some() && effectcraft_effects::transform_shutter(ctx).is_some() {
+    if ctx.env.host.is_some() && artheffect_effects::transform_shutter(ctx).is_some() {
         return None;
     }
     let opacity = ctx.params.f("opacity") as f32 / 100.0;
     // As distort::transform: After Effects' matrix, drawn outside the layer's bounds.
     if !ctx.adjustment {
-        let m = effectcraft_effects::transform_matrix_px(ctx.params, |p| b.to_px(p));
-        let sides = effectcraft_effects::transform_grow(&[m], b.img.width, b.img.height);
+        let m = artheffect_effects::transform_matrix_px(ctx.params, |p| b.to_px(p));
+        let sides = artheffect_effects::transform_grow(&[m], b.img.width, b.img.height);
         b.pad_sides(e, sides)?;
     }
-    let m = effectcraft_effects::transform_matrix_px(ctx.params, |p| b.to_px(p));
+    let m = artheffect_effects::transform_matrix_px(ctx.params, |p| b.to_px(p));
     let sampling = if ctx.params.e("sampling") == 1 { Sampling::Bicubic } else { Sampling::Bilinear };
     let empty = e.image(b.img.width, b.img.height);
-    b.img = ops::warp(e, &empty, &b.img, &m, ops::WarpOptions { sampling, mode: effectcraft_color::BlendMode::Normal, opacity, seed: 0 }, None);
+    b.img = ops::warp(e, &empty, &b.img, &m, ops::WarpOptions { sampling, mode: artheffect_color::BlendMode::Normal, opacity, seed: 0 }, None);
     Some(b)
 }
 
 // ---------------------------------------------------------------- per-pixel
 
 fn curves(e: &mut Enc, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
-    let parsed = ["rgb", "red", "green", "blue", "alpha"].map(|id| effectcraft_effects::Curve::parse_natural(ctx.params.s(id)));
+    let parsed = ["rgb", "red", "green", "blue", "alpha"].map(|id| artheffect_effects::Curve::parse_natural(ctx.params.s(id)));
     if parsed.iter().all(Option::is_none) {
         return Some(b);
     }
@@ -511,7 +511,7 @@ fn pointwise(e: &mut Enc, id: &str, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
         }
         "ec.color.huesaturation" => {
             // Colour ranges (Channel Control) render on the CPU.
-            if !effectcraft_effects::huesat_ranges_identity(ctx) {
+            if !artheffect_effects::huesat_ranges_identity(ctx) {
                 return None;
             }
             p.u[0] = [3, ctx.params.b("colorize") as u32, 0, 0];
@@ -520,16 +520,16 @@ fn pointwise(e: &mut Enc, id: &str, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
         }
         "ec.color.levels" => {
             // Red / Green / Blue / Alpha controls render on the CPU.
-            if !effectcraft_effects::levels_channels_identity(ctx) {
+            if !artheffect_effects::levels_channels_identity(ctx) {
                 return None;
             }
-            let (clip_b, clip_w) = effectcraft_effects::levels_clip(ctx);
+            let (clip_b, clip_w) = artheffect_effects::levels_clip(ctx);
             p.u[0] = [4, clip_b as u32, clip_w as u32, 0];
             p.f[0] = [f("inBlack") as f32, f("inWhite") as f32, f("gamma").max(0.01) as f32, f("outBlack") as f32];
             p.f[1][0] = f("outWhite") as f32;
         }
         "ec.color.exposure" => {
-            let s = effectcraft_effects::exposure_settings(ctx);
+            let s = artheffect_effects::exposure_settings(ctx);
             p.u[0] = [5, ctx.params.b("bypassLinearLight") as u32, 0, 0];
             for i in 0..3 {
                 p.f[0][i] = s[i].0;
@@ -541,7 +541,7 @@ fn pointwise(e: &mut Enc, id: &str, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
             // The shader does the RGB channels and Alpha; HLS / YIQ inversions run on the CPU.
             let ch = match ctx.params.e("channel") {
                 c @ 0..=3 => c,
-                effectcraft_effects::INVERT_ALPHA => 4,
+                artheffect_effects::INVERT_ALPHA => 4,
                 _ => return None,
             };
             p.u[0] = [6, ch, 0, 0];
@@ -549,7 +549,7 @@ fn pointwise(e: &mut Enc, id: &str, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
         }
         "ec.generate.fill" => {
             // Fill Mask / All Masks render on the CPU.
-            if effectcraft_effects::fill_uses_masks(ctx) {
+            if artheffect_effects::fill_uses_masks(ctx) {
                 return None;
             }
             p.u[0] = [7, ctx.params.b("invert") as u32, 0, 0];
@@ -596,7 +596,7 @@ fn pointwise(e: &mut Enc, id: &str, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
             p.f[0] = [
                 f("contrast") as f32 / 100.0,
                 f("brightness") as f32 / 100.0,
-                (sw * effectcraft_effects::NOISE_CELL * b.scale).max(1.0) as f32,
+                (sw * artheffect_effects::NOISE_CELL * b.scale).max(1.0) as f32,
                 (octaves - octaves.floor()) as f32,
             ];
             p.f[1] = [ox as f32, oy as f32, sr, cr];
@@ -604,7 +604,7 @@ fn pointwise(e: &mut Enc, id: &str, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
                 f("evolution") as f32 / 360.0,
                 f("blend") as f32 / 100.0,
                 (f("opacity") as f32 / 100.0).clamp(0.0, 1.0),
-                (sh * effectcraft_effects::NOISE_CELL * b.scale).max(1.0) as f32,
+                (sh * artheffect_effects::NOISE_CELL * b.scale).max(1.0) as f32,
             ];
             p.f[3] = [(f("subSettings/subInfluence") as f32 / 100.0).clamp(0.0, 1.0), 1.0 / sub as f32, 0.0, 0.0];
         }

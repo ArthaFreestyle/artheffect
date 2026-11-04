@@ -12,8 +12,8 @@
 
 use std::collections::BTreeMap;
 
-use effectcraft_color::Label;
-use effectcraft_time::Tick;
+use artheffect_color::Label;
+use artheffect_time::Tick;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 

@@ -7,8 +7,8 @@
 
 use std::f64::consts::TAU;
 
-use effectcraft_effects::EffectCtx;
-use effectcraft_effects::util::{self, Src, src_at};
+use artheffect_effects::EffectCtx;
+use artheffect_effects::util::{self, Src, src_at};
 
 use crate::context::{Enc, Params};
 use crate::effects::GBuf;
@@ -182,7 +182,7 @@ fn turbulent(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
         b.pad(e, amount.abs().ceil() as u32 + 1)?;
     } else {
         // Room for pixels displaced past the content, up to the layer's edge (#1205).
-        b.pad(e, effectcraft_effects::cover_pad(ctx, [b.img.width, b.img.height], b.offset, b.scale, amount.abs().ceil() as u32 + 1))?;
+        b.pad(e, artheffect_effects::cover_pad(ctx, [b.img.width, b.img.height], b.offset, b.scale, amount.abs().ceil() as u32 + 1))?;
     }
     let off = b.to_px(ctx.params.v2("offset"));
     let oct = ctx.params.f("complexity").clamp(1.0, 10.0);
@@ -261,7 +261,7 @@ fn displacement_map(e: &mut Enc, ctx: &EffectCtx, mut b: GBuf) -> Option<GBuf> {
         }
         None => None,
     };
-    let idx = |s: Src| effectcraft_effects::util::SRC_ORDER.iter().position(|x| *x == s).unwrap_or(10) as u32;
+    let idx = |s: Src| artheffect_effects::util::SRC_ORDER.iter().position(|x| *x == s).unwrap_or(10) as u32;
     let mut p = Params::default();
     p.u[0] = [idx(hs), idx(vs), mode, wrap as u32 | (center as u32) << 1];
     p.u[1] = [w as u32, h as u32, 0, 0];
@@ -277,7 +277,7 @@ fn mesh_warp(e: &mut Enc, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
     let rows = ctx.params.f("rows").round().clamp(1.0, 31.0) as usize;
     let cols = ctx.params.f("columns").round().clamp(1.0, 31.0) as usize;
     let q = ctx.params.f("quality").round().clamp(1.0, 10.0) as usize;
-    let offs = effectcraft_effects::parse_mesh(ctx.params.s("mesh"));
+    let offs = artheffect_effects::parse_mesh(ctx.params.s("mesh"));
     if offs.len() != (rows + 1) * (cols + 1) || offs.iter().all(|o| o.0 == 0.0 && o.1 == 0.0) {
         return Some(b);
     }

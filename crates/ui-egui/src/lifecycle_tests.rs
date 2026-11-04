@@ -5,13 +5,13 @@
 //! prepared input. Nothing may depend on `current_pass_index`, which is zero in both.
 
 use super::*;
-use effectcraft_engine::config::{ConfigStore, MemoryConfig};
+use artheffect_engine::config::{ConfigStore, MemoryConfig};
 
-fn app_with_comp() -> EffectcraftApp {
+fn app_with_comp() -> ArtheffectApp {
     let mut session = Session::default();
     session.execute("comp.new", json!({"name": "Lifecycle", "width": 64, "height": 36, "duration": 1})).unwrap();
     session.execute("layer.newSolid", json!({"color": "#ff0000"})).unwrap();
-    let mut app = EffectcraftApp::new(session);
+    let mut app = ArtheffectApp::new(session);
     app.ui.start_screen = false;
     app.ui.show_menu_bar = false;
     app.use_manual_clock();
@@ -22,23 +22,23 @@ fn raw(size: egui::Vec2) -> egui::RawInput {
     egui::RawInput { screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, size)), ..Default::default() }
 }
 
-fn tick_with(app: &mut EffectcraftApp, ctx: &egui::Context, frame: &eframe::Frame, raw: &egui::RawInput) -> egui::LogicOutput {
+fn tick_with(app: &mut ArtheffectApp, ctx: &egui::Context, frame: &eframe::Frame, raw: &egui::RawInput) -> egui::LogicOutput {
     ctx.run_logic(raw, |ctx| app.tick(ctx, frame))
 }
 
-fn hidden_tick(app: &mut EffectcraftApp, ctx: &egui::Context, frame: &eframe::Frame) {
+fn hidden_tick(app: &mut ArtheffectApp, ctx: &egui::Context, frame: &eframe::Frame) {
     let _ = tick_with(app, ctx, frame, &raw(egui::vec2(800.0, 480.0)));
 }
 
 /// One host iteration that ends in a UI pass (the forced hidden pass, or a visible frame).
-fn pass(app: &mut EffectcraftApp, ctx: &egui::Context, frame: &eframe::Frame, raw: &mut egui::RawInput) -> egui::FullOutput {
+fn pass(app: &mut ArtheffectApp, ctx: &egui::Context, frame: &eframe::Frame, raw: &mut egui::RawInput) -> egui::FullOutput {
     eframe::App::raw_input_hook(app, ctx, raw);
     let mut out = ctx.run_ui(raw.take(), |ui| app.draw(ui, frame));
     out.textures_delta.clear();
     out
 }
 
-fn ready(app: &mut EffectcraftApp, ctx: &egui::Context, frame: &eframe::Frame) -> DrawGeometry {
+fn ready(app: &mut ArtheffectApp, ctx: &egui::Context, frame: &eframe::Frame) -> DrawGeometry {
     // The first pass installs the fonts, the second draws with them.
     for _ in 0..3 {
         let mut raw = raw(egui::vec2(800.0, 480.0));
@@ -48,7 +48,7 @@ fn ready(app: &mut EffectcraftApp, ctx: &egui::Context, frame: &eframe::Frame) -
     app.draw_geometry().expect("a completed pass records its geometry")
 }
 
-fn send(app: &mut EffectcraftApp, method: &str, params: serde_json::Value) -> std::sync::mpsc::Receiver<serde_json::Value> {
+fn send(app: &mut ArtheffectApp, method: &str, params: serde_json::Value) -> std::sync::mpsc::Receiver<serde_json::Value> {
     let (request, reply) = ControlRequest::new(method, params);
     let (tx, rx) = std::sync::mpsc::channel();
     tx.send(request).unwrap();
@@ -188,7 +188,7 @@ fn playback_advances_on_a_logic_only_tick() {
     let frame = eframe::Frame::_new_kittest();
     let mut app = app_with_comp();
     app.playback.playing = true;
-    app.playback.plan = Some(effectcraft_engine::preview::PreviewPlan {
+    app.playback.plan = Some(artheffect_engine::preview::PreviewPlan {
         start: 1,
         end: 1,
         first: 1,
@@ -212,7 +212,7 @@ fn playback_advances_on_a_logic_only_tick() {
 #[test]
 fn workspace_layout_autosave_writes_on_a_hidden_tick() {
     let store = Arc::new(MemoryConfig::default());
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = ArtheffectApp::new(Session { config: Some(store.clone()), ..Default::default() });
     app.ui.start_screen = false;
     app.use_manual_clock();
     app.ui.focused = PanelKind::Timeline;
@@ -241,7 +241,7 @@ fn the_close_guard_answers_a_close_request_without_a_pass() {
 
 // ---------------------------------------------------------------- screenshots
 
-fn screenshot_request(app: &mut EffectcraftApp, ctx: &egui::Context, path: Option<&str>, target: ShotTarget) -> std::sync::mpsc::Receiver<serde_json::Value> {
+fn screenshot_request(app: &mut ArtheffectApp, ctx: &egui::Context, path: Option<&str>, target: ShotTarget) -> std::sync::mpsc::Receiver<serde_json::Value> {
     let (tx, rx) = std::sync::mpsc::channel();
     app.admit_screenshot(ctx, path.map(str::to_string), target, tx);
     rx
@@ -259,11 +259,11 @@ fn shot_callbacks(out: &egui::LogicOutput) -> Vec<egui::ScreenshotCallback> {
 }
 
 /// Three settled passes and the settle delay, then the tick that issues the capture.
-fn issue_shot(app: &mut EffectcraftApp, ctx: &egui::Context, frame: &eframe::Frame) -> egui::ScreenshotCallback {
+fn issue_shot(app: &mut ArtheffectApp, ctx: &egui::Context, frame: &eframe::Frame) -> egui::ScreenshotCallback {
     issue_shot_at(app, ctx, frame, egui::vec2(800.0, 480.0))
 }
 
-fn issue_shot_at(app: &mut EffectcraftApp, ctx: &egui::Context, frame: &eframe::Frame, size: egui::Vec2) -> egui::ScreenshotCallback {
+fn issue_shot_at(app: &mut ArtheffectApp, ctx: &egui::Context, frame: &eframe::Frame, size: egui::Vec2) -> egui::ScreenshotCallback {
     for _ in 0..SCREENSHOT_SETTLE_PASSES {
         let mut raw = raw(size);
         pass(app, ctx, frame, &mut raw);
@@ -285,7 +285,7 @@ fn a_screenshot_is_issued_only_after_settled_passes_and_writes_from_the_tick() {
     let frame = eframe::Frame::_new_kittest();
     let mut app = app_with_comp();
     ready(&mut app, &ctx, &frame);
-    let path = std::env::temp_dir().join(format!("effectcraft-shot-{}-ok.png", std::process::id()));
+    let path = std::env::temp_dir().join(format!("artheffect-shot-{}-ok.png", std::process::id()));
     let _ = std::fs::remove_file(&path);
     let reply = screenshot_request(&mut app, &ctx, path.to_str(), ShotTarget::Window);
     // Not settled: a tick issues nothing and asks for passes instead.
@@ -311,7 +311,7 @@ fn a_resize_between_issue_and_completion_rejects_the_pixels_and_retries() {
     let frame = eframe::Frame::_new_kittest();
     let mut app = app_with_comp();
     ready(&mut app, &ctx, &frame);
-    let path = std::env::temp_dir().join(format!("effectcraft-shot-{}-retry.png", std::process::id()));
+    let path = std::env::temp_dir().join(format!("artheffect-shot-{}-retry.png", std::process::id()));
     let _ = std::fs::remove_file(&path);
     let reply = screenshot_request(&mut app, &ctx, path.to_str(), ShotTarget::Window);
     let first = issue_shot(&mut app, &ctx, &frame);
@@ -364,7 +364,7 @@ fn a_late_callback_after_cancellation_writes_nothing_and_replies_once() {
     let frame = eframe::Frame::_new_kittest();
     let mut app = app_with_comp();
     ready(&mut app, &ctx, &frame);
-    let path = std::env::temp_dir().join(format!("effectcraft-shot-{}-late.png", std::process::id()));
+    let path = std::env::temp_dir().join(format!("artheffect-shot-{}-late.png", std::process::id()));
     let _ = std::fs::remove_file(&path);
     let reply = screenshot_request(&mut app, &ctx, path.to_str(), ShotTarget::Window);
     let late = issue_shot(&mut app, &ctx, &frame);
@@ -431,7 +431,7 @@ fn a_downscaled_capture_is_cropped_with_the_images_own_scale() {
         Arc::new(egui::ColorImage::new([400, 240], (0..400 * 240).map(|i| if i % 400 < 200 { egui::Color32::RED } else { egui::Color32::BLUE }).collect()));
     let dir = std::env::temp_dir();
     for (name, crop, want) in [("left", [0.0, 0.0, 400.0, 240.0], egui::Color32::RED), ("right", [400.0, 0.0, 400.0, 240.0], egui::Color32::BLUE)] {
-        let path = dir.join(format!("effectcraft-shot-{}-scale-{name}.png", std::process::id()));
+        let path = dir.join(format!("artheffect-shot-{}-scale-{name}.png", std::process::id()));
         let _ = std::fs::remove_file(&path);
         let reply = screenshot_request(&mut app, &ctx, path.to_str(), ShotTarget::Rect(crop));
         let cb = issue_shot(&mut app, &ctx, &frame);

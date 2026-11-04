@@ -2,10 +2,10 @@
 //! First Vertex, Free Transform Points) and Layer ▸ Mask ▸ Motion Blur, Feather Falloff and Hide
 //! Locked Masks.
 
-use effectcraft_keyframe::{ShapePath, Value as KV};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{FeatherFalloff, GroupKind, ItemId, LayerId, LayerSource, MaskMotionBlur, Node, PropGroup, Uid};
-use effectcraft_render::EvalCtx;
+use artheffect_keyframe::{ShapePath, Value as KV};
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{FeatherFalloff, GroupKind, ItemId, LayerId, LayerSource, MaskMotionBlur, Node, PropGroup, Uid};
+use artheffect_render::EvalCtx;
 use serde_json::{Value, json};
 
 use super::layer_menu::target_masks;
@@ -117,24 +117,24 @@ const PARAMETRIC: [&str; 3] = ["rect", "ellipse", "star"];
 /// converted path is the shape that was on screen rather than an approximation of it; the defaults
 /// match that code for a property a group doesn't carry (a polygon has no inner radius or
 /// roundness).
-fn parametric_path(ctx: &EvalCtx, layer: &effectcraft_project::Layer, g: &PropGroup) -> Option<ShapePath> {
+fn parametric_path(ctx: &EvalCtx, layer: &artheffect_project::Layer, g: &PropGroup) -> Option<ShapePath> {
     let f = |id: &str, d: f64| ctx.f(layer, g, id, d);
     let v2 = |id: &str, d: [f64; 2]| ctx.v2(layer, g, id, d);
     let path = match g.match_id.as_str() {
         "rect" => {
             let (size, pos) = (v2("size", [100.0; 2]), v2("position", [0.0; 2]));
             if ctx.b(layer, g, "perCorner") {
-                effectcraft_path::rect_radii(
+                artheffect_path::rect_radii(
                     size,
                     pos,
                     [f("topLeftRoundness", 0.0), f("topRightRoundness", 0.0), f("bottomRightRoundness", 0.0), f("bottomLeftRoundness", 0.0)],
                 )
             } else {
-                effectcraft_path::rect(size, pos, f("roundness", 0.0))
+                artheffect_path::rect(size, pos, f("roundness", 0.0))
             }
         }
-        "ellipse" => effectcraft_path::ellipse(v2("size", [100.0; 2]), v2("position", [0.0; 2])),
-        "star" => effectcraft_path::polystar(effectcraft_path::Polystar {
+        "ellipse" => artheffect_path::ellipse(v2("size", [100.0; 2]), v2("position", [0.0; 2])),
+        "star" => artheffect_path::polystar(artheffect_path::Polystar {
             star: ctx.e(layer, g, "type") == 0,
             points: f("points", 5.0),
             pos: v2("position", [0.0; 2]),
@@ -147,7 +147,7 @@ fn parametric_path(ctx: &EvalCtx, layer: &effectcraft_project::Layer, g: &PropGr
         _ => return None,
     };
     // A closed parametric shape is one subpath; anything else would not be this shape.
-    effectcraft_path::from_kurbo(&path).into_iter().next()
+    artheffect_path::from_kurbo(&path).into_iter().next()
 }
 
 fn convert_to_bezier(s: &mut Session, p: &Value) -> Result<Value> {

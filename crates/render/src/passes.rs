@@ -12,9 +12,9 @@
 use std::future::Future;
 use std::task::{Context, Poll, Waker};
 
-use effectcraft_project::ItemId;
-use effectcraft_raster::Image;
-use effectcraft_time::Tick;
+use artheffect_project::ItemId;
+use artheffect_raster::Image;
+use artheffect_time::Tick;
 
 use crate::{Accelerator, AutoKey, Backend, Renderer};
 

@@ -1,5 +1,5 @@
 //! Menus, keyboard shortcuts and UI-level commands. The menu bar is the engine's After Effects
-//! menu tree (`effectcraft_engine::menus`): every entry is an engine command, and frontend-only
+//! menu tree (`artheffect_engine::menus`): every entry is an engine command, and frontend-only
 //! commands (viewer zoom, panels, dialogs…) come back as `Event::Frontend` and are performed by
 //! [`frontend`]. [`UI_COMMANDS`] holds the remaining UI-only shortcuts (tools, timeline
 //! navigation, reveal keys). `invoke` is the single entry point used by menus, shortcuts and the
@@ -7,10 +7,10 @@
 
 use serde_json::{Value, json};
 
-use crate::EffectcraftApp;
+use crate::ArtheffectApp;
 use crate::dock::{PanelKind, WorkspaceExt as _};
 use crate::state::{Resolution, Tool};
-use effectcraft_engine::menus::{MenuEntry, MenuNode};
+use artheffect_engine::menus::{MenuEntry, MenuNode};
 
 mod bar;
 mod commands;

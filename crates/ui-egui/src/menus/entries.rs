@@ -17,10 +17,10 @@ pub struct MenuItem {
 
 /// Top-level menus in order.
 pub fn menus() -> Vec<&'static str> {
-    effectcraft_engine::menus::top_level()
+    artheffect_engine::menus::top_level()
 }
 
-pub(crate) fn entry_label(app: &EffectcraftApp, e: &MenuEntry) -> String {
+pub(crate) fn entry_label(app: &ArtheffectApp, e: &MenuEntry) -> String {
     let shown = match e.command.as_str() {
         "edit.undo" => app.session.history.undo.last().map(|u| format!("Undo {}", u.0)).unwrap_or_else(|| "Can't Undo".into()),
         "edit.redo" => app.session.history.redo.last().map(|u| format!("Redo {}", u.0)).unwrap_or_else(|| "Can't Redo".into()),
@@ -29,23 +29,23 @@ pub(crate) fn entry_label(app: &EffectcraftApp, e: &MenuEntry) -> String {
             let name = app
                 .ui
                 .layer_panel
-                .and_then(|id| app.session.active_comp().and_then(|c| c.layer(effectcraft_engine::project::LayerId(id))))
+                .and_then(|id| app.session.active_comp().and_then(|c| c.layer(artheffect_engine::project::LayerId(id))))
                 .map(|l| l.name.clone());
             format!("Layer: {}", name.unwrap_or_else(|| "(none)".into()))
         }
-        _ => effectcraft_engine::menus::entry_label(&app.session, e),
+        _ => artheffect_engine::menus::entry_label(&app.session, e),
     };
     crate::i18n::entry(app, e, shown)
 }
 
 /// The entry's shortcut in the active keyboard shortcut preset.
-pub(crate) fn entry_shortcut(app: &EffectcraftApp, e: &MenuEntry) -> Option<String> {
+pub(crate) fn entry_shortcut(app: &ArtheffectApp, e: &MenuEntry) -> Option<String> {
     app.session.shortcuts().shortcut_of(&e.command, &e.params).map(str::to_string)
 }
 
 /// Whether panel `p` is on screen: the front tab of a floating window, or of a docked group
 /// (an open frame in a stack) that a maximized panel does not cover.
-pub(crate) fn panel_shown(app: &EffectcraftApp, p: PanelKind) -> bool {
+pub(crate) fn panel_shown(app: &ArtheffectApp, p: PanelKind) -> bool {
     if app.ui.dock.is_floating(p) {
         return app.ui.dock.is_visible(p);
     }
@@ -58,7 +58,7 @@ pub(crate) fn panel_shown(app: &EffectcraftApp, p: PanelKind) -> bool {
 /// The command a menu entry runs when chosen from a menu: Window ▸ `<panel>` closes a panel whose
 /// entry is checked, as in After Effects (#1630). Shortcuts and agents calling `window.panel`
 /// still only show the panel.
-pub(crate) fn menu_choice(app: &EffectcraftApp, id: String, params: Value) -> (String, Value) {
+pub(crate) fn menu_choice(app: &ArtheffectApp, id: String, params: Value) -> (String, Value) {
     if id == "window.panel"
         && let Some(p) = params.get("panel").and_then(Value::as_str).and_then(PanelKind::from_name)
         && panel_shown(app, p)
@@ -69,7 +69,7 @@ pub(crate) fn menu_choice(app: &EffectcraftApp, id: String, params: Value) -> (S
 }
 
 /// Check-mark state of frontend toggles (engine state is answered by the engine).
-pub(crate) fn entry_checked(app: &EffectcraftApp, e: &MenuEntry) -> Option<bool> {
+pub(crate) fn entry_checked(app: &ArtheffectApp, e: &MenuEntry) -> Option<bool> {
     let v = &app.ui.viewer;
     let pstr = |k: &str| e.params.get(k).and_then(Value::as_str);
     match e.command.as_str() {
@@ -96,11 +96,11 @@ pub(crate) fn entry_checked(app: &EffectcraftApp, e: &MenuEntry) -> Option<bool>
             };
             Some(pstr("color") == Some(cur))
         }
-        _ => effectcraft_engine::menus::checked(&app.session, &e.command, &e.params),
+        _ => artheffect_engine::menus::checked(&app.session, &e.command, &e.params),
     }
 }
 
-pub(crate) fn entry_enabled(app: &EffectcraftApp, e: &MenuEntry) -> bool {
+pub(crate) fn entry_enabled(app: &ArtheffectApp, e: &MenuEntry) -> bool {
     // The Project-panel enabled rules mirror the invoke redirects, so they stand down for the
     // same reason (see the redirect block): while a text edit is open the menu items must be
     // enabled by what their routed command can do, or the menu grays out commands that work.
@@ -135,8 +135,8 @@ pub(crate) fn entry_enabled(app: &EffectcraftApp, e: &MenuEntry) -> bool {
 }
 
 /// Every menu entry, flattened with its submenu path.
-pub fn menu_items(app: &EffectcraftApp) -> Vec<MenuItem> {
-    effectcraft_engine::menus::entries()
+pub fn menu_items(app: &ArtheffectApp) -> Vec<MenuItem> {
+    artheffect_engine::menus::entries()
         .into_iter()
         .map(|(path, e)| MenuItem {
             id: e.command.clone(),

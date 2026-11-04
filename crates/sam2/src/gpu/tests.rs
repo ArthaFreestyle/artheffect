@@ -458,7 +458,7 @@ fn half_precision_weights_give_the_same_product_to_half_precision() {
 /// child process, which has them set.
 #[test]
 fn the_instance_reads_the_wgpu_environment() {
-    const CHILD: &str = "EFFECTCRAFT_TEST_SAM2_WGPU_ENV_CHILD";
+    const CHILD: &str = "ARTHEFFECT_TEST_SAM2_WGPU_ENV_CHILD";
     if std::env::var_os(CHILD).is_none() {
         let out = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "gpu::tests::the_instance_reads_the_wgpu_environment", "--nocapture"])

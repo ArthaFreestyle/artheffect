@@ -5,13 +5,13 @@
 //! the Play/Pause flag is local egui state.
 
 use crate::i18n::{tr, tr_args};
-use effectcraft_engine::project::{FootageKind, ItemKind};
-use effectcraft_engine::time::Tick;
+use artheffect_engine::project::{FootageKind, ItemKind};
+use artheffect_engine::time::Tick;
 use egui::{Align2, Color32, Rect, Sense, Stroke, pos2, vec2};
 use serde_json::json;
 
 use super::panel_kit as kit;
-use crate::EffectcraftApp;
+use crate::ArtheffectApp;
 use crate::theme::Tokens;
 
 /// The Footage panel for the item opened into it: the frame at the panel's current time (cached
@@ -19,7 +19,7 @@ use crate::theme::Tokens;
 /// or drag, Play/Pause, set In/Out, and Ripple Insert / Overlay Edit into the active comp. A solid
 /// shows its colour, footage without video says so, and an empty panel explains how to open one.
 /// Time changes run `footage.*` commands; the panel's Play/Pause flag is local egui state.
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let p = ui.painter().with_clip_rect(rect);
@@ -45,7 +45,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let (dur, fr) = match &footage {
         Some(f) if f.kind != FootageKind::Still && f.duration > Tick::ZERO => (f.duration, f.frame_rate),
         Some(f) => (Tick::from_seconds_f64(10.0), f.frame_rate),
-        None => (Tick::from_seconds_f64(10.0), effectcraft_engine::time::FrameRate::FPS_30),
+        None => (Tick::from_seconds_f64(10.0), artheffect_engine::time::FrameRate::FPS_30),
     };
     // Title strip.
     let top = Rect::from_min_size(rect.min, vec2(rect.width(), 24.0));
@@ -68,7 +68,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         let cached: Option<((u64, i64, u64), egui::TextureHandle, [u32; 2])> = ctx.data(|d| d.get_temp(tid));
         let tex = match cached {
             Some((k, tex, size)) if k == key => Some((tex, size)),
-            _ => effectcraft_engine::commands::footage_panel::frame(&app.session, view.item, f, view.time).map(|img| {
+            _ => artheffect_engine::commands::footage_panel::frame(&app.session, view.item, f, view.time).map(|img| {
                 let ci = egui::ColorImage::from_rgba_unmultiplied([img.width as usize, img.height as usize], &img.to_rgba8());
                 let tex = crate::frames::load_fitted(&ctx, "footage-panel", ci, egui::TextureOptions::LINEAR);
                 ctx.data_mut(|d| d.insert_temp(tid, (key, tex.clone(), [img.width, img.height])));
@@ -127,7 +127,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     p.text(
         pos2(x, bar.center().y),
         Align2::LEFT_CENTER,
-        effectcraft_engine::commands::footage_panel::timecode(Some(&item), fr, fr.frame_at(view.time)),
+        artheffect_engine::commands::footage_panel::timecode(Some(&item), fr, fr.frame_at(view.time)),
         Tokens::mono(12.0),
         t.timecode,
     );

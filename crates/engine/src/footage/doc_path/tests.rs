@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use effectcraft_project::{Footage, ItemId, ItemKind};
+use artheffect_project::{Footage, ItemId, ItemKind};
 use serde_json::json;
 
 use crate::{Event, Services, Session};
@@ -44,7 +44,7 @@ impl crate::Importer for Stills {
         if !std::path::Path::new(path).is_file() {
             return Err(format!("{path}: no such file"));
         }
-        Ok(Footage { path: path.into(), kind: effectcraft_project::FootageKind::Still, width: 64, height: 32, has_video: true, ..Default::default() })
+        Ok(Footage { path: path.into(), kind: artheffect_project::FootageKind::Still, width: 64, height: 32, has_video: true, ..Default::default() })
     }
 }
 

@@ -1,35 +1,35 @@
 //! Shortcut scopes: one chord can run a different command in a panel than in the rest of the
 //! application, and the Timeline's keys work with the Composition panel focused.
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
+use artheffect_engine::Session;
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::dock::PanelKind;
 use egui::{Key, Modifiers};
 use serde_json::json;
 
 /// A comp with one solid selected at 1 s, and one render item.
-fn app() -> EffectcraftApp {
+fn app() -> ArtheffectApp {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Main", "width": 160, "height": 90, "frameRate": 30, "duration": 4})).unwrap();
     s.execute("layer.newSolid", json!({"color": "#406080"})).unwrap();
     s.execute("renderQueue.add", json!({"output": "/out/main.mov"})).unwrap();
     s.execute("time.set", json!({"time": 1.0})).unwrap();
-    EffectcraftApp::new(s)
+    ArtheffectApp::new(s)
 }
 
 /// Press `key` with `modifiers` and run the shortcut dispatcher on it.
-fn press(app: &mut EffectcraftApp, key: Key, modifiers: Modifiers) {
+fn press(app: &mut ArtheffectApp, key: Key, modifiers: Modifiers) {
     let ctx = egui::Context::default();
     let raw = egui::RawInput { events: vec![egui::Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers }], ..Default::default() };
-    let mut output = ctx.run_ui(raw, |ui| effectcraft_ui_egui::menus::handle_shortcuts(app, ui.ctx()));
+    let mut output = ctx.run_ui(raw, |ui| artheffect_ui_egui::menus::handle_shortcuts(app, ui.ctx()));
     output.textures_delta.clear();
 }
 
-fn layers(app: &EffectcraftApp) -> usize {
+fn layers(app: &ArtheffectApp) -> usize {
     app.session.active_comp().map_or(0, |c| c.layers.len())
 }
 
-fn render_items(app: &EffectcraftApp) -> usize {
+fn render_items(app: &ArtheffectApp) -> usize {
     app.session.project.render_queue.len()
 }
 

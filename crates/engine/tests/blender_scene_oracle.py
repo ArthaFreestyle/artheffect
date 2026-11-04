@@ -11,7 +11,7 @@ from mathutils import Quaternion, Vector
 path = sys.argv[sys.argv.index("--") + 1]
 before = set(bpy.data.scenes)
 exported = runpy.run_path(path, run_name="__main__")
-scene = exported["EFFECTCRAFT_SCENE"]
+scene = exported["ARTHEFFECT_SCENE"]
 data = exported["DATA"]
 assert before.issubset(set(bpy.data.scenes)), "existing scenes were removed"
 assert scene not in before
@@ -22,7 +22,7 @@ camera = scene.camera
 assert camera.animation_data.action is not None
 assert camera.data.animation_data.action is not None
 assert camera.data.sensor_fit == 'HORIZONTAL'
-metadata = json.loads(bpy.data.texts[scene["effectcraft_metadata_text"]].as_string())
+metadata = json.loads(bpy.data.texts[scene["artheffect_metadata_text"]].as_string())
 assert metadata["solve"]["averageError"] == 0.12
 cloud = scene.objects["Solved Track Points"]
 assert len(cloud.data.vertices) == 2
@@ -58,4 +58,4 @@ for i, sample in enumerate(data["frames"]):
         assert actual_source == sample["sourceFrame"], (actual_source, sample["sourceFrame"])
         assert user.use_auto_refresh
 
-print("EFFECTCRAFT_BLENDER_ORACLE_OK")
+print("ARTHEFFECT_BLENDER_ORACLE_OK")

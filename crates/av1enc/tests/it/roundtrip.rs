@@ -3,8 +3,8 @@
 
 use crate::common;
 
+use artheffect_av1enc::{EncoderConfig, RateControl};
 use common::*;
-use effectcraft_av1enc::{EncoderConfig, RateControl};
 
 fn cfg(w: u32, h: u32, bd: u8, q: u8, keyint: u32) -> EncoderConfig {
     let mut c = EncoderConfig::new(w, h, 30, 1);
@@ -89,7 +89,7 @@ fn bitrate_mode_is_accurate_over_many_groups() {
         let pics: Vec<Pic> = (0..n).map(|t| synth(192, 128, bd, t)).collect();
         let mut c = cfg(192, 128, bd as u8, 0, keyint);
         c.rate = RateControl::Bitrate { kbps };
-        let mut enc = effectcraft_av1enc::Encoder::new(c).unwrap();
+        let mut enc = artheffect_av1enc::Encoder::new(c).unwrap();
         let bits: usize = pics.iter().map(|p| enc.encode(&p.frame()).data.len() * 8).sum();
         let got = bits as f64 / (n as f64 / 30.0) / 1000.0;
         eprintln!("{bd} bit, keyint {keyint}: {got:.1} kbit/s for {kbps}");
@@ -99,7 +99,7 @@ fn bitrate_mode_is_accurate_over_many_groups() {
 
 #[test]
 fn headers() {
-    let enc = effectcraft_av1enc::Encoder::new(cfg(1920, 1080, 10, 100, 60)).unwrap();
+    let enc = artheffect_av1enc::Encoder::new(cfg(1920, 1080, 10, 100, 60)).unwrap();
     let c = enc.av1c();
     assert_eq!(c[0], 0x81);
     assert_eq!(c[1] & 0x1f, 8, "1080p30 is level 4.0");

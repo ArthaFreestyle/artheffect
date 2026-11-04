@@ -2,9 +2,9 @@
 //! applications read this tab-separated format (AE2Blend brings it into Blender). Like After
 //! Effects it covers one layer: its copied properties, keyframed ones as one row per key (frame
 //! number in comp time, then the value) and static ones as a single row with no frame. Easing
-//! and tangents aren't part of the format; EffectCraft's own paste keeps them.
+//! and tangents aren't part of the format; Artheffect's own paste keeps them.
 
-use effectcraft_project::{AutoOrient, Comp, GroupKind, ItemKind, Layer, LayerId, LayerSource, Node, ParamUi, Project, PropGroup, Property, Uid};
+use artheffect_project::{AutoOrient, Comp, GroupKind, ItemKind, Layer, LayerId, LayerSource, Node, ParamUi, Project, PropGroup, Property, Uid};
 
 use crate::{KeyRef, keyframe_text_effects};
 
@@ -101,7 +101,7 @@ pub(crate) fn text(project: &Project, comp: &Comp, keys: &[KeyRef], statics: &[(
     }
     // After Effects writes a text layer's source as 1 × 1. Other layers without a source of
     // their own (shapes, cameras) take the comp's size, and all of them its pixel aspect.
-    let (w, h) = match (&layer.source, effectcraft_render::eval::source_size(project, layer)) {
+    let (w, h) = match (&layer.source, artheffect_render::eval::source_size(project, layer)) {
         (LayerSource::Text, _) => (1, 1),
         (_, (0, 0)) => (comp.width, comp.height),
         (_, size) => size,
@@ -195,7 +195,7 @@ fn nested(chain: &[&Node], pr: &Property) -> Option<Channel> {
 fn effect(chain: &[&Node], pr: &Property) -> Option<Channel> {
     let [Node::Group(effects), Node::Group(fx), ..] = chain else { return None };
     let GroupKind::Effect { effect } = &fx.kind else { return None };
-    let name = effectcraft_effects::find(effect).map_or(fx.name.as_str(), |spec| spec.name);
+    let name = artheffect_effects::find(effect).map_or(fx.name.as_str(), |spec| spec.name);
     let path: String = chain.iter().skip(2).filter_map(|n| n.as_group()).map(|g| format!("{}/", g.match_id)).chain([pr.match_id.clone()]).collect();
     let (labels, values) = columns(effect, &path, pr, true)?;
     let header = format!("Effects\t{name} #{}\t{} #{}", place(effects, fx.uid)?, pr.name, effect_index(effect, fx, pr.uid)?);
@@ -204,7 +204,7 @@ fn effect(chain: &[&Node], pr: &Property) -> Option<Channel> {
 
 /// After Effects' index of an effect property: the effect's hidden input layer is #1, and a
 /// twirl-down group takes an index where it opens and another where it closes. The hidden
-/// source choice EffectCraft keeps beside a layer parameter has none. Where After Effects
+/// source choice Artheffect keeps beside a layer parameter has none. Where After Effects
 /// numbers a parameter otherwise ([`keyframe_text_effects::INDICES`]), counting goes on from it.
 fn effect_index(effect: &str, fx: &PropGroup, uid: Uid) -> Option<usize> {
     fn count(effect: &str, g: &PropGroup, prefix: &str, uid: Uid, n: &mut usize) -> bool {
@@ -234,7 +234,7 @@ fn effect_index(effect: &str, fx: &PropGroup, uid: Uid) -> Option<usize> {
 }
 
 fn is_layer_source(g: &PropGroup, p: &Property) -> bool {
-    p.ui == ParamUi::Hidden && g.props().any(|l| l.ui == ParamUi::Layer && effectcraft_effects::layer_source_id(&l.match_id) == p.match_id)
+    p.ui == ParamUi::Hidden && g.props().any(|l| l.ui == ParamUi::Layer && artheffect_effects::layer_source_id(&l.match_id) == p.match_id)
 }
 
 /// 1-based position of a child in its group.

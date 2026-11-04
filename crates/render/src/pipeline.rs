@@ -7,8 +7,8 @@ use super::{
     Arc, AutoKey, AutoPick, BlendMode, Buf, Comp, EffectCtx, EffectEnv, EvalCtx, Footage, FootageKind, FrameBlend, FrameRate, GroupKind, Image, ItemId,
     ItemKind, Layer, LayerCache, LayerSource, Params, Project, Quality, Region, Renderer, Tick, cache, color, masks, shapes, styles, text, three_d, vec2,
 };
-use effectcraft_keyframe::Value;
-use effectcraft_project::LayerId;
+use artheffect_keyframe::Value;
+use artheffect_project::LayerId;
 
 /// Coordinate space and stack range shared by CPU and accelerated effect evaluation.
 #[derive(Clone, Copy)]
@@ -54,7 +54,7 @@ pub struct Collapsed {
 /// Properties group or the source comp's definitions are missing (the flattened path then
 /// preserves the old behaviour).
 fn collapsed_instance(ctx: &EvalCtx, layer: &Layer, item: ItemId) -> Option<(Vec<PropertyOverride>, Vec<MediaOverride>)> {
-    use effectcraft_project::essential::{self, ControlType, EgKind};
+    use artheffect_project::essential::{self, ControlType, EgKind};
     let over = essential::overridden(layer);
     if over.is_empty() {
         return Some((vec![], vec![]));
@@ -93,7 +93,7 @@ fn collapsed_instance(ctx: &EvalCtx, layer: &Layer, item: ItemId) -> Option<(Vec
     // of the same property, as `essential::with_overrides` does: keep one entry per property.
     for f in fonts {
         match property.iter_mut().rev().find(|o| o.layer == f.layer && o.prop == f.prop) {
-            Some(o) => effectcraft_project::essential::merge_font(&mut o.value, &f.value),
+            Some(o) => artheffect_project::essential::merge_font(&mut o.value, &f.value),
             None => property.push(f),
         }
     }
@@ -437,7 +437,7 @@ impl<'a> Renderer<'a> {
         if self.depth == 0
             && let Some(r) = self.opts.roi
             && comp.has_3d()
-            && (roi_inside(r, comp.width, comp.height) || comp.renderer == effectcraft_project::Renderer::Advanced3D)
+            && (roi_inside(r, comp.width, comp.height) || comp.renderer == artheffect_project::Renderer::Advanced3D)
         {
             let full = Renderer { opts: RenderOpts { roi: None, ..self.opts }, ..*self }.comp_frame(comp_id, t);
             let (x0, y0) = ((r[0] * s).round() as i64, (r[1] * s).round() as i64);
@@ -519,9 +519,9 @@ impl<'a> Renderer<'a> {
     }
 
     /// Evaluate an effect instance's parameters.
-    fn effect_params(&self, ctx: &EvalCtx, layer: &Layer, g: &effectcraft_project::PropGroup) -> Params {
+    fn effect_params(&self, ctx: &EvalCtx, layer: &Layer, g: &artheffect_project::PropGroup) -> Params {
         // Nested groups (Paint strokes, Puppet meshes and pins) are flattened too.
-        effectcraft_effects::flatten_params(g, &mut |pr| ctx.value(layer, pr))
+        artheffect_effects::flatten_params(g, &mut |pr| ctx.value(layer, pr))
     }
 
     pub(crate) fn apply_effects(&self, ctx: &EvalCtx, layer: &Layer, buf: Buf, adjustment: bool) -> Buf {
@@ -576,7 +576,7 @@ impl<'a> Renderer<'a> {
         // get the cover: they move content past the painted bounds without growing the buffer.
         let video = || {
             fx.groups().filter(|g| g.enabled).filter_map(|g| match &g.kind {
-                GroupKind::Effect { effect } => effectcraft_effects::find(effect).filter(|s| !effectcraft_effects::audio_fx::is_audio_effect(s.id)),
+                GroupKind::Effect { effect } => artheffect_effects::find(effect).filter(|s| !artheffect_effects::audio_fx::is_audio_effect(s.id)),
                 _ => None,
             })
         };
@@ -617,16 +617,16 @@ impl<'a> Renderer<'a> {
             shutter: self.mb_on(ctx, layer).then_some((ctx.comp.shutter_angle, ctx.comp.shutter_phase, ctx.comp.motion_blur_samples)),
         };
         // Video effects in stack order (index, group, spec); disabled and audio effects skipped.
-        let stack: Vec<(usize, &effectcraft_project::PropGroup, &'static effectcraft_effects::EffectSpec)> = fx
+        let stack: Vec<(usize, &artheffect_project::PropGroup, &'static artheffect_effects::EffectSpec)> = fx
             .groups()
             .enumerate()
             .take_while(|(i, _)| *i < limit)
             .filter(|(_, g)| g.enabled)
             .filter_map(|(i, g)| match &g.kind {
-                GroupKind::Effect { effect } => effectcraft_effects::find(effect).map(|s| (i, g, s)),
+                GroupKind::Effect { effect } => artheffect_effects::find(effect).map(|s| (i, g, s)),
                 _ => None,
             })
-            .filter(|(_, _, s)| !effectcraft_effects::audio_fx::is_audio_effect(s.id))
+            .filter(|(_, _, s)| !artheffect_effects::audio_fx::is_audio_effect(s.id))
             .collect();
         let accel = self.active_accel();
         let mut k = 0;
@@ -673,7 +673,7 @@ impl<'a> Renderer<'a> {
             let ectx = EffectCtx { params: &params, time: lt.seconds(), layer_size, seed: g.uid as u32, adjustment, env };
             let t0 = web_time::Instant::now();
             target.cpu(&mut |buf| {
-                let mut buf = effectcraft_effects::apply(spec, &ectx, buf);
+                let mut buf = artheffect_effects::apply(spec, &ectx, buf);
                 // 8/16 bpc effects write integer pixels.
                 self.pipe.quantize(&mut buf.img);
                 buf
@@ -723,7 +723,7 @@ impl<'a> Renderer<'a> {
                 // Essential Properties overrides render the nested comp with this instance's
                 // values.
                 let ov = essential_overrides(ctx, layer);
-                let tmp = if ov.is_empty() { None } else { effectcraft_project::essential::with_overrides(self.project, *item, &ov) };
+                let tmp = if ov.is_empty() { None } else { artheffect_project::essential::with_overrides(self.project, *item, &ov) };
                 // Preserve resolution when nested: drawn at full size even when this comp renders
                 // smaller (the buffer's scale places it).
                 let full = s < 1.0 && self.project.comp(*item).is_some_and(|nc| nc.preserve_resolution);
@@ -796,7 +796,7 @@ impl<'a> Renderer<'a> {
         let mut buf = match self.reduced_size(w, h) {
             // The source resampled it already (`FootageSource::frame_at_size`).
             Some(size) if (img.width, img.height) == size => Buf { img: img.clone(), offset: [0.0; 2], scale: s },
-            Some((rw, rh)) if k <= 1.0 + 1e-9 => Buf { img: effectcraft_raster::resample(img, rw, rh), offset: [0.0; 2], scale: s },
+            Some((rw, rh)) if k <= 1.0 + 1e-9 => Buf { img: artheffect_raster::resample(img, rw, rh), offset: [0.0; 2], scale: s },
             _ => Buf { img: img.clone(), offset: [0.0; 2], scale: 1.0 / k },
         };
         if let Some(c) = self.pipe.media_in(f) {
@@ -826,11 +826,11 @@ impl<'a> Renderer<'a> {
     /// `size`: a plain frame may come resampled to it ([`FootageSource::frame_at_size`]).
     fn footage_frame(&self, ctx: &EvalCtx, layer: &Layer, item: ItemId, f: &Footage, t: Tick, size: Option<(u32, u32)>) -> Option<Arc<Image>> {
         // Interpret Footage ▸ Separate Fields: each field is a frame at twice the rate.
-        if f.fields != effectcraft_project::FieldOrder::Off && matches!(f.kind, FootageKind::Video | FootageKind::Sequence) {
+        if f.fields != artheffect_project::FieldOrder::Off && matches!(f.kind, FootageKind::Video | FootageKind::Sequence) {
             let field_rate = FrameRate::new(f.frame_rate.num * 2, f.frame_rate.den);
             let i = field_rate.frame_at(t).max(0);
             let img = cineon_frame(self.footage.frame_with(item, f, f.frame_rate.tick_of(i / 2), None, self.pipe.float_curve(f))?, f);
-            let dominant_upper = f.fields == effectcraft_project::FieldOrder::UpperFirst;
+            let dominant_upper = f.fields == artheffect_project::FieldOrder::UpperFirst;
             // Upper field = even lines (0, 2, …).
             let parity = if (i % 2 == 0) == dominant_upper { 0 } else { 1 };
             return Some(Arc::new(interpret_pixels(&field_frame(&img, parity), f, self.pipe.linear_footage_space(f))));
@@ -854,7 +854,7 @@ impl<'a> Renderer<'a> {
                     let mut h = std::collections::hash_map::DefaultHasher::new();
                     (0x00f8_a3e5_u64, item, i, (w as f32).to_bits(), mode as u8, f.frame_rate.num, f.frame_rate.den, &f.path, float).hash(&mut h);
                     (f.alpha as u8).hash(&mut h);
-                    if f.alpha == effectcraft_project::AlphaMode::Premultiplied {
+                    if f.alpha == artheffect_project::AlphaMode::Premultiplied {
                         f.premul_color.map(f32::to_bits).hash(&mut h);
                     }
                     if f.cineon_applies() {
@@ -972,7 +972,7 @@ impl<'a> Renderer<'a> {
         }
         let mut solo = layer.clone();
         solo.track_matte = None;
-        solo.blend_mode = effectcraft_color::BlendMode::Normal;
+        solo.blend_mode = artheffect_color::BlendMode::Normal;
         solo.preserve_transparency = false;
         solo.switches.video = true;
         three_d::compose::draw_run(self, ctx, &[&solo], &mut canvas);

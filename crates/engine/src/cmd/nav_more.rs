@@ -2,9 +2,9 @@
 
 use std::collections::BTreeSet;
 
-use effectcraft_keyframe::Value as KV;
-use effectcraft_project::{ItemId, LayerSource, Project};
-use effectcraft_time::Tick;
+use artheffect_keyframe::Value as KV;
+use artheffect_project::{ItemId, LayerSource, Project};
+use artheffect_time::Tick;
 use serde_json::{Value, json};
 
 use super::{CommandSpec, always, bad, comp_id, has_comp, has_layers, layers_p};
@@ -42,7 +42,7 @@ fn deselect_keys(s: &mut Session, _: &Value) -> Result<Value> {
 impl Session {
     /// The selected mask (its group, or a property inside it) of a selected layer, the first
     /// one: (layer, mask group).
-    pub fn selected_mask(&self) -> Option<(effectcraft_project::LayerId, effectcraft_project::Uid)> {
+    pub fn selected_mask(&self) -> Option<(artheffect_project::LayerId, artheffect_project::Uid)> {
         let comp = self.active_comp()?;
         self.state.selected_props.iter().find_map(|(lid, uid)| {
             let masks = comp.layer(*lid)?.masks()?;
@@ -65,9 +65,8 @@ fn step_mask(s: &mut Session, p: &Value, dir: i64) -> Result<Value> {
     let groups: Vec<_> = masks.groups().collect();
     let n = groups.len() as i64;
     // The selected mask: its group, or a property inside it.
-    let selected = |g: &effectcraft_project::PropGroup| {
-        s.state.selected_props.iter().any(|(l, uid)| *l == lid && (g.find_group(*uid).is_some() || g.find(*uid).is_some()))
-    };
+    let selected =
+        |g: &artheffect_project::PropGroup| s.state.selected_props.iter().any(|(l, uid)| *l == lid && (g.find_group(*uid).is_some() || g.find(*uid).is_some()));
     let i = match groups.iter().position(|g| selected(g)) {
         Some(i) => (i as i64 + dir).rem_euclid(n.max(1)),
         None if dir > 0 => 0,

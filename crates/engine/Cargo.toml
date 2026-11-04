@@ -1,6 +1,6 @@
 [package]
-name = "effectcraft-engine"
-description = "The EffectCraft engine: session, undo history, editor state and the command registry every frontend (UI, CLI, control channel, MCP) dispatches through"
+name = "artheffect-engine"
+description = "The Artheffect engine: session, undo history, editor state and the command registry every frontend (UI, CLI, control channel, MCP) dispatches through"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,25 +11,25 @@ workspace = true
 
 [dependencies]
 craft-docpath = { workspace = true }
-effectcraft-time = { workspace = true }
-effectcraft-geom = { workspace = true }
-effectcraft-color = { workspace = true }
-effectcraft-keyframe = { workspace = true }
-effectcraft-project = { workspace = true }
-effectcraft-raster = { workspace = true }
-effectcraft-path = { workspace = true }
-effectcraft-text = { workspace = true }
-effectcraft-effects = { workspace = true }
-effectcraft-render = { workspace = true }
-effectcraft-segment = { workspace = true }
-effectcraft-track = { workspace = true }
-effectcraft-model = { workspace = true }
-effectcraft-lottie = { workspace = true }
-effectcraft-interchange = { workspace = true }
-effectcraft-psd = { workspace = true }
+artheffect-time = { workspace = true }
+artheffect-geom = { workspace = true }
+artheffect-color = { workspace = true }
+artheffect-keyframe = { workspace = true }
+artheffect-project = { workspace = true }
+artheffect-raster = { workspace = true }
+artheffect-path = { workspace = true }
+artheffect-text = { workspace = true }
+artheffect-effects = { workspace = true }
+artheffect-render = { workspace = true }
+artheffect-segment = { workspace = true }
+artheffect-track = { workspace = true }
+artheffect-model = { workspace = true }
+artheffect-lottie = { workspace = true }
+artheffect-interchange = { workspace = true }
+artheffect-psd = { workspace = true }
 kurbo = { workspace = true }
-effectcraft-svg = { workspace = true }
-effectcraft-pdf = { workspace = true }
+artheffect-svg = { workspace = true }
+artheffect-pdf = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -44,4 +44,4 @@ exr = { workspace = true }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 same-file = { workspace = true }
 tempfile = { workspace = true }
-effectcraft-sam2 = { workspace = true }
+artheffect-sam2 = { workspace = true }

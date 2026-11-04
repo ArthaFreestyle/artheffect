@@ -2,7 +2,7 @@
 
 > **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-29 · **Change:** minor (SAM 2 crate added to the layer table) · **Target:** Adobe After Effects 2026
 
-EffectCraft is a stack of small Rust crates. The engine knows nothing about the user interface;
+Artheffect is a stack of small Rust crates. The engine knows nothing about the user interface;
 the egui frontend, the command-line tool and the MCP server all sit on top of the same `Session`
 and drive it through the same command registry.
 
@@ -13,7 +13,7 @@ layers` enforces this, and fails the build if a crate below L5 depends on egui, 
 cpal or muda. Everything in L0 to L4, the egui UI and the web app also build for
 `wasm32-unknown-unknown` (`cargo xtask wasm`); see [web.md](web.md).
 
-| Layer | Crate (`effectcraft-…`) | Responsibility |
+| Layer | Crate (`artheffect-…`) | Responsibility |
 |---|---|---|
 | L0 | `time` | `Tick` (254 016 000 000 per second), rational frame rates incl. NTSC, SMPTE and drop-frame timecode |
 | L0 | `geom` | Vectors, matrices, quaternions, the layer transform (anchor, position, scale, orientation, rotation) |
@@ -48,7 +48,7 @@ cpal or muda. Everything in L0 to L4, the egui UI and the web app also build for
 | L4 | `host` | A fully wired `Session` (media, expressions, scripting, WebAssembly plug-ins, exporter) for the frontends |
 | L5 | `ui-egui` | The desktop interface: docking, panels, viewer, timeline, graph editor, dialogs, control channel |
 | L5 | `automation` | The MCP server, headless or bridged to the running app |
-| L6 | apps `effectcraft`, `effectcraft-cli`, `effectcraft-web` | Desktop app; command-line tool (render, exec, get/set, MCP); the browser app (wasm32, [web.md](web.md)) |
+| L6 | apps `artheffect`, `artheffect-cli`, `artheffect-web` | Desktop app; command-line tool (render, exec, get/set, MCP); the browser app (wasm32, [web.md](web.md)) |
 
 Allowed same-layer edges: `path → keyframe, raster`, `text → path`, `pdf → svg, text`, `effects → project, text, path, track`,
 `media / expr / export / gpu → render`, `export → media`, `lottie → format`, `host → engine, script`,
@@ -56,7 +56,7 @@ Allowed same-layer edges: `path → keyframe, raster`, `text → path`, `pdf →
 
 The frontend uses `craft-ui::docking` for atomic layout transactions and pointer drop targets,
 and `craft-ui::layout` for bounded split geometry and resize interactions. A small adapter
-preserves EffectCraft's saved dock tree, stacked entries, floating rectangles and dynamic
+preserves Artheffect's saved dock tree, stacked entries, floating rectangles and dynamic
 viewer/ScriptUI identities. Tab moves, edge splits, reordering, float/redock, activation and
 close operations use the shared model. The app retains composition-tab behavior, accordion
 height allocation and ScriptUI close callbacks. Lower layers cannot depend on `craft-ui`.
@@ -92,11 +92,11 @@ Everything animatable is a `Property` in the layer's `PropGroup` tree, addressed
 `transform/position`, `effects/#1/blurriness`, `masks/#1/feather`, or by `@uid`. Effects, masks,
 text animators and shape contents are groups in the same tree.
 
-A project file (`.ecproj`) is the project as readable JSON, headed by `savedBy` (the EffectCraft
+A project file (`.ecproj`) is the project as readable JSON, headed by `savedBy` (the Artheffect
 version that wrote it) and `schema`; `.ecprojx` is the same data as XML (File ▸ Save a Copy As
 XML). Saving goes through `Project::to_file_json`, which checks that the text reads back before
 anything is written (JSON can't hold NaN or infinity), and files are written atomically. Opening
-a file that a newer EffectCraft saved shows a warning: fields this version doesn't know are
+a file that a newer Artheffect saved shows a warning: fields this version doesn't know are
 dropped if it saves the project. Save, Save As, Save a Copy and Increment and Save keep the
 file's format (`.ecprojx` stays XML). Next to `savedBy` the file records the active comp and the
 open comp tabs (`activeComp`, `openComps`), which opening restores; they are editor state, not
@@ -104,7 +104,7 @@ part of `Project`, so older files (and ids that no longer name a comp) open on t
 older versions ignore them.
 
 `schema` changes when a saved value changes meaning; a project from an older schema is converted
-when it is opened (`effectcraft_engine::upgrade_effects`, which also refreshes effect instances
+when it is opened (`artheffect_engine::upgrade_effects`, which also refreshes effect instances
 from the registry) and saved with the current one, which older versions refuse to open rather than
 render wrongly. Schema 2 put effect positions on shape and text layers in effect space (§4,
 #227). Opening a schema 1 project moves what an effect on a shape or text layer (not an adjustment
@@ -130,7 +130,7 @@ then **effects** in order, then **layer styles**, then the **transform** into co
 when enabled), the **track matte**, and finally **blends** into the accumulator. Adjustment layers
 apply their effects to the accumulator.
 
-Effects run in **effect space** (`effectcraft_render::effect_bounds`): layer pixels measured from
+Effects run in **effect space** (`artheffect_render::effect_bounds`): layer pixels measured from
 the top-left of the layer's effect bounds, which are the source rectangle, or for layers without
 one (shape, text) a comp-sized rectangle centred on the layer's origin that their content
 surrounds. A shape layer's default effect point (the bounds' centre) is therefore its content's
@@ -179,7 +179,7 @@ Material Options (Accepts Lights/Shadows, Casts Shadows On/Only, Ambient, Diffus
 models and primitives add Base Color, Metallic, Roughness, Emissive. Rasterisation runs at 2×2
 supersampling with a reversed-Z depth buffer; opaque triangles resolve visibility first, the
 transparent ones are sorted back to front and blended. The software rasteriser
-(`adv::raster`) is the reference and the headless/CI path; `effectcraft-gpu` implements
+(`adv::raster`) is the reference and the headless/CI path; `artheffect-gpu` implements
 `Accelerator::raster_3d` with a wgpu render pipeline (`advanced3d.wgsl`) that repeats the
 shading step for step, and tests compare the two. Resolve, depth of field (a gather blur by
 each pixel's circle of confusion from the camera's Depth of Field settings) and the conversion
@@ -228,7 +228,7 @@ empties it, `cache.diskStats` reports it, and the timeline draws disk-only frame
 browser the frames live in the Origin Private File System: frame workers write them, the page
 keeps the index (`DiskIndex`) and reads hits ([web.md](web.md#disk-cache)).
 
-**Deferred readbacks** (`effectcraft-gpu` `deferred`): where a readback can't be waited for (WebGPU
+**Deferred readbacks** (`artheffect-gpu` `deferred`): where a readback can't be waited for (WebGPU
 in a browser worker) a frame renders in passes. `Accelerator::frame_begin` / `pass_begin` /
 `pass_missed` / `miss_gate`: a readback not there yet starts asynchronously and the step returns a
 placeholder; the pass is missed, the layer cache's gate drops inserts until the pass ends, and the
@@ -283,7 +283,7 @@ in blocks where colours clip) and resampled from there, as other frames are from
 **GPU compositor** (`crates/gpu`; Project Settings ▸ Video Rendering and Effects ▸ Mercury GPU
 Acceleration, the default, or Mercury Software Only; `render.backend`). The CPU renderer is the
 reference and keeps rendering layer content (sources, masks, CPU effects, layer styles) into the
-layer cache. The render crate defines an `Accelerator` trait; `effectcraft_gpu::Gpu` implements it
+layer cache. The render crate defines an `Accelerator` trait; `artheffect_gpu::Gpu` implements it
 on wgpu compute shaders. `RenderOpts::backend` picks `Cpu`, `Gpu` or `Auto` (an accelerator
 attached and the project's renderer the GPU). Auto renders each comp's top-level frames on
 whichever compositor measured faster for it (`render::auto::AutoPick`, kept by the accelerator):
@@ -375,7 +375,7 @@ renderer preference; materialized CPU frames remain usable and late GPU textures
 to the preview cache. Scoped allocation failures retain the adaptive budget/CPU retry behavior.
 
 **Recovery boundary:** the host installs handlers through eframe's CreationContext, after egui's
-presentation pipelines but before EffectCraft's pipelines. This does not cover that earlier egui
+presentation pipelines but before Artheffect's pipelines. This does not cover that earlier egui
 startup window. eframe 0.37 supports lost-surface recreation, not replacing its live device and
 all presentation resources. Device loss therefore requires restarting the presentation backend;
 CPU compositing alone cannot restore that display. No automatic restart or persistent safe-mode
@@ -395,7 +395,7 @@ checkpoint's births). The rate's keyframes are read at the step's exact layer ti
 (`EvalCtx::value_at_layer_time`; mapping it to comp time and back rounds under a fractional
 stretch), a rate without keyframes or an expression isn't sampled, and a layer of one of them with
 expressions isn't layer cached (its key can't see what an expression returned at earlier times).
-`effectcraft-cli bench --gpu` reports CPU vs GPU ms/frame, speed-up, Auto's ms/frame, pixel
+`artheffect-cli bench --gpu` reports CPU vs GPU ms/frame, speed-up, Auto's ms/frame, pixel
 agreement and the steady-state upload / readback MB per frame for every comp plus an
 adjustment-layer comp.
 
@@ -448,31 +448,31 @@ is a `Tracker` group under the layer's Motion Trackers group, with Track Point g
 Center, Feature Size, Search Offset, Search Size, Confidence, Attach Point, Attach Point Offset)
 keyframed per analysed frame. `track.analyze` renders the layer's source frames
 (`Renderer::layer_source`) on a background thread (`engine::tracking`, polled like the render
-queue; blocking with `wait`), and `effectcraft-track` matches each point in parallel. One undo step
+queue; blocking with `wait`), and `artheffect-track` matches each point in parallel. One undo step
 covers an analysis. `track.apply` keys the target's Position/Rotation/Scale, the tracked layer's
 Anchor Point and Position (Stabilize), or a Corner Pin effect (Parallel / Perspective).
 
 **Mask tracking** (`track.mask`, `engine::mask_track`) runs the same kind of background job over
-the layer's source frames: `effectcraft-track`'s mask tracker detects features inside the mask,
+the layer's source frames: `artheffect-track`'s mask tracker detects features inside the mask,
 tracks them with pyramidal Lucas–Kanade and fits the chosen model (position … perspective) with
 RANSAC; the motion moves the Mask Path's vertices and tangents and is keyed per frame. **Mask
-Interpolation** (`mask.interpolate`) uses `effectcraft-path`'s smart interpolation (arc-length
+Interpolation** (`mask.interpolate`) uses `artheffect-path`'s smart interpolation (arc-length
 vertex insertion, shape-context matching, rigid in-betweens) to key in-between shapes.
-The two **Face Tracking** methods (`effectcraft_track::face`) fit a face inside the mask instead:
+The two **Face Tracking** methods (`artheffect_track::face`) fit a face inside the mask instead:
 a skin colour model from the first frame, the face outline along rays from the skin component's
 centre (an area-moment ellipse gives centre, size and roll), facial features as the non-skin
 components inside it, and an active-shape point distribution model trained on synthetic face
 shapes (our own generator, no external weights) that fills and checks the landmarks. The outline
 keys the Mask Path; Detailed Features keys a Face Track Points effect, and
 `track.extractFaceMeasurements` derives a keyed Face Measurements effect (and copies its keys).
-With a trained face model chosen (`effectcraft_segment::face::FaceModel`, Settings ▸ Face
+With a trained face model chosen (`artheffect_segment::face::FaceModel`, Settings ▸ Face
 Tracking; `Session::models` hands it to the mask track), `FaceTracker::new_with` lets the model
 find the face in the mask and follow it; the model's outline and named points replace the
 classical steps, and chin and jaw still come from the outline so the measurements agree.
 
 **Warp Stabilizer** (`effects::warp_stab`, `engine::warp`): `warp.analyze` renders the layer's
 input to the effect (`Renderer::layer_input`: source, masks and the effects above it) for every
-frame on a background thread and stores `effectcraft-track`'s `WarpAnalysis` (per-frame
+frame on a background thread and stores `artheffect-track`'s `WarpAnalysis` (per-frame
 translation / similarity / homography fits) as JSON in the effect's hidden Analysis parameter,
 with a key of the layer's source, In/Out, start, stretch and Time Remap. `Session::edit` clears
 analyses whose key no longer matches and queues them; the desktop app re-analyses them in the
@@ -504,7 +504,7 @@ lines interpolated); pixel aspect stretches footage, solids and precomps in the 
 (`EvalCtx::par_ratio`, not inherited by children); Invert Alpha and Interpret As Linear Light
 apply after decoding.
 
-**3D Camera Tracker** (`effects::camera_tracker`, `engine::camera_track`, `effectcraft-track`'s
+**3D Camera Tracker** (`effects::camera_tracker`, `engine::camera_track`, `artheffect-track`'s
 `camtrack`): `camera.analyze` / `track.camera` render the layer's input to the effect on a
 background thread and run structure from motion in two steps. Step 1 follows Shi–Tomasi features
 through the clip with pyramidal Lucas–Kanade (forward–backward checked, re-detected where the frame
@@ -523,13 +523,13 @@ comp space so the first frame's camera is the default comp camera (or so a chose
 the X-Z plane at the origin); `camera.createFromSolve` keys a one-node "3D Tracker Camera" on every
 frame and places text, solids, nulls or a shadow catcher and light on the target plane.
 
-**Roto Brush & Refine Edge** (`effectcraft_track::roto`, `effects::roto`, `engine::roto`):
+**Roto Brush & Refine Edge** (`artheffect_track::roto`, `effects::roto`, `engine::roto`):
 strokes (foreground, background, Refine Edge) are stored as JSON in the effect's hidden Strokes
 parameter with the base frame and segmentation span. Each frame is segmented by graph cut
 (Boykov–Jolly hard constraints, GrabCut colour mixtures, our own Boykov–Kolmogorov max-flow,
 coarse to fine) and propagated to the next frame by warping the matte with block optical flow and
 re-cutting in a Search Radius band; frames with correction strokes are re-cut with the warped
-matte as a soft prior. With Version 2.0 / 3.0 and a trained model chosen (`effectcraft_segment`,
+matte as a soft prior. With Version 2.0 / 3.0 and a trained model chosen (`artheffect_segment`,
 Settings ▸ Roto Brush), the model's foreground probability, prompted by the strokes or by the
 warped matte, becomes a strong prior for the same cut (falling back to the classic result when it
 disagrees with the flow); the model's id is part of the chain seed. Refine Edge bands get guided-filter + closed-form matting and
@@ -603,7 +603,7 @@ appear after the key is ready instead of serializing composition content during 
 
 ## 5a. Scripting
 
-`effectcraft-script` runs JavaScript (boa, a fresh context per run; the Script Console keeps one)
+`artheffect-script` runs JavaScript (boa, a fresh context per run; the Script Console keeps one)
 with an object model written from the behaviour the After Effects Scripting Guide documents:
 `app`, `Project`, `ItemCollection`, `CompItem`/`FootageItem`/`FolderItem`, `LayerCollection`,
 `AVLayer`/`TextLayer`/`ShapeLayer`/`CameraLayer`/`LightLayer`, `PropertyGroup`/`Property`
@@ -620,7 +620,7 @@ parameters are `<effect match name>-0001…`. `File` reads are limited to the pr
 writes and the network are refused, unless Preferences ▸ Scripting & Expressions ▸ Allow Scripts
 to Write Files and Access Network is on. Entry points: the `script.run` command
 (`Session::script`, set by the host), File ▸ Scripts ▸ Run Script File… (`.jsx`/`.js`; `.json`
-command scripts still run as steps), Window ▸ Script Console, `effectcraft-cli script` and the
+command scripts still run as steps), Window ▸ Script Console, `artheffect-cli script` and the
 MCP `run_script` tool.
 
 ## 6. Commands, the UI seam and automation
@@ -685,12 +685,12 @@ media embedded in them is not extracted, and the AAF writer keeps neither speed 
 
 ## 7. Performance of everyday operations
 
-`effectcraft-cli bench --ops [--small] [--layers N] [--comps N] [--footage N]` measures the
+`artheffect-cli bench --ops [--small] [--layers N] [--comps N] [--footage N]` measures the
 operations people do all day on a large generated project (`engine::perf::large_project`: 200
 comps, 5,000 layers in the main comp plus 10 in each other comp, 300 footage items — 100 image
 sequences of 240 frames, 100 movies, 100 stills — a 20-deep precomp chain, expressions on every
 4th layer, Gaussian Blur on every 6th, parenting). The engine side is `engine::perf::ops_bench`;
-the UI side (`ui-egui::bench`) drives the real `EffectcraftApp` headless: layout, painting and
+the UI side (`ui-egui::bench`) drives the real `ArtheffectApp` headless: layout, painting and
 tessellation, no window or GPU upload.
 
 What keeps it fast:
@@ -754,4 +754,4 @@ JSON parsing is now the bulk of open), and rendering 5,000-layer comps faster.
 |---|---|---|
 | 2026-10-10 | minor | Status line added; crate table checked against `crates/` (every crate listed); effect count and VP9 encoder description corrected |
 
-PDF document structure uses the `craft-pdf` read feature through an app-owned bounded object adapter. EffectCraft retains its drawing tree, fonts, content/image filters and EPS interpreter; ordinary object/xref limits remain 256 MiB on 64-bit and 64 MiB on 32-bit/WASM, including repair.
+PDF document structure uses the `craft-pdf` read feature through an app-owned bounded object adapter. Artheffect retains its drawing tree, fonts, content/image filters and EPS interpreter; ordinary object/xref limits remain 256 MiB on 64-bit and 64 MiB on 32-bit/WASM, including repair.

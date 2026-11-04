@@ -38,11 +38,11 @@ fn opentype_features_substitute_glyphs() {
     assert_eq!(ids("1234567890", &plain), ids("1234567890", &ot(|o| o.set_stylistic_set(20, true))), "Inter has no ss20");
     assert_ne!(ids("1/2", &plain), ids("1/2", &ot(|o| o.fractions = true)), "frac");
     assert_ne!(ids("1a 2o No", &plain), ids("1a 2o No", &ot(|o| o.ordinals = true)), "ordn");
-    let tab = measure("1111", &ot(|o| o.figure_width = effectcraft_keyframe::FigureWidth::Tabular));
-    let prop = measure("1111", &ot(|o| o.figure_width = effectcraft_keyframe::FigureWidth::Proportional));
+    let tab = measure("1111", &ot(|o| o.figure_width = artheffect_keyframe::FigureWidth::Tabular));
+    let prop = measure("1111", &ot(|o| o.figure_width = artheffect_keyframe::FigureWidth::Proportional));
     assert!((tab - prop).abs() > 1.0, "tabular {tab} vs proportional {prop}");
     // Old-style figures (Noto Serif).
-    let old = TextStyle { opentype: OpenType { figure_style: effectcraft_keyframe::FigureStyle::OldStyle, ..Default::default() }, ..serif() };
+    let old = TextStyle { opentype: OpenType { figure_style: artheffect_keyframe::FigureStyle::OldStyle, ..Default::default() }, ..serif() };
     assert_ne!(ids("123", &serif()), ids("123", &old), "onum");
     // Contextual alternates are on by default; turning them off can only keep or change glyphs.
     let no_calt = ot(|o| o.contextual_alternates = false);
@@ -343,7 +343,7 @@ fn rtl_paragraph_carets_run_right_to_left() {
 /// as if they had been set as variations; axes set on the text itself keep their values.
 #[test]
 fn named_instance_sets_the_base_variations() {
-    const FAMILY: &str = "EffectCraft Layout Instance Test";
+    const FAMILY: &str = "Artheffect Layout Instance Test";
     fonts::add_font_data(crate::sfnt::test_font::variable(FAMILY, &[("Light", 300.0, None), ("Black", 900.0, None)], true));
     let st =
         |style: &str, variations: Vec<(String, f32)>| TextStyle { family: FAMILY.into(), style: style.into(), size: 50.0, variations, ..Default::default() };
@@ -360,7 +360,7 @@ fn named_instance_sets_the_base_variations() {
 
 /// After Effects 2026 (case 818): box text's first baseline is the `d` height (in whole
 /// thousandths of an em) below the box top, at the nominal size also for superscript, whose
-/// glyphs are then raised. EffectCraft used the font ascent of the drawn size (plus the
+/// glyphs are then raised. Artheffect used the font ascent of the drawn size (plus the
 /// superscript rise): 89.1 px instead of 69.5 for Times New Roman at 100 px, and the
 /// superscript glyphs 15.8 px low.
 #[test]

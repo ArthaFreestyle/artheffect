@@ -1,8 +1,8 @@
 use super::common::{Actions, gesture_key};
-use super::{Align2, Color32, EffectcraftApp, EvalCtx, Layer, PropGroup, Rect, Sense, Tokens, Value, fw, json, pos2, vec2, widgets};
+use super::{Align2, ArtheffectApp, Color32, EvalCtx, Layer, PropGroup, Rect, Sense, Tokens, Value, fw, json, pos2, vec2, widgets};
 
 /// Warp Stabilizer's Analyze / Cancel buttons and analysis status.
-pub(super) fn warp_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, r: Rect, actions: &mut Actions) {
+pub(super) fn warp_editor(app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, r: Rect, actions: &mut Actions) {
     let t = app.tokens;
     let running = app.session.warp_target().is_some_and(|(_, l, u)| l == layer.id && u == g.uid) && app.session.is_warp_analyzing();
     let busy = app.session.is_warp_analyzing();
@@ -18,7 +18,7 @@ pub(super) fn warp_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui:
         }
         app.auto.add(&format!("effectControls.warp.{}.cancel", g.uid), b2, "Cancel");
     }
-    let analysed = matches!(g.get(effectcraft_engine::effects::warp_stab::ANALYSIS).map(|p| &p.value), Some(Value::Str(s)) if !s.is_empty());
+    let analysed = matches!(g.get(artheffect_engine::effects::warp_stab::ANALYSIS).map(|p| &p.value), Some(Value::Str(s)) if !s.is_empty());
     let status = match app.session.warp_progress() {
         Some(pr) if running => pr.banner(),
         _ if analysed => "Analysis complete".to_string(),
@@ -29,10 +29,10 @@ pub(super) fn warp_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui:
 }
 
 /// Roto Brush & Refine Edge: Freeze / Unfreeze and Propagate buttons and the segmentation status.
-pub(super) fn roto_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, r: Rect, actions: &mut Actions) {
-    use effectcraft_engine::effects::roto as fx;
+pub(super) fn roto_editor(app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, r: Rect, actions: &mut Actions) {
+    use artheffect_engine::effects::roto as fx;
     let t = app.tokens;
-    let params = effectcraft_engine::effects::flatten_params(g, &mut |pr| pr.value.clone());
+    let params = artheffect_engine::effects::flatten_params(g, &mut |pr| pr.value.clone());
     let frozen = fx::is_frozen(&params);
     let d = fx::data(&params);
     let running = app.session.roto_target().is_some_and(|(_, l, u, _)| l == layer.id && u == g.uid) && app.session.is_roto_running();
@@ -59,18 +59,10 @@ pub(super) fn roto_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui:
 
 /// Object Matte: Freeze / Unfreeze and Track / Stop buttons (the background job that computes
 /// the matte over the tracked frames) and its status.
-pub(super) fn object_matte_editor(
-    app: &mut EffectcraftApp,
-    ui: &mut egui::Ui,
-    p: &egui::Painter,
-    layer: &Layer,
-    g: &PropGroup,
-    r: Rect,
-    actions: &mut Actions,
-) {
-    use effectcraft_engine::effects::object_matte as om;
+pub(super) fn object_matte_editor(app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, r: Rect, actions: &mut Actions) {
+    use artheffect_engine::effects::object_matte as om;
     let t = app.tokens;
-    let params = effectcraft_engine::effects::flatten_params(g, &mut |pr| pr.value.clone());
+    let params = artheffect_engine::effects::flatten_params(g, &mut |pr| pr.value.clone());
     let frozen = om::is_frozen(&params);
     let mine = app.session.roto_target().is_some_and(|(_, l, u, _)| l == layer.id && u == g.uid);
     let running = mine && app.session.is_roto_running();
@@ -113,9 +105,9 @@ pub(super) fn editor_height(effect: &str, g: &PropGroup, width: f32) -> f32 {
             crate::panels::fx_editors::header_height(effect, g, width)
         }
         "ec.color.curves" => 34.0 + curves_size(width) + 26.0,
-        effectcraft_engine::effects::warp_stab::ID => 50.0,
-        effectcraft_engine::effects::camera_tracker::ID => crate::panels::camera_tracker_ui::editor_height(g),
-        effectcraft_engine::effects::roto::ID | effectcraft_engine::effects::object_matte::ID => 50.0,
+        artheffect_engine::effects::warp_stab::ID => 50.0,
+        artheffect_engine::effects::camera_tracker::ID => crate::panels::camera_tracker_ui::editor_height(g),
+        artheffect_engine::effects::roto::ID | artheffect_engine::effects::object_matte::ID => 50.0,
         "ec.color.levels" | "ec.color.levelsic" => 34.0 + 80.0 + 58.0,
         "ec.color.autolevels" | "ec.color.autocontrast" | "ec.color.autocolor" => 24.0 + 80.0 + 12.0,
         _ => 0.0,
@@ -127,7 +119,7 @@ fn curves_size(width: f32) -> f32 {
 }
 
 /// Cached histogram of the displayed frame (recomputed when the frame changes).
-fn frame_histogram(app: &mut EffectcraftApp, ctx: &egui::Context) -> Option<std::sync::Arc<[[u32; 256]; 5]>> {
+fn frame_histogram(app: &mut ArtheffectApp, ctx: &egui::Context) -> Option<std::sync::Arc<[[u32; 256]; 5]>> {
     let img = app.viewer_pixels()?;
     let key = std::sync::Arc::as_ptr(&img) as usize;
     let id = egui::Id::unique("ec-histogram");
@@ -154,7 +146,7 @@ fn channel_color(ch: usize) -> Color32 {
 /// A "Channel: [RGB ▾]" popup; returns the chosen channel.
 #[allow(clippy::too_many_arguments)]
 fn channel_popup(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     x: f32,
@@ -180,7 +172,7 @@ fn channel_popup(
 /// hidden point-list parameter.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn curves_editor(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -258,7 +250,7 @@ pub(super) fn curves_editor(
 /// Levels parameter ids for a channel: input black, input white, gamma, output black, output white.
 fn levels_ids(effect: &str, ch: usize) -> [String; 5] {
     if effect == "ec.color.levels" {
-        return effectcraft_engine::effects::levels_channel_ids(ch);
+        return artheffect_engine::effects::levels_channel_ids(ch);
     }
     // Levels (Individual Controls) nests each channel's controls in its twirl-down group.
     let pre = fw::LEVELS_CHANNELS[ch.min(4)].0;
@@ -269,7 +261,7 @@ fn levels_ids(effect: &str, ch: usize) -> [String; 5] {
 /// black/white triangles.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn levels_editor(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -360,7 +352,7 @@ pub(super) fn levels_editor(
 }
 
 /// Auto Levels / Auto Contrast / Auto Color: the histogram they work from.
-pub(super) fn histogram_only(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, g: &PropGroup, r: Rect) {
+pub(super) fn histogram_only(app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, g: &PropGroup, r: Rect) {
     let t = app.tokens;
     let x0 = r.min.x + 30.0;
     p.text(pos2(x0, r.min.y + 12.0), Align2::LEFT_CENTER, crate::i18n::tr("Histogram"), Tokens::ui(12.0), t.text_dim);

@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 
 #[test]
 fn index_references_read_the_same_values_as_names() {
-    let mut s = effectcraft_host::session();
+    let mut s = artheffect_host::session();
     s.execute("comp.new", json!({"name": "T", "width": 64, "height": 64, "duration": 1})).unwrap();
     let l = s.execute("layer.newSolid", json!({"name": "Reader", "color": "#ffffff"})).unwrap()["layer"].as_u64().unwrap();
     let o = s.execute("layer.newSolid", json!({"name": "Other", "color": "#00ff00"})).unwrap()["layer"].as_u64().unwrap();
@@ -18,7 +18,7 @@ fn index_references_read_the_same_values_as_names() {
     }
     s.execute("prop.set", json!({"layer": o, "path": "effects/#1/transform/scale", "value": 77})).unwrap();
     s.execute("prop.set", json!({"layer": o, "path": "effects/#2/point", "value": [12, 34]})).unwrap();
-    let evaluated = |s: &mut effectcraft_engine::Session, path: &str| -> Value {
+    let evaluated = |s: &mut artheffect_engine::Session, path: &str| -> Value {
         let v = s.execute("prop.get", json!({"layer": l, "path": path})).unwrap();
         assert!(v.get("expressionError").is_none(), "{v}");
         v["evaluated"].clone()

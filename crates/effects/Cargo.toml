@@ -1,5 +1,5 @@
 [package]
-name = "effectcraft-effects"
+name = "artheffect-effects"
 description = "Effect registry (specs, parameters, categories) and CPU implementations of the effects library"
 version.workspace = true
 edition.workspace = true
@@ -10,13 +10,13 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-effectcraft-geom = { workspace = true }
-effectcraft-color = { workspace = true }
-effectcraft-keyframe = { workspace = true }
-effectcraft-project = { workspace = true }
-effectcraft-raster = { workspace = true }
-effectcraft-segment = { workspace = true }
-effectcraft-track = { workspace = true }
+artheffect-geom = { workspace = true }
+artheffect-color = { workspace = true }
+artheffect-keyframe = { workspace = true }
+artheffect-project = { workspace = true }
+artheffect-raster = { workspace = true }
+artheffect-segment = { workspace = true }
+artheffect-track = { workspace = true }
 rayon = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

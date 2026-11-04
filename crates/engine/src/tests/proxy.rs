@@ -4,10 +4,10 @@
 
 use std::sync::Arc;
 
-use effectcraft_project::render_queue::ProxyUse;
-use effectcraft_project::{AlphaMode, Footage, FootageKind, ItemId, ItemKind};
-use effectcraft_raster::Image;
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_project::render_queue::ProxyUse;
+use artheffect_project::{AlphaMode, Footage, FootageKind, ItemId, ItemKind};
+use artheffect_raster::Image;
+use artheffect_time::{FrameRate, Tick};
 use serde_json::json;
 
 use crate::Session;
@@ -152,7 +152,7 @@ fn footage_proxy_follows_use_proxy_and_proxy_use() {
     // Render queue items carry Proxy Use (Best Settings: none).
     let r = s.execute("renderQueue.add", json!({"proxyUse": "all"})).unwrap();
     assert_eq!(s.project.render_queue[0].settings.proxy_use, ProxyUse::UseAll, "{r}");
-    assert_eq!(effectcraft_project::render_queue::RenderSettings::default().proxy_use, ProxyUse::UseNone);
+    assert_eq!(artheffect_project::render_queue::RenderSettings::default().proxy_use, ProxyUse::UseNone);
 }
 
 #[test]
@@ -176,7 +176,7 @@ fn comp_proxy_and_create_proxy() {
     let r = s.execute("file.createProxy", json!({"kind": "still"})).unwrap();
     let it = s.project.render_queue.last().unwrap().clone();
     assert_eq!(it.comp, inner);
-    assert_eq!(it.post_render, effectcraft_project::render_queue::PostRenderAction::SetProxy);
+    assert_eq!(it.post_render, artheffect_project::render_queue::PostRenderAction::SetProxy);
     assert_eq!(it.settings.resolution, 0.5);
     assert!(r["output"].as_str().unwrap().contains("Inner_proxy_"), "{r}");
     let m = s.execute("file.createProxy", json!({"kind": "movie", "comp": inner.0})).unwrap();
@@ -481,7 +481,7 @@ fn cineon_settings_convert_dpx_code_values() {
     // The form sends the points in the units it showed them in (`pointUnits`) with a new Units.
     s.execute_checked("file.interpretFootage", json!({"items": [d.0], "pointUnits": "8bit", "cineonUnits": "float", "convertedWhite": 255})).unwrap();
     let f = foot(&s, d);
-    assert_eq!(f.cineon.units, effectcraft_project::CineonUnits::Float);
+    assert_eq!(f.cineon.units, artheffect_project::CineonUnits::Float);
     assert!((f.cineon.converted_white - 1023.0).abs() < 1e-3, "{:?}", f.cineon);
     // Refused: a black point at or above the white point, values out of range, and footage
     // that is not DPX or Cineon. Nothing changes.
@@ -498,7 +498,7 @@ fn cineon_settings_convert_dpx_code_values() {
         assert!(s.execute("file.interpretFootage", bad.clone()).is_err(), "{bad}");
     }
     assert_eq!(foot(&s, d).cineon, before);
-    assert!(foot(&s, png).cineon == effectcraft_project::CineonSettings::default());
+    assert!(foot(&s, png).cineon == artheffect_project::CineonSettings::default());
     // With DPX and other footage selected, only the DPX file takes the settings.
     s.execute("file.interpretFootage", json!({"items": [png.0, other.0], "logConversion": true})).unwrap();
     assert!(foot(&s, other).cineon.log_conversion && !foot(&s, png).cineon.log_conversion);
@@ -509,7 +509,7 @@ fn cineon_settings_convert_dpx_code_values() {
     s.execute("file.rememberInterpretation", json!({"item": d.0})).unwrap();
     s.execute("file.applyInterpretation", json!({"items": [other.0, png.0]})).unwrap();
     assert_eq!(foot(&s, other).cineon, before);
-    assert_eq!(foot(&s, png).cineon, effectcraft_project::CineonSettings::default());
+    assert_eq!(foot(&s, png).cineon, artheffect_project::CineonSettings::default());
     // Off again: as stored.
     s.execute("file.interpretFootage", json!({"item": d.0, "logConversion": false})).unwrap();
     assert!(near(at(&s, 2), 400.0 / 1023.0), "{}", at(&s, 2));

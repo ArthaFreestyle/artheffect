@@ -135,7 +135,7 @@ pub(super) fn caustics(ctx: &EffectCtx, mut b: Buf) -> Buf {
     let st = caustics_setup(ctx, &b);
     let mut bottom = st.bottom.clone().unwrap_or_else(|| b.img.clone());
     if st.bottom_sigma > 0.0 {
-        bottom = effectcraft_raster::gaussian_blur(&bottom, st.bottom_sigma, st.bottom_sigma, false);
+        bottom = artheffect_raster::gaussian_blur(&bottom, st.bottom_sigma, st.bottom_sigma, false);
     }
     let CausticsSetup {
         scaling,
@@ -361,7 +361,7 @@ fn wave_world_impl(ctx: &EffectCtx, b: &Buf, plan_only: bool) -> Result<Image, W
             .map(|i| {
                 let (fx, fy) = ((i % nx) as f64 / (nx - 1) as f64, (i / nx) as f64 / (ny - 1) as f64);
                 let (c, a) = unpremul(lp.buf.img.sample_bilinear_clamped(fx * gw * lp.buf.scale + lp.buf.offset[0], fy * gh * lp.buf.scale + lp.buf.offset[1]));
-                level - steep * effectcraft_color::luminance(c[0], c[1], c[2]) * a
+                level - steep * artheffect_color::luminance(c[0], c[1], c[2]) * a
             })
             .collect()
     });

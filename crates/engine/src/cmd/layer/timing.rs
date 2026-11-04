@@ -104,7 +104,7 @@ pub(super) fn slip(s: &mut Session, p: &Value) -> Result<Value> {
         }
         let dur = match &l.source {
             LayerSource::Footage { item } => match s.project.item(*item).map(|i| &i.kind) {
-                Some(ItemKind::Footage(f)) if f.kind != effectcraft_project::FootageKind::Still => Some(f.looped_duration()),
+                Some(ItemKind::Footage(f)) if f.kind != artheffect_project::FootageKind::Still => Some(f.looped_duration()),
                 _ => None,
             },
             LayerSource::Comp { item } => s.project.comp(*item).map(|c| c.duration),
@@ -202,7 +202,7 @@ pub(super) fn arrange(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 /// "Pre-comp N" with the lowest N no item already uses.
-fn unused_precomp_name(proj: &effectcraft_project::Project) -> String {
+fn unused_precomp_name(proj: &artheffect_project::Project) -> String {
     (1u32..).map(|n| format!("Pre-comp {n}")).find(|n| !proj.items.values().any(|i| &i.name == n)).unwrap_or_else(|| "Pre-comp".to_string())
 }
 
@@ -234,7 +234,7 @@ pub(super) fn precompose(s: &mut Session, p: &Value) -> Result<Value> {
         let Some(src_item) = layer.source.item() else {
             return Err(bad(c, "\"Leave all attributes\" is available for footage, solid and precomp layers only"));
         };
-        let (w, h) = effectcraft_render::source_size(&s.project, &layer);
+        let (w, h) = artheffect_render::source_size(&s.project, &layer);
         let (w, h) = if w == 0 || h == 0 { (comp.width, comp.height) } else { (w, h) };
         let dur = match s.project.item(src_item).map(|i| &i.kind) {
             Some(ItemKind::Comp(nc)) => nc.duration,
@@ -259,7 +259,7 @@ pub(super) fn precompose(s: &mut Session, p: &Value) -> Result<Value> {
         return Ok(json!({"comp": new.0.0, "layer": new.1.0}));
     }
     let span = {
-        let sel: Vec<&effectcraft_project::Layer> = comp.layers.iter().filter(|l| ids.contains(&l.id)).collect();
+        let sel: Vec<&artheffect_project::Layer> = comp.layers.iter().filter(|l| ids.contains(&l.id)).collect();
         let a = sel.iter().map(|l| l.in_point).min().unwrap_or(Tick(0)).max(Tick(0));
         let b = sel.iter().map(|l| l.out_point).max().unwrap_or(comp.duration).min(comp.duration);
         (a, b)

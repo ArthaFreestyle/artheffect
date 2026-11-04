@@ -1,4 +1,4 @@
-// Original work for EffectCraft; the maths follows the Hugging Face `transformers` SAM 2 video
+// Original work for Artheffect; the maths follows the Hugging Face `transformers` SAM 2 video
 // implementation (Apache-2.0, see NOTICE).
 //! The memory encoder on the GPU: the mask is down-sampled by four strided convolutions, fused with the
 //! frame's features by two ConvNeXt-style blocks, and projected to the 64 channels of a memory.

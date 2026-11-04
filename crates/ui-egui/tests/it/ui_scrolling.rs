@@ -1,8 +1,8 @@
 //! Long menus and lists scroll instead of running off the window, with a scroll bar to drag
 //! (egui_kittest, UI logic only).
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
+use artheffect_engine::Session;
+use artheffect_ui_egui::ArtheffectApp;
 use egui::{Event, Pos2, Rect, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
@@ -14,15 +14,15 @@ use super::ui_menus::{click_at, move_to, press as hold, rect};
 use super::ui_tail::drag;
 
 /// Open the demo project in a UI test harness with the requested window size.
-fn harness(w: f32, h: f32) -> Harness<'static, EffectcraftApp> {
+fn harness(w: f32, h: f32) -> Harness<'static, ArtheffectApp> {
     let mut s = Session::default();
     s.execute("file.openDemoProject", json!({})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(w, h)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(w, h)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     h
 }
 
-fn wheel(h: &mut Harness<'_, EffectcraftApp>, at: Pos2, dy: f32) {
+fn wheel(h: &mut Harness<'_, ArtheffectApp>, at: Pos2, dy: f32) {
     h.input_mut().events.push(Event::PointerMoved(at));
     h.input_mut().events.push(Event::MouseWheel {
         unit: egui::MouseWheelUnit::Point,
@@ -35,7 +35,7 @@ fn wheel(h: &mut Harness<'_, EffectcraftApp>, at: Pos2, dy: f32) {
 }
 
 /// The open menu popup's rect (frame included), from egui's area memory: the only tall area up.
-fn open_popup(h: &Harness<'_, EffectcraftApp>) -> Rect {
+fn open_popup(h: &Harness<'_, ArtheffectApp>) -> Rect {
     h.ctx
         .memory(|m| {
             m.areas()
@@ -64,13 +64,13 @@ fn a_menu_taller_than_the_window_scrolls() {
     let last = h.query_by_label_contains("Keyboard Shortcuts").expect("still open").rect();
     assert!(last.min.y >= 0.0 && last.max.y <= 520.0, "scrolled into the window ({last:?})");
     click_at(&mut h, last.center());
-    assert_eq!(h.state().dialog, Some(effectcraft_ui_egui::Dialog::Shortcuts), "the entry takes the click");
+    assert_eq!(h.state().dialog, Some(artheffect_ui_egui::Dialog::Shortcuts), "the entry takes the click");
 }
 
 /// Open Edit in a window shorter than the menu (holding or clicking its title) and return the
 /// last entry's rect before any scroll, plus the open popup's rect. `opened` is the failure
 /// message when the menu did not open.
-fn open_tall_edit(h: &mut Harness<'_, EffectcraftApp>, held: bool, opened: &str) -> (Rect, Rect) {
+fn open_tall_edit(h: &mut Harness<'_, ArtheffectApp>, held: bool, opened: &str) -> (Rect, Rect) {
     let edit = rect(h, "menu.Edit");
     if held {
         hold(h, edit.center());
@@ -122,7 +122,7 @@ fn without_the_hold_the_edge_does_not_scroll_the_menu() {
 }
 
 /// Find the actual Edit popup's bottom crawl band while keeping the title press held.
-fn held_edit_crawl(h: &mut Harness<'_, EffectcraftApp>) -> Pos2 {
+fn held_edit_crawl(h: &mut Harness<'_, ArtheffectApp>) -> Pos2 {
     let edit = rect(h, "menu.Edit");
     hold(h, edit.center());
     let before = h.query_by_label_contains("Keyboard Shortcuts").expect("Edit opens on press").rect();
@@ -139,7 +139,7 @@ fn held_edit_crawl(h: &mut Harness<'_, EffectcraftApp>) -> Pos2 {
     panic!("the held Edit menu never crawled from its bottom edge");
 }
 
-fn menu_at(h: &mut Harness<'_, EffectcraftApp>, time: f64) {
+fn menu_at(h: &mut Harness<'_, ArtheffectApp>, time: f64) {
     h.input_mut().time = Some(time);
     h.step();
 }
@@ -183,7 +183,7 @@ fn menu_edge_crawl_advances_once_on_replay_then_continues_at_a_later_time() {
 
 /// The actual menu viewport's vertical range, rather than its outer Area/frame rectangle.
 /// Popup's accessibility parent is its title, so background panels and other menus cannot match.
-fn menu_scrollbar(h: &Harness<'_, EffectcraftApp>, title: &str) -> Rect {
+fn menu_scrollbar(h: &Harness<'_, ArtheffectApp>, title: &str) -> Rect {
     let menu = h.get_by_label(title);
     let bars: Vec<_> = menu.query_all_by_role(egui::accesskit::Role::ScrollBar).map(|node| node.rect()).filter(|r| r.height() > r.width()).collect();
     assert_eq!(bars.len(), 1, "{title}: exactly one actual vertical menu scrollbar ({bars:?})");
@@ -268,7 +268,7 @@ fn menu_edge_crawl_is_bounded_stops_and_keeps_wheel_and_menu_state_independent()
 }
 
 /// A scroll bar's "scroll/max" automation label.
-fn scrolled(h: &Harness<'_, EffectcraftApp>, id: &str) -> (f32, f32) {
+fn scrolled(h: &Harness<'_, ArtheffectApp>, id: &str) -> (f32, f32) {
     let label = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).label.clone();
     let (s, max) = label.split_once('/').unwrap_or_else(|| panic!("{id}: {label}"));
     (s.parse().unwrap(), max.parse().unwrap())
@@ -278,7 +278,7 @@ fn scrolled(h: &Harness<'_, EffectcraftApp>, id: &str) -> (f32, f32) {
 /// scrolls them: without a mouse wheel or touchpad there was no way down most panels (#271).
 #[test]
 fn panels_taller_than_their_space_have_a_scroll_bar_to_drag() {
-    use effectcraft_ui_egui::dock::PanelKind;
+    use artheffect_ui_egui::dock::PanelKind;
     // (The Project panel's list starts below its item preview and search: a taller window.)
     for (panel, id, height) in [
         (PanelKind::EffectControls, "effectControls.scroll", 240.0),
@@ -321,7 +321,7 @@ fn panels_taller_than_their_space_have_a_scroll_bar_to_drag() {
 
 /// A window of `height` with one `panel` maximized, with rows to fill it: effects on the selected
 /// layers, queued renders, markers with a long comment, a folder of files.
-fn panel_with_rows(panel: effectcraft_ui_egui::dock::PanelKind, height: f32, folder: &std::path::Path) -> Harness<'static, EffectcraftApp> {
+fn panel_with_rows(panel: artheffect_ui_egui::dock::PanelKind, height: f32, folder: &std::path::Path) -> Harness<'static, ArtheffectApp> {
     let mut h = harness(640.0, height);
     let app = h.state_mut();
     let layers: Vec<u64> = app.session.active_comp().unwrap().layers.iter().map(|l| l.id.0).collect();
@@ -353,7 +353,7 @@ fn folder_of_files(test: &str) -> std::path::PathBuf {
 
 /// The right edge of the elements under `prefix` level with `track` (or anywhere, without one),
 /// other than the scroll bar `bar`.
-fn rightmost(h: &Harness<'_, EffectcraftApp>, prefix: &str, bar: &str, track: Option<Rect>) -> Option<f32> {
+fn rightmost(h: &Harness<'_, ArtheffectApp>, prefix: &str, bar: &str, track: Option<Rect>) -> Option<f32> {
     h.state()
         .auto
         .query(prefix)
@@ -366,7 +366,7 @@ fn rightmost(h: &Harness<'_, EffectcraftApp>, prefix: &str, bar: &str, track: Op
 }
 
 /// The text painted this frame, with where it shows (cut by its clip).
-fn painted_text(h: &Harness<'_, EffectcraftApp>) -> Vec<(String, Rect)> {
+fn painted_text(h: &Harness<'_, ArtheffectApp>) -> Vec<(String, Rect)> {
     h.output()
         .shapes
         .iter()
@@ -380,8 +380,8 @@ fn painted_text(h: &Harness<'_, EffectcraftApp>) -> Vec<(String, Rect)> {
 /// The panels that scroll their rows: the elements in them (none for a panel that only paints),
 /// the scroll bar, and how far in from the panel's edge the rows end at full width (`None`: their
 /// width is capped).
-const SCROLLED_PANELS: [(effectcraft_ui_egui::dock::PanelKind, &str, &str, Option<f32>); 12] = {
-    use effectcraft_ui_egui::dock::PanelKind as P;
+const SCROLLED_PANELS: [(artheffect_ui_egui::dock::PanelKind, &str, &str, Option<f32>); 12] = {
+    use artheffect_ui_egui::dock::PanelKind as P;
     [
         (P::EffectControls, "effectControls.", "effectControls.scroll", Some(0.0)),
         (P::EffectsPresets, "effects.", "effects.scroll", Some(0.0)),
@@ -440,7 +440,7 @@ fn panels_with_room_keep_their_full_width() {
 /// The Render Queue's header columns stay over their columns when the rows narrow for the bar.
 #[test]
 fn render_queue_header_lines_up_with_narrowed_rows() {
-    use effectcraft_ui_egui::dock::PanelKind;
+    use artheffect_ui_egui::dock::PanelKind;
     let h = panel_with_rows(PanelKind::RenderQueue, 240.0, &std::env::temp_dir());
     assert!(scrolled(&h, "renderQueue.scroll").1 > 0.0, "the rows overflow");
     let status = rect(&h, "renderQueue.item.1.status");
@@ -452,7 +452,7 @@ fn render_queue_header_lines_up_with_narrowed_rows() {
 /// navigator (â—€ â—† â–¶), which was drawn over them (#271).
 #[test]
 fn effect_values_stay_clear_of_the_keyframe_navigator() {
-    use effectcraft_ui_egui::dock::PanelKind;
+    use artheffect_ui_egui::dock::PanelKind;
     let mut h = harness(1600.0, 1000.0);
     let app = h.state_mut();
     let lid = app.session.active_comp().unwrap().layers[0].id.0;
@@ -461,7 +461,7 @@ fn effect_values_stay_clear_of_the_keyframe_navigator() {
     let path = "effects/#1/point";
     app.session.execute("prop.toggleAnimation", json!({"layer": lid, "path": path})).unwrap();
     app.session.execute("prop.set", json!({"layer": lid, "path": path, "value": [123456.7, 123456.7]})).unwrap();
-    let uid = app.session.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(lid)).unwrap().props.prop(path).unwrap().uid;
+    let uid = app.session.active_comp().unwrap().layer(artheffect_engine::project::LayerId(lid)).unwrap().props.prop(path).unwrap().uid;
     app.apply_dock(craft_ui::docking::Action::Float { panel: PanelKind::EffectControls, rect: [300.0, 150.0, 330.0, 500.0] }).unwrap();
     h.run_steps(3);
     let value = rect(&h, &format!("effectControls.prop.{uid}.value.1"));
@@ -476,7 +476,7 @@ fn effect_values_stay_clear_of_the_keyframe_navigator() {
 fn settings_dialog_does_not_scroll_sideways() {
     let mut h = harness(1400.0, 900.0);
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "app.settings", json!({"page": "general"})).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, "app.settings", json!({"page": "general"})).unwrap();
     h.run_steps(3);
     let (ok, page) = (rect(&h, "settings.ok"), rect(&h, "settings.page.general"));
     h.input_mut().events.push(Event::PointerMoved(page.center()));
@@ -494,14 +494,14 @@ fn settings_dialog_does_not_scroll_sideways() {
 /// #2034: the Settings sidebar uses the translated page names when deciding its width.
 #[test]
 fn settings_page_column_fits_japanese_names() {
-    use effectcraft_text::fonts;
-    use effectcraft_ui_egui::theme::Tokens;
+    use artheffect_text::fonts;
+    use artheffect_ui_egui::theme::Tokens;
 
     let mut session = Session::default();
     session.prefs.general.language = "ja".into();
-    let app = EffectcraftApp::new(session);
+    let app = ArtheffectApp::new(session);
     // The panel titles a page with its Settings menu row, minus the ellipsis.
-    let name = effectcraft_ui_egui::menus::menu_items(&app)
+    let name = artheffect_ui_egui::menus::menu_items(&app)
         .into_iter()
         .find(|m| m.id == "app.settings" && m.params["page"] == "scripting")
         .and_then(|m| m.label.strip_suffix("...").map(str::to_owned))
@@ -509,7 +509,7 @@ fn settings_page_column_fits_japanese_names() {
     assert!(name.chars().any(|c| c >= '\u{3000}'), "the actual sidebar label is Japanese: {name}");
     // Use the same external-directory scan and face coverage as production, before rendering.
     // The managed job supplies CRAFT_FONTS_DIR; register its canonical fonts folder through the
-    // same directory source production scans for EFFECTCRAFT_FONT_DIRS, without changing the env.
+    // same directory source production scans for ARTHEFFECT_FONT_DIRS, without changing the env.
     crate::add_canonical_test_fonts();
     fonts::scan_system();
     let base = fonts::resolve("Inter", "Regular").face;
@@ -542,7 +542,7 @@ fn settings_page_column_fits_japanese_names() {
     let mut h = Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(|_| app);
     h.run_steps(3);
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "app.settings", json!({"page": "scripting"})).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, "app.settings", json!({"page": "scripting"})).unwrap();
     h.run_steps(3);
     h.ctx.fonts_mut(|fonts| {
         let definitions = fonts.definitions();

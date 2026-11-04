@@ -1,4 +1,4 @@
-// SAM 2 compute kernels (f32). Original work for EffectCraft; the maths follows the Hugging Face
+// SAM 2 compute kernels (f32). Original work for Artheffect; the maths follows the Hugging Face
 // `transformers` SAM 2 implementation (Apache-2.0, see NOTICE).
 //
 // Every kernel reads its parameters from one uniform: 24 u32 words (floats are bit-cast).

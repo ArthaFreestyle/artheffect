@@ -1,5 +1,5 @@
 [package]
-name = "effectcraft-sam2"
+name = "artheffect-sam2"
 description = "SAM 2.1 (Hiera) video object tracker for the Roto Brush: a Rust port of the Hugging Face transformers implementation, native only, weights downloaded by the user"
 version.workspace = true
 edition.workspace = true
@@ -10,7 +10,7 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-effectcraft-segment = { workspace = true }
+artheffect-segment = { workspace = true }
 rayon = { workspace = true }
 log = { workspace = true }
 

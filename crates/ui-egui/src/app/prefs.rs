@@ -1,6 +1,6 @@
-use super::{EffectcraftApp, Tokens, json, theme};
+use super::{ArtheffectApp, Tokens, json, theme};
 
-impl EffectcraftApp {
+impl ArtheffectApp {
     /// Apply changed settings: theme and brightness, label colours, tool tips, preview caches.
     pub fn apply_prefs(&mut self, ctx: &egui::Context) {
         // Sync with System re-applies when the system appearance changes (the host wakes the UI;
@@ -70,8 +70,8 @@ mod appearance_tests {
     use crate::menus;
     use crate::theme::ThemeKind;
 
-    fn app() -> EffectcraftApp {
-        EffectcraftApp::new(effectcraft_engine::Session::default())
+    fn app() -> ArtheffectApp {
+        ArtheffectApp::new(artheffect_engine::Session::default())
     }
 
     /// The Tools bar's appearance button: Sync with System, Light, Dark, then Sync with System

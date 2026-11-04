@@ -1,8 +1,8 @@
 //! Essential Graphics Font and uniform Scale controls, Composition ▸ Open in Essential Graphics.
 
-use effectcraft_keyframe::Value as KV;
-use effectcraft_project::essential::{self, ControlType};
-use effectcraft_time::Tick;
+use artheffect_keyframe::Value as KV;
+use artheffect_project::essential::{self, ControlType};
+use artheffect_time::Tick;
 use serde_json::json;
 
 use crate::{Event, Session};
@@ -59,7 +59,7 @@ fn font_and_scale_controls_override_per_instance() {
     assert_eq!(i["controls"][2]["value"][0], 50.0);
     assert_eq!(i["controls"][2]["value"][1], 50.0);
     // What the instance renders: the overridden text with the overridden font, scaled.
-    let layer = s.active_comp().unwrap().layer(effectcraft_project::LayerId(inst)).unwrap().clone();
+    let layer = s.active_comp().unwrap().layer(artheffect_project::LayerId(inst)).unwrap().clone();
     let over: Vec<essential::Override> = {
         let g = essential::group(&layer).unwrap();
         let mut v = vec![];
@@ -71,7 +71,7 @@ fn font_and_scale_controls_override_per_instance() {
         v
     };
     let p = essential::with_overrides(&s.project, title, &over).unwrap();
-    let src = p.comp(title).unwrap().layer(effectcraft_project::LayerId(text)).unwrap();
+    let src = p.comp(title).unwrap().layer(artheffect_project::LayerId(text)).unwrap();
     match src.props.prop("text/sourceText").map(|x| &x.value) {
         Some(KV::Text(d)) => assert_eq!((d.text.as_str(), d.font.as_str(), d.size), ("Bye", "Serif Test", 40.0)),
         o => panic!("{o:?}"),
@@ -79,7 +79,7 @@ fn font_and_scale_controls_override_per_instance() {
     // Push to Comp with only the font: the source keeps its own text.
     s.execute("essential.revert", json!({"layer": inst, "control": t})).unwrap();
     s.execute("essential.pushToComp", json!({"layer": inst, "control": f})).unwrap();
-    let srcl = s.project.comp(title).unwrap().layer(effectcraft_project::LayerId(text)).unwrap();
+    let srcl = s.project.comp(title).unwrap().layer(artheffect_project::LayerId(text)).unwrap();
     match srcl.props.prop("text/sourceText").map(|x| &x.value) {
         Some(KV::Text(d)) => assert_eq!((d.text.as_str(), d.font.as_str()), ("Hello", "Serif Test")),
         o => panic!("{o:?}"),
@@ -122,12 +122,12 @@ fn collapsed_instance_merges_text_and_font_overrides() {
     s.execute("essential.set", json!({"layer": inst, "control": body, "value": "Bye"})).unwrap();
     s.execute("essential.set", json!({"layer": inst, "control": font, "value": {"font": "Serif Test", "size": 40}})).unwrap();
     // Evaluate the nested text in the collapsed instance's context, as the renderer does.
-    let r = effectcraft_render::Renderer::new(&s.project, &*s.footage, crate::render::RenderOpts::default());
-    let ctx = effectcraft_render::EvalCtx::new(&s.project, main, s.project.comp(main).unwrap(), Tick::ZERO);
-    let layer = ctx.comp.layer(effectcraft_project::LayerId(inst)).unwrap();
+    let r = artheffect_render::Renderer::new(&s.project, &*s.footage, crate::render::RenderOpts::default());
+    let ctx = artheffect_render::EvalCtx::new(&s.project, main, s.project.comp(main).unwrap(), Tick::ZERO);
+    let layer = ctx.comp.layer(artheffect_project::LayerId(inst)).unwrap();
     let collapsed = r.collapsed(&ctx, layer).expect("the instance collapses");
     let (_, nctx) = r.collapse_into(&ctx, layer, &collapsed, 1.0).expect("a nested context");
-    let src = nctx.comp.layer(effectcraft_project::LayerId(text)).unwrap();
+    let src = nctx.comp.layer(artheffect_project::LayerId(text)).unwrap();
     match nctx.value(src, src.props.prop("text/sourceText").unwrap()) {
         KV::Text(d) => assert_eq!((d.text.as_str(), d.font.as_str(), d.size), ("Bye", "Serif Test", 40.0)),
         o => panic!("{o:?}"),

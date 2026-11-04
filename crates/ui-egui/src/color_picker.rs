@@ -665,16 +665,16 @@ pub fn hsv_to_rgb([h, s, v]: [f32; 3]) -> [f32; 3] {
 mod tests {
     use super::*;
 
-    fn sampling_viewer() -> egui_kittest::Harness<'static, crate::EffectcraftApp> {
-        let mut session = effectcraft_engine::Session::default();
+    fn sampling_viewer() -> egui_kittest::Harness<'static, crate::ArtheffectApp> {
+        let mut session = artheffect_engine::Session::default();
         session.execute("comp.new", serde_json::json!({"width": 320, "height": 180, "duration": 2})).unwrap();
         session.execute("layer.newSolid", serde_json::json!({"color": "#204060"})).unwrap();
-        let mut harness = egui_kittest::Harness::builder().with_size(vec2(1200.0, 800.0)).build_eframe(|_| crate::EffectcraftApp::new(session));
+        let mut harness = egui_kittest::Harness::builder().with_size(vec2(1200.0, 800.0)).build_eframe(|_| crate::ArtheffectApp::new(session));
         settle_sampling_viewer(&mut harness);
         harness
     }
 
-    fn settle_sampling_viewer(harness: &mut egui_kittest::Harness<'_, crate::EffectcraftApp>) {
+    fn settle_sampling_viewer(harness: &mut egui_kittest::Harness<'_, crate::ArtheffectApp>) {
         for _ in 0..200 {
             harness.step();
             if harness.state().frames.inflight() == 0 && harness.state().viewer_image.is_some() {
@@ -686,7 +686,7 @@ mod tests {
         panic!("the synthetic viewer frame did not arrive");
     }
 
-    fn press_sampling_viewer(harness: &mut egui_kittest::Harness<'_, crate::EffectcraftApp>) -> Option<[f32; 3]> {
+    fn press_sampling_viewer(harness: &mut egui_kittest::Harness<'_, crate::ArtheffectApp>) -> Option<[f32; 3]> {
         let ctx = harness.ctx.clone();
         arm(&ctx, egui::Id::unique("test-popup"));
         let point = crate::panels::viewer::comp_to_screen(&ctx, [20.0, 20.0]).unwrap();
@@ -702,15 +702,15 @@ mod tests {
     #[test]
     fn popup_eyedropper_samples_the_displayed_channel_and_exposure() {
         let mut harness = sampling_viewer();
-        harness.state_mut().session.state.viewer.channel = effectcraft_engine::viewer::Channel::Green;
+        harness.state_mut().session.state.viewer.channel = artheffect_engine::viewer::Channel::Green;
         let green = press_sampling_viewer(&mut harness).unwrap();
         assert!(green.iter().all(|value| (*value - 64.0 / 255.0).abs() < 0.01), "{green:?}");
         let options = &mut harness.state_mut().session.state.viewer;
-        options.channel = effectcraft_engine::viewer::Channel::Rgb;
+        options.channel = artheffect_engine::viewer::Channel::Rgb;
         options.exposure = 1.0;
         let exposed = press_sampling_viewer(&mut harness).unwrap();
         let mut expected = [[32, 64, 96, 255]];
-        effectcraft_engine::viewer::display_transform(&mut expected, effectcraft_engine::viewer::Channel::Rgb, false, 1.0);
+        artheffect_engine::viewer::display_transform(&mut expected, artheffect_engine::viewer::Channel::Rgb, false, 1.0);
         for (actual, expected) in exposed.iter().zip(expected[0]) {
             assert!((*actual - expected as f32 / 255.0).abs() < 0.01, "{exposed:?}");
         }
@@ -731,7 +731,7 @@ mod tests {
         }
         let options = &mut harness.state_mut().session.state.viewer;
         options.show_snapshot = false;
-        options.fast_previews = effectcraft_engine::commands::viewer_cmds::FastPreviews::Wireframe;
+        options.fast_previews = artheffect_engine::commands::viewer_cmds::FastPreviews::Wireframe;
         harness.event(egui::Event::Key { key: egui::Key::F5, physical_key: None, pressed: false, repeat: false, modifiers: egui::Modifiers::NONE });
         assert_eq!(press_sampling_viewer(&mut harness), None, "wireframe must not sample an old pixel frame");
     }

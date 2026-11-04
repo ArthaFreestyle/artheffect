@@ -4,14 +4,14 @@ use crate::i18n::{tr, tr_args};
 use egui::{Align2, Color32, Rect, pos2, vec2};
 
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{ArtheffectApp, widgets};
 
 /// The Info panel: the colour and alpha under the pointer (sampled from the shown viewer frame,
 /// read back for GPU frames) with its position and a swatch, then the selected layers, the current
 /// time, the duration/In/Out of a single selected layer, the achieved preview frame rate, the
 /// render time and queue state (when the preference asks for it) and the selected keyframe's
 /// property, time and value. Read-only: it draws and scrolls but changes no document state.
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let scroll = widgets::PanelScroll::begin(ui, egui::Id::unique("info-scroll"), rect);
     let rect = scroll.content;
@@ -85,10 +85,10 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
                 format!("Duration: {}", {
                     let fr = c.frame_rate;
                     let n = fr.frame_at(l.out_point) - fr.frame_at(l.in_point);
-                    let s = effectcraft_engine::time::format_timecode_frames(n, fr, fr.supports_drop_frame());
+                    let s = artheffect_engine::time::format_timecode_frames(n, fr, fr.supports_drop_frame());
                     if fr.supports_drop_frame() { s } else { s.replace(';', ":") }
                 }),
-                format!("In: {}, Out: {}", tc(l.in_point), tc(effectcraft_engine::time::Tick(l.out_point.0 - c.frame_duration().0))),
+                format!("In: {}, Out: {}", tc(l.in_point), tc(artheffect_engine::time::Tick(l.out_point.0 - c.frame_duration().0))),
             ];
             for line in lines {
                 p.text(pos2(x0, ly), Align2::LEFT_CENTER, line, Tokens::ui(12.0), t.text_dim);
@@ -123,9 +123,9 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
                     let key = pr.keys.iter().find(|x| x.time == k.time)?;
                     let tc = crate::panels::timecode(&app.session, &c, l.comp_time(k.time));
                     let v = match &key.value {
-                        effectcraft_engine::keyframe::Value::Scalar(v) => format!("{v:.2}"),
-                        effectcraft_engine::keyframe::Value::Vec2(v) => format!("{:.1}, {:.1}", v[0], v[1]),
-                        effectcraft_engine::keyframe::Value::Vec3(v) => format!("{:.1}, {:.1}, {:.1}", v[0], v[1], v[2]),
+                        artheffect_engine::keyframe::Value::Scalar(v) => format!("{v:.2}"),
+                        artheffect_engine::keyframe::Value::Vec2(v) => format!("{:.1}, {:.1}", v[0], v[1]),
+                        artheffect_engine::keyframe::Value::Vec3(v) => format!("{:.1}, {:.1}, {:.1}", v[0], v[1], v[2]),
                         _ => String::new(),
                     };
                     Some(format!("{}  {tc}  {v}", pr.name).trim_end().to_string())

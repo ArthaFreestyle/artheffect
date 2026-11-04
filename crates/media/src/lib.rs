@@ -1,8 +1,8 @@
-//! Footage import for EffectCraft (layer **L3**: it implements `effectcraft_render::FootageSource`).
+//! Footage import for Artheffect (layer **L3**: it implements `artheffect_render::FootageSource`).
 //!
-//! - [`probe`] / [`probe_bytes`]: inspect a file and describe it as an [`effectcraft_project::Footage`]
+//! - [`probe`] / [`probe_bytes`]: inspect a file and describe it as an [`artheffect_project::Footage`]
 //!   (video, still, image sequence or audio; size, rate, duration, streams, codec, alpha).
-//! - [`MediaPool`]: decodes footage frames on demand into [`effectcraft_raster::Image`]s
+//! - [`MediaPool`]: decodes footage frames on demand into [`artheffect_raster::Image`]s
 //!   (premultiplied f32, sRGB/Rec.709-encoded values, as the compositor expects) with a
 //!   memory-budgeted LRU frame cache, one decoder per source, and the decoder kept positioned for
 //!   sequential playback. Also audio ([`MediaPool::audio_samples`]) and thumbnails.
@@ -11,7 +11,7 @@
 //! AV1, ProRes, DNxHD, MPEG-2, MJPEG; AAC, Opus, PCM, MP3/FLAC/Vorbis) come from FilmCraft's pure-Rust crates (git dependency,
 //! pinned; `plan/adr/0001`). FilmCraft types never leave this crate. Stills use the `image` crate
 //! (PNG, JPEG, GIF, WebP, TIFF, BMP, OpenEXR, Targa, Radiance HDR); Photoshop documents (merged image or one layer) come
-//! from `effectcraft-psd` and SVG from `effectcraft-svg` (rasterised at any scale).
+//! from `artheffect-psd` and SVG from `artheffect-svg` (rasterised at any scale).
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
@@ -41,7 +41,7 @@ pub enum MediaError {
     Unsupported(String),
     #[error("decode error: {0}")]
     Decode(String),
-    /// The read was called off before it finished (see [`effectcraft_render::FootageSource::cancellable`]).
+    /// The read was called off before it finished (see [`artheffect_render::FootageSource::cancellable`]).
     #[error("cancelled")]
     Cancelled,
 }
@@ -65,7 +65,7 @@ pub const STILL_EXTENSIONS: &[&str] =
     &["png", "jpg", "jpeg", "gif", "webp", "tif", "tiff", "bmp", "exr", "tga", "hdr", "psd", "psb", "svg", "pdf", "ai", "eps"];
 /// File extensions recognised as audio-only files.
 pub const AUDIO_EXTENSIONS: &[&str] = filmcraft_media::AUDIO_EXTENSIONS;
-pub use effectcraft_project::VIDEO_EXTENSIONS;
+pub use artheffect_project::VIDEO_EXTENSIONS;
 
 /// File extensions recognised as 3D models (Advanced 3D model layers).
 pub const MODEL_EXTENSIONS: &[&str] = &["gltf", "glb", "obj", "stl", "fbx"];
@@ -113,8 +113,8 @@ pub(crate) fn still_format(path: &str, bytes: &[u8]) -> Option<image::ImageForma
     }
 }
 
-pub(crate) fn rate_from_fc(r: filmcraft_time::FrameRate) -> effectcraft_time::FrameRate {
-    if r.num > 0 && r.den > 0 { effectcraft_time::FrameRate::new(r.num, r.den) } else { effectcraft_time::FrameRate::FPS_30 }
+pub(crate) fn rate_from_fc(r: filmcraft_time::FrameRate) -> artheffect_time::FrameRate {
+    if r.num > 0 && r.den > 0 { artheffect_time::FrameRate::new(r.num, r.den) } else { artheffect_time::FrameRate::FPS_30 }
 }
 
 #[cfg(test)]

@@ -11,7 +11,7 @@
 //!
 //! wasm32 has no threads: jobs wait in the same priority queue and [`Frames::pump`] hands them
 //! to a [`RemoteFrames`] (the browser's frame worker, a second engine instance fed with project
-//! diffs, `effectcraft_engine::remote`) or, without one, renders them on the UI thread between
+//! diffs, `artheffect_engine::remote`) or, without one, renders them on the UI thread between
 //! egui frames, within a time budget.
 //!
 //! With the disk cache on (Settings ▸ Media & Disk Cache), every CPU-rendered frame is also
@@ -28,11 +28,11 @@ use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
-use effectcraft_engine::project::{Comp, ItemId, ItemKind, LayerSource, Node, Project, PropGroup};
-use effectcraft_engine::render::disk_cache::{self, DiskCache};
-use effectcraft_engine::render::{CancellableFootage, ExprHost, FootageSource, LayerCache, RenderOpts, Renderer};
-use effectcraft_engine::time::Tick;
-use effectcraft_gpu::{DisplayFrame, FrameError, Gpu};
+use artheffect_engine::project::{Comp, ItemId, ItemKind, LayerSource, Node, Project, PropGroup};
+use artheffect_engine::render::disk_cache::{self, DiskCache};
+use artheffect_engine::render::{CancellableFootage, ExprHost, FootageSource, LayerCache, RenderOpts, Renderer};
+use artheffect_engine::time::Tick;
+use artheffect_gpu::{DisplayFrame, FrameError, Gpu};
 use rayon::prelude::*;
 
 /// Comp identities (and the project snapshots behind them) the RAM preview keeps frames of.
@@ -295,7 +295,7 @@ pub struct RenderSource {
     /// desktop: Show Channel / exposure / region-of-interest drawing read the CPU frame texture,
     /// so GPU frames are read back (the compositing still runs on the GPU). On in the browser
     /// while the viewer draws plainly, because there frames can't be read back synchronously
-    /// (`EffectcraftApp::gpu_display`).
+    /// (`ArtheffectApp::gpu_display`).
     pub gpu_display: bool,
     /// The persistent disk cache, when enabled.
     pub disk: Option<Arc<DiskCache>>,
@@ -464,7 +464,7 @@ pub fn comp_has_effects(project: &Project, comp: ItemId) -> bool {
         let Some(c) = p.comp(comp) else { return false };
         c.layers.iter().any(|l| {
             l.switches.effects && l.effects().is_some_and(|fx| fx.groups().any(|g| g.enabled))
-                || depth < 16 && matches!(l.source, effectcraft_engine::project::LayerSource::Comp { item } if walk(p, item, depth + 1))
+                || depth < 16 && matches!(l.source, artheffect_engine::project::LayerSource::Comp { item } if walk(p, item, depth + 1))
         })
     }
     walk(project, comp, 0)
@@ -560,7 +560,7 @@ impl Default for Frames {
 
 /// Premultiplied f32 → egui premultiplied Color32 (alpha kept, so the viewer can show the
 /// transparency grid or the comp background colour underneath).
-pub fn to_color_image(img: &effectcraft_engine::render::Image) -> egui::ColorImage {
+pub fn to_color_image(img: &artheffect_engine::render::Image) -> egui::ColorImage {
     let px: Vec<egui::Color32> = img.data.par_iter().map(|p| display_pixel(*p)).collect();
     egui::ColorImage::new([img.width as usize, img.height as usize], px)
 }
@@ -1413,7 +1413,7 @@ impl Worker {
         });
         // A preview frame is done: the GPU pool ages the sizes it did not ask for.
         if let Some(g) = &job.src.gpu {
-            effectcraft_engine::render::Accelerator::frame_end(g);
+            artheffect_engine::render::Accelerator::frame_end(g);
         }
         img
     }
@@ -1456,10 +1456,10 @@ impl Worker {
         let mut r = Renderer::new(&job.src.project, &footage, job.opts);
         r.expr = job.src.expr.as_deref();
         r.cache = Some(&job.src.layer_cache);
-        r.accel = Some(g as &dyn effectcraft_engine::render::Accelerator);
+        r.accel = Some(g as &dyn artheffect_engine::render::Accelerator);
         r.active_accel()?;
         let f = g.within_memory(|| g.render_display(&r, job.comp, job.t));
-        effectcraft_engine::render::Accelerator::frame_end(g);
+        artheffect_engine::render::Accelerator::frame_end(g);
         match f {
             Ok(f) => {
                 if f.is_some() {
@@ -1484,7 +1484,7 @@ impl Worker {
         // reported failure. The CPU retry must compute its own pixels from the snapshot.
         r.cache = gpu_allowed.then_some(job.src.layer_cache.as_ref());
         let gpu = job.src.gpu.as_ref().filter(|_| gpu_allowed);
-        r.accel = gpu.map(|g| g as &dyn effectcraft_engine::render::Accelerator);
+        r.accel = gpu.map(|g| g as &dyn artheffect_engine::render::Accelerator);
         // The GPU leaves the frame in a texture for the viewer; otherwise (Software Only, no
         // adapter, or a frame the GPU cannot finish here) the CPU renders it.
         // Auto (Mercury GPU Acceleration) shows each comp on whichever compositor measured

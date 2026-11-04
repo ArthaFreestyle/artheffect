@@ -96,13 +96,13 @@ impl DirectorySource {
         // folders (/run/host/…) and the folders the fontconfig configuration names.
         #[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32")))]
         dirs.extend(crate::font_dirs::unix_font_dirs(&crate::font_dirs::FontEnv::from_process()));
-        dirs.extend(extra_dirs(std::env::var_os("EFFECTCRAFT_FONT_DIRS").as_deref()));
+        dirs.extend(extra_dirs(std::env::var_os("ARTHEFFECT_FONT_DIRS").as_deref()));
         Self { dirs }
     }
 }
 
-/// Extra font folders from `EFFECTCRAFT_FONT_DIRS` (a path list, `:`-separated, `;` on Windows), so a
-/// tool can hand EffectCraft its own font library without installing the fonts system-wide.
+/// Extra font folders from `ARTHEFFECT_FONT_DIRS` (a path list, `:`-separated, `;` on Windows), so a
+/// tool can hand Artheffect its own font library without installing the fonts system-wide.
 fn extra_dirs(var: Option<&std::ffi::OsStr>) -> Vec<PathBuf> {
     var.map(|v| std::env::split_paths(v).filter(|p| !p.as_os_str().is_empty()).collect()).unwrap_or_default()
 }
@@ -843,14 +843,14 @@ fn requested_cjk_locale() -> Option<String> {
 }
 
 /// The CJK locale to use: [`set_cjk_locale`] when the host asked for one, otherwise the locale
-/// environment (`LANG`, `LC_ALL`, `LC_CTYPE`; `EFFECTCRAFT_CJK_LOCALE` overrides them).
+/// environment (`LANG`, `LC_ALL`, `LC_CTYPE`; `ARTHEFFECT_CJK_LOCALE` overrides them).
 fn active_cjk_locale() -> String {
     requested_cjk_locale().unwrap_or_else(environment_cjk_locale)
 }
 
 /// Read the environment independently of another UI's process-wide language request.
 fn environment_cjk_locale() -> String {
-    ["EFFECTCRAFT_CJK_LOCALE", "LC_ALL", "LC_CTYPE", "LANG"]
+    ["ARTHEFFECT_CJK_LOCALE", "LC_ALL", "LC_CTYPE", "LANG"]
         .iter()
         .filter_map(|k| std::env::var(k).ok())
         .map(|v| v.trim().to_ascii_lowercase())

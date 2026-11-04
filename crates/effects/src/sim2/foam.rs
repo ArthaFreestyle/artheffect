@@ -179,7 +179,7 @@ pub fn foam_full_plan(ctx: &EffectCtx, b: &Buf) -> FoamPlan {
         let img = &lp.buf.img;
         let pl = Plane::from_image(img, |px| {
             let (c, a) = unpremul(px);
-            effectcraft_color::luminance(c[0], c[1], c[2]) * a
+            artheffect_color::luminance(c[0], c[1], c[2]) * a
         });
         (pl, lp.buf.scale, lp.buf.offset, lp.size)
     });

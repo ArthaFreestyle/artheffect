@@ -24,7 +24,7 @@ pub(super) const CD_PROPS: [(&str, &str); 8] = [
 fn card_source(src: u32, g1: [f32; 4], g2: [f32; 4]) -> f32 {
     let (c1, a1) = unpremul(g1);
     let (c2, a2) = unpremul(g2);
-    let lum = |c: [f32; 3]| effectcraft_color::luminance(c[0], c[1], c[2]);
+    let lum = |c: [f32; 3]| artheffect_color::luminance(c[0], c[1], c[2]);
     match src {
         1 => lum(c1),
         2 => c1[0],
@@ -341,7 +341,7 @@ pub(super) fn shatter_impl(ctx: &EffectCtx, b: &Buf) -> ShatterPlan {
             }
             if broken && let Some(g) = &gradient {
                 let (c, _) = unpremul(g.sample_bilinear(gc[0] * s + b.offset[0], gc[1] * s + b.offset[1]));
-                let mut l = effectcraft_color::luminance(c[0], c[1], c[2]).clamp(0.0, 1.0) as f64;
+                let mut l = artheffect_color::luminance(c[0], c[1], c[2]).clamp(0.0, 1.0) as f64;
                 if invert_gradient {
                     l = 1.0 - l;
                 }

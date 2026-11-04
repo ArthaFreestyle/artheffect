@@ -1,0 +1,28 @@
+[package]
+name = "artheffect-cli"
+description = "Artheffect headless CLI: render frames and sequences, run commands, MCP server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "artheffect-cli"
+path = "src/main.rs"
+
+[dependencies]
+artheffect-engine = { workspace = true }
+artheffect-host = { workspace = true }
+artheffect-automation = { workspace = true }
+artheffect-ui-egui = { workspace = true }
+artheffect-render = { workspace = true }
+artheffect-gpu = { workspace = true }
+artheffect-time = { workspace = true }
+artheffect-track = { workspace = true }
+artheffect-segment = { workspace = true }
+artheffect-sam2 = { workspace = true }
+serde_json = { workspace = true }
+image = { workspace = true }
+cpu-time = "1"

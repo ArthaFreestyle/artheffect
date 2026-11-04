@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Artheffect
+GenericName=Motion Graphics Editor
+Comment=Motion graphics and visual effects compositor
+Exec=artheffect %F
+TryExec=artheffect
+Icon=ai.storyteller.artheffect
+Terminal=false
+StartupNotify=true
+StartupWMClass=ai.storyteller.artheffect
+Categories=AudioVideo;Video;Graphics;2DGraphics;
+Keywords=motion;graphics;animation;compositor;effects;keyframe;vfx;

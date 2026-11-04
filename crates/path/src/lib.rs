@@ -16,9 +16,9 @@ pub mod ops;
 pub mod trace;
 pub mod varstroke;
 
-use effectcraft_geom::Mat3;
-use effectcraft_keyframe::ShapePath;
-use effectcraft_raster::Mask;
+use artheffect_geom::Mat3;
+use artheffect_keyframe::ShapePath;
+use artheffect_raster::Mask;
 pub use kurbo::{BezPath, PathEl, Point};
 use kurbo::{Shape, Vec2 as KVec2};
 

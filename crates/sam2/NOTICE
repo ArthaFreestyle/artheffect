@@ -1,4 +1,4 @@
-EffectCraft SAM 2 (effectcraft-sam2)
+Artheffect SAM 2 (artheffect-sam2)
 Copyright the EffectCraft contributors.
 
 This crate is a Rust port of the SAM 2 implementation in Hugging Face `transformers`

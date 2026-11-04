@@ -4,8 +4,8 @@
 
 use crate::common;
 
+use artheffect_opusenc::{Application, Bandwidth, Mode, OpusEncoder};
 use common::*;
-use effectcraft_opusenc::{Application, Bandwidth, Mode, OpusEncoder};
 
 struct Run {
     snr: f64,

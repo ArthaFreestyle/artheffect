@@ -1,4 +1,4 @@
-//! The EffectCraft engine façade.
+//! The Artheffect engine façade.
 //!
 //! Every user-visible action is a command with a stable id (`layer.newSolid`, `prop.set`,
 //! `keys.easyEase`…) and JSON parameters, dispatched through [`Session::execute`]. The egui UI,
@@ -28,10 +28,10 @@ pub mod viewer;
 
 use std::sync::Arc;
 
-use effectcraft_project::{Comp, ItemId, Layer, LayerId, Project, Uid};
-use effectcraft_raster::Image;
-use effectcraft_render::{ExprHost, FootageSource, LayerCache, NoFootage, RenderOpts, Renderer};
-use effectcraft_time::Tick;
+use artheffect_project::{Comp, ItemId, Layer, LayerId, Project, Uid};
+use artheffect_raster::Image;
+use artheffect_render::{ExprHost, FootageSource, LayerCache, NoFootage, RenderOpts, Renderer};
+use artheffect_time::Tick;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -41,22 +41,22 @@ pub use analysis::models;
 pub use analysis::roto;
 pub use analysis::tracking;
 pub use analysis::warp;
+pub use artheffect_color as color;
+pub use artheffect_effects as effects;
+pub use artheffect_geom as geom;
+pub use artheffect_keyframe as keyframe;
+pub use artheffect_project as project;
+pub use artheffect_raster as raster;
+pub use artheffect_render as render;
+pub use artheffect_segment as segment;
+pub use artheffect_text as text;
+pub use artheffect_time as time;
+pub use artheffect_track as track;
 pub use background::jobs;
 pub use background::offload;
 pub use background::remote;
 pub use cmd as commands;
 pub use cmd::{CommandSpec, command_specs, find as find_command};
-pub use effectcraft_color as color;
-pub use effectcraft_effects as effects;
-pub use effectcraft_geom as geom;
-pub use effectcraft_keyframe as keyframe;
-pub use effectcraft_project as project;
-pub use effectcraft_raster as raster;
-pub use effectcraft_render as render;
-pub use effectcraft_segment as segment;
-pub use effectcraft_text as text;
-pub use effectcraft_time as time;
-pub use effectcraft_track as track;
 pub use footage::doc_path;
 pub use footage::footage_check;
 pub use footage::footage_reload;
@@ -121,9 +121,9 @@ pub struct Session {
     pub footage: Arc<dyn FootageSource>,
     pub expr: Option<Arc<dyn ExprHost>>,
     /// GPU compositor (Mercury GPU Acceleration), when the frontend has one: used by renders
-    /// that ask for [`effectcraft_render::Backend::Gpu`]/`Auto`, and by Render Queue exports
+    /// that ask for [`artheffect_render::Backend::Gpu`]/`Auto`, and by Render Queue exports
     /// when the project's renderer is the GPU.
-    pub accel: Option<Arc<dyn effectcraft_render::Accelerator>>,
+    pub accel: Option<Arc<dyn artheffect_render::Accelerator>>,
     /// Why there is no [`Session::accel`] (`render.backend`'s `why`): the host's reason, e.g. a
     /// headless start without `--gpu` or the compositor's setup error.
     pub accel_note: Option<String>,
@@ -136,7 +136,7 @@ pub struct Session {
     /// Render Queue encoder (the export layer); `None` = export unavailable.
     pub exporter: Option<Arc<dyn Exporter>>,
     /// Free-space hook for Render Settings ▸ Use Storage Overflow (`None`: never full).
-    pub storage_quota: Option<Arc<dyn effectcraft_project::render_queue::StorageQuota>>,
+    pub storage_quota: Option<Arc<dyn artheffect_project::render_queue::StorageQuota>>,
     /// The running (or finished, not yet polled) render.
     pub render_job: Option<render_queue::RenderJob>,
     /// The running (or finished, not yet polled) track analysis.
@@ -169,7 +169,7 @@ pub struct Session {
     #[doc(hidden)]
     pub crypto_probe: Arc<std::sync::Mutex<commands::CryptoProbeSlot>>,
     /// The persistent disk cache (Settings ▸ Media & Disk Cache), when enabled.
-    pub disk_cache: Option<Arc<effectcraft_render::disk_cache::DiskCache>>,
+    pub disk_cache: Option<Arc<artheffect_render::disk_cache::DiskCache>>,
     /// Settings (Preferences).
     pub prefs: prefs::Prefs,
     /// Bumped whenever settings change (frontends re-apply theme, labels…).
@@ -193,10 +193,10 @@ pub struct Session {
     pub autosave_folder_override: Option<std::path::PathBuf>,
     /// The viewer snapshot (Take Snapshot / Show Snapshot).
     pub snapshot: Option<viewer::Snapshot>,
-    /// The JavaScript scripting engine (set by the host that links `effectcraft-script`):
+    /// The JavaScript scripting engine (set by the host that links `artheffect-script`):
     /// `script.run`, File ▸ Scripts ▸ Run Script File… (`.jsx`/`.js`) and the Script Console.
     pub script: Option<ScriptRunner>,
-    /// Loads WebAssembly effect plug-ins (set by the host that links `effectcraft-plugin` with
+    /// Loads WebAssembly effect plug-ins (set by the host that links `artheffect-plugin` with
     /// its runtime): `effect.plugins.load`.
     pub plugin_loader: Option<PluginLoader>,
     /// ScriptUI windows and panels opened by scripts (see [`scriptui`]).

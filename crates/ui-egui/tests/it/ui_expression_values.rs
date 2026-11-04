@@ -6,11 +6,11 @@
 //! text shapes: the numbers are painted with an override colour, the separator and sign as plain
 //! text), and require every expected part to be there.
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::{LayerId, PropGroup};
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
-use effectcraft_ui_egui::theme::ThemeKind;
+use artheffect_engine::Session;
+use artheffect_engine::project::{LayerId, PropGroup};
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::dock::PanelKind;
+use artheffect_ui_egui::theme::ThemeKind;
 use egui::epaint::Shape;
 use egui::{Color32, Event, Modifiers, PointerButton, Pos2, Rect, pos2, vec2};
 use egui_kittest::Harness;
@@ -47,7 +47,7 @@ struct Ids {
     scale: Checked,
 }
 
-fn setup() -> (Harness<'static, EffectcraftApp>, Ids) {
+fn setup() -> (Harness<'static, ArtheffectApp>, Ids) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "E", "width": 320, "height": 180, "duration": 4})).unwrap();
     let l = s.execute("layer.newSolid", json!({"color": "#406080"})).unwrap()["layer"].as_u64().unwrap();
@@ -73,7 +73,7 @@ fn setup() -> (Harness<'static, EffectcraftApp>, Ids) {
     };
     let transform = layer.props.sub("transform").unwrap().uid;
     s.state.selected_layers = vec![LayerId(l)];
-    let mut app = EffectcraftApp::new(s);
+    let mut app = ArtheffectApp::new(s);
     app.show_panel(PanelKind::EffectControls);
     app.ui.timeline.open_layers.insert(l);
     app.ui.timeline.open_groups.insert(transform);
@@ -82,27 +82,27 @@ fn setup() -> (Harness<'static, EffectcraftApp>, Ids) {
     (h, ids)
 }
 
-fn set_expression(h: &mut Harness<'_, EffectcraftApp>, ids: &Ids, prop: u64, p: &serde_json::Value) {
+fn set_expression(h: &mut Harness<'_, ArtheffectApp>, ids: &Ids, prop: u64, p: &serde_json::Value) {
     let mut p = p.clone();
     p["layer"] = json!(ids.layer);
     p["prop"] = json!(prop);
     h.state_mut().session.execute("prop.setExpression", p).unwrap();
 }
 
-fn set_theme(h: &mut Harness<'_, EffectcraftApp>, theme: ThemeKind) {
+fn set_theme(h: &mut Harness<'_, ArtheffectApp>, theme: ThemeKind) {
     let ctx = h.ctx.clone();
     h.state_mut().set_theme(&ctx, theme);
     h.run_steps(3);
 }
 
-fn rect_of(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect_of(h: &Harness<'_, ArtheffectApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}: the part isn't shown"));
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
 /// The area of `c`'s value in `panel`, every expected part required: both components of a vector,
 /// the revolutions and degrees of an angle (the separator and sign lie between them).
-fn value_area(h: &Harness<'_, EffectcraftApp>, panel: &str, c: Checked) -> Rect {
+fn value_area(h: &Harness<'_, ArtheffectApp>, panel: &str, c: Checked) -> Rect {
     let uid = c.uid;
     match c.kind {
         Kind::Vector => rect_of(h, &format!("{panel}.{uid}.value.0")).union(rect_of(h, &format!("{panel}.{uid}.value.1"))),
@@ -112,7 +112,7 @@ fn value_area(h: &Harness<'_, EffectcraftApp>, panel: &str, c: Checked) -> Rect 
 }
 
 /// The text painted inside `area` in the last frame, with its colour.
-fn texts(h: &Harness<'_, EffectcraftApp>, area: Rect) -> Vec<(String, Color32)> {
+fn texts(h: &Harness<'_, ArtheffectApp>, area: Rect) -> Vec<(String, Color32)> {
     fn walk(s: &Shape, area: Rect, out: &mut Vec<(String, Color32)>) {
         match s {
             Shape::Vec(v) => v.iter().for_each(|s| walk(s, area, out)),
@@ -131,7 +131,7 @@ fn texts(h: &Harness<'_, EffectcraftApp>, area: Rect) -> Vec<(String, Color32)> 
 
 /// `c`'s value in `panel` shows every part, all in `want`: two numbers and (in the Timeline) the
 /// `,` of a vector, the revolutions, sign and degrees of an angle, the number of a scalar.
-fn assert_value(h: &Harness<'_, EffectcraftApp>, panel: &str, c: Checked, want: Color32, what: &str) {
+fn assert_value(h: &Harness<'_, ArtheffectApp>, panel: &str, c: Checked, want: Color32, what: &str) {
     let shown = texts(h, value_area(h, panel, c));
     let numbers = shown.iter().filter(|(s, _)| s.chars().any(|ch| ch.is_ascii_digit())).count();
     let has = |text: &str| shown.iter().any(|(s, _)| s == text);
@@ -153,7 +153,7 @@ fn assert_value(h: &Harness<'_, EffectcraftApp>, panel: &str, c: Checked, want: 
 }
 
 /// Every checked property in every panel it belongs to.
-fn assert_all(h: &Harness<'_, EffectcraftApp>, checked: &[Checked], want: Color32, what: &str) {
+fn assert_all(h: &Harness<'_, ArtheffectApp>, checked: &[Checked], want: Color32, what: &str) {
     for c in checked {
         for panel in c.panels {
             assert_value(h, panel, *c, want, what);
@@ -205,7 +205,7 @@ fn expression_state_changes_switch_the_colour() {
     }
 }
 
-fn hover(h: &mut Harness<'_, EffectcraftApp>, at: Pos2) {
+fn hover(h: &mut Harness<'_, ArtheffectApp>, at: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(at));
     h.run_steps(2);
 }
@@ -278,7 +278,7 @@ fn a_dragged_expression_value_stays_red() {
 fn separated_position_colours_each_dimension_on_its_own() {
     let (mut h, ids) = setup();
     h.state_mut().session.execute("prop.separateDimensions", json!({"layer": ids.layer, "value": true})).unwrap();
-    let uid = |h: &Harness<'_, EffectcraftApp>, path: &str| {
+    let uid = |h: &Harness<'_, ArtheffectApp>, path: &str| {
         let s = &h.state().session;
         s.active_comp().unwrap().layer(LayerId(ids.layer)).unwrap().props.prop(path).unwrap_or_else(|| panic!("no {path}")).uid
     };

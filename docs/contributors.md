@@ -1,6 +1,6 @@
 # Contributors in the About window
 
-**About ▸ Contributors** credits everyone who contributed to EffectCraft, and **About ▸ Models** credits
+**About ▸ Contributors** credits everyone who contributed to Artheffect, and **About ▸ Models** credits
 the AI models named in `Co-Authored-By` trailers.
 
 ## Decision
@@ -19,7 +19,7 @@ the AI models named in `Co-Authored-By` trailers.
   first or last commit date. The name toggle cycles **Username → Display name → Real name**; a
   missing name falls back to `@username`. Alphabetical sorting is case-insensitive and ignores the `@`.
 
-## In EffectCraft
+## In Artheffect
 
 - The About window is `about()` in `crates/ui-egui/src/panels/dialogs.rs` (`app.about`, or click the header logo); automation ids `about.tab.*` and `about.credits.*`.
 

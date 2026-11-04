@@ -2,7 +2,7 @@
 
 > **Last reviewed:** 2026-10-14 · **Last updated:** 2026-11-03 · **Change:** Traditional Chinese (`zh-hant`) effect names are complete: 308 names and 21 categories (#2037). Previously: minor (Polish (`pl`): menus 630, panels 695; recounted at this tree after #1774: Japanese 1,923 of ≈ 4,200 interface strings (46%, with 297 effect names), Simplified Chinese 1,935 (46%, with 307 effect names), Traditional Chinese 1,581 (38%, its panel catalog 951 rows after #2244); overall ≈ 24%; previously: minor, the panel/dialog catalogs grow by 303 rows in Japanese, Simplified Chinese and Traditional Chinese: panel tabs, form and dialog labels, context menus, tracker/graph/text-panel labels, credits and File-panel footers; previously: minor, catalogs recounted at `upstream/main` 470ea7a3: menus in 10 languages, panels in 6, Hangul probe (#599)) · **Target:** Adobe After Effects 2026
 
-How much of EffectCraft's interface is translated, language by language, compared with After
+How much of Artheffect's interface is translated, language by language, compared with After
 Effects. [gaps.md](gaps.md) gap 16 and workstream G9 hold the work;
 [target-app-parity.md](target-app-parity.md) the overall numbers.
 
@@ -14,7 +14,7 @@ Chinese (`zh_CN`) and Traditional Chinese (`zh_TW`). Each translates the whole i
 including effect names and parameters. It ships no Hindi, Arabic, Indonesian or Vietnamese
 interface; Arabic and Hebrew text *in layers* is supported through its Middle Eastern text engine.
 
-## How EffectCraft translates
+## How Artheffect translates
 
 - **Menus:** `crates/ui-egui/src/i18n.rs`, one catalog per language keyed by
   `(command, English label)`. A test (`menu_catalogs_have_no_stale_or_duplicate_rows`) fails on a
@@ -48,7 +48,7 @@ interface; Arabic and Hebrew text *in layers* is supported through its Middle Ea
   (`crates/ui-egui/src/i18n.rs`) prints, per language, the fixed menu entries, panel strings, effect
   names and effect categories that have no row. It always passes; `cargo xtask ci` runs it with
   `--nocapture`, so the list is in the gate log. Locally:
-  `cargo test -p effectcraft-ui-egui --lib missing_translations_report -- --nocapture`.
+  `cargo test -p artheffect-ui-egui --lib missing_translations_report -- --nocapture`.
 - **Not translated anywhere yet:** effect *parameter* names (≈ 1,650, `crates/effects`),
   engine-generated text (property names, errors, undo labels), the Home screen's unwrapped
   literals (#574), Learn tutorials and documentation.
@@ -89,7 +89,7 @@ counted, so the true percentages are slightly lower.
 | Korean | `ko` | 0 | — | Hangul fallback probe added (#599, closed); not checked on macOS here | no | none | 9–13 h + review |
 | Vietnamese | `vi` | 0 | — | Latin with stacked diacritics; untested | no | none (After Effects: none) | 8–12 h + review |
 
-Other languages EffectCraft ships (6):
+Other languages Artheffect ships (6):
 
 | Language | Code | UI strings translated | Status | To `full` |
 |---|---|---|---|---|
@@ -100,12 +100,12 @@ Other languages EffectCraft ships (6):
 | Georgian | `ka` | 1,822 (≈ 43%): menus 629 rows, panels 885 (the Simplified Chinese catalog's 694 plus 191 Georgian-only rows: form dialogs, context menus, column headers), effect names 308 + 21 categories; native-speaker reviewed | partial | 5–8 h |
 | Swedish | `sv` | menus 630 rows, panels 723, effect names 308 and categories 21; added after the measurement above | Settings, Edit menu and Match System (`sv-*` locales) offer it; parameter and engine text still in English; not yet native-speaker reviewed | Remaining strings + native review |
 
-Russian (`ru`) has a menu catalog (630 rows, ≈ 15%); After Effects also ships Italian, which EffectCraft does not (8–12 h).
+Russian (`ru`) has a menu catalog (630 rows, ≈ 15%); After Effects also ships Italian, which Artheffect does not (8–12 h).
 
 **Overall: ≈ 25%**, the average coverage of After Effects' 10 non-English languages
 (Simplified Chinese 46%, Traditional Chinese 45%, Japanese 46%, Brazilian Portuguese 34%,
 Spanish 29%, French, German and Russian 16%, Korean and Italian 0%; 248 / 10, was ≈ 24% before #2037's effect names and ≈ 21% on
-22 October; Ukrainian (≈ 29%) and Czech (≈ 29%) are EffectCraft-only and stay out of that
+22 October; Ukrainian (≈ 29%) and Czech (≈ 29%) are Artheffect-only and stay out of that
 average). This is the localization row in [target-app-parity.md](target-app-parity.md#by-dimension).
 
 **Effort.** One-time work first: route parameter names and engine messages through

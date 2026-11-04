@@ -2,9 +2,9 @@
 //! render): the fill and the outline follow Dark and Light, and the two themes differ. `MARKER_NAMES_SNAPSHOT=/abs/dir`
 //! also saves the rendered panel for each theme.
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::theme::ThemeKind;
+use artheffect_engine::Session;
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::theme::ThemeKind;
 use egui_kittest::Harness;
 use serde_json::json;
 
@@ -20,7 +20,7 @@ fn the_name_box_follows_the_theme() {
     s.execute("layer.newSolid", json!({"name": "Bed", "color": "#204060", "width": 640, "height": 360})).unwrap();
     s.execute("markers.set", json!({"new": true, "time": 1.0, "comment": "Verse"})).unwrap();
 
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| ArtheffectApp::new(s));
     h.run_steps(4);
     let ctx = h.ctx.clone();
 
@@ -63,7 +63,7 @@ fn a_short_duration_stays_visible_beside_the_name_box() {
     // a second marker half a second later gives the timeline's scale (points per second)
     s.execute("markers.set", json!({"new": true, "time": 1.5})).unwrap();
 
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| ArtheffectApp::new(s));
     h.run_steps(5);
     let tokens = h.state().tokens;
     let centre = |id: &str| {
@@ -100,7 +100,7 @@ fn a_later_name_box_does_not_hide_an_earlier_duration_cap() {
     s.execute("comp.new", json!({"width": 640, "height": 360, "duration": 4})).unwrap();
     s.execute("markers.set", json!({"new": true, "time": 1.0, "duration": 0.5, "label": "Red"})).unwrap();
     s.execute("markers.set", json!({"new": true, "time": 1.3, "comment": "This name overlaps the earlier endpoint", "label": "Blue"})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| ArtheffectApp::new(s));
     h.run_steps(5);
     let a = h.state().auto.find("timeline.marker.0").unwrap().rect;
     let b = h.state().auto.find("timeline.marker.1").unwrap().rect;

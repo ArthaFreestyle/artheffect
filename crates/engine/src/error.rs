@@ -12,7 +12,7 @@ pub enum EngineError {
     #[error("no composition {0}")]
     NoSuchComp(String),
     #[error("{0}")]
-    Project(#[from] effectcraft_project::ProjectError),
+    Project(#[from] artheffect_project::ProjectError),
     #[error("{0}")]
     Other(String),
 }

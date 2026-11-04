@@ -1,18 +1,18 @@
 //! #2207: Duplicate is reachable from a Project row's context menu, with the same targets,
 //! naming, undo and shortcut preset as Edit > Duplicate.
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::ItemId;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
-use effectcraft_ui_egui::menus::{parse_shortcut, shortcut_text};
+use artheffect_engine::Session;
+use artheffect_engine::project::ItemId;
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::dock::PanelKind;
+use artheffect_ui_egui::menus::{parse_shortcut, shortcut_text};
 use egui::{Event, Key, Modifiers, PointerButton, Rect, Shape, pos2};
 use egui_kittest::Harness;
 use serde_json::json;
 
 const DUPLICATE: &str = "project.context.duplicate";
 
-fn harness() -> (Harness<'static, EffectcraftApp>, ItemId, ItemId, ItemId) {
+fn harness() -> (Harness<'static, ArtheffectApp>, ItemId, ItemId, ItemId) {
     let mut s = Session::default();
     let mut comp =
         |name: &str| ItemId(s.execute("comp.new", json!({"name": name, "width": 64, "height": 64, "duration": 1})).unwrap()["comp"].as_u64().unwrap());
@@ -20,17 +20,17 @@ fn harness() -> (Harness<'static, EffectcraftApp>, ItemId, ItemId, ItemId) {
     let other = comp("Other");
     let folder = ItemId(s.execute("project.newFolder", json!({"name": "Bin"})).unwrap()["item"].as_u64().unwrap());
     s.execute("project.select", json!({"items": []})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     (h, main, other, folder)
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, ArtheffectApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), egui::vec2(e.rect[2], e.rect[3]))
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str, button: PointerButton, modifiers: Modifiers) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, id: &str, button: PointerButton, modifiers: Modifiers) {
     let p = rect(h, id).center();
     h.input_mut().events.push(Event::ModifiersChanged(modifiers));
     h.input_mut().events.push(Event::PointerMoved(p));
@@ -43,22 +43,22 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str, button: PointerButton, m
     h.step();
 }
 
-fn row(h: &mut Harness<'_, EffectcraftApp>, item: ItemId, button: PointerButton, modifiers: Modifiers) {
+fn row(h: &mut Harness<'_, ArtheffectApp>, item: ItemId, button: PointerButton, modifiers: Modifiers) {
     click(h, &format!("project.item.{}.name", item.0), button, modifiers);
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
+fn key(h: &mut Harness<'_, ArtheffectApp>, key: Key, modifiers: Modifiers) {
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers });
     h.step();
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: false, repeat: false, modifiers });
     h.run_steps(2);
 }
 
-fn copy_name(h: &Harness<'_, EffectcraftApp>, id: ItemId) -> String {
+fn copy_name(h: &Harness<'_, ArtheffectApp>, id: ItemId) -> String {
     h.state().session.project.item(id).unwrap().name.clone()
 }
 
-fn menu_text(h: &Harness<'_, EffectcraftApp>, text: &str) -> bool {
+fn menu_text(h: &Harness<'_, ArtheffectApp>, text: &str) -> bool {
     fn contains(shape: &Shape, bounds: Rect, text: &str) -> bool {
         match shape {
             Shape::Text(t) => bounds.contains(t.pos) && t.galley.text() == text,

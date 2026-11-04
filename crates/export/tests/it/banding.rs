@@ -4,14 +4,14 @@
 
 use std::sync::{Arc, Mutex};
 
-use effectcraft_color::Label;
-use effectcraft_export::render_queue::*;
-use effectcraft_export::{Job, JobOptions, Sink, export};
-use effectcraft_keyframe::Value;
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{BitDepth, Comp, ItemId, ItemKind, LayerSource, Project, Solid};
-use effectcraft_render::NoFootage;
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_export::render_queue::*;
+use artheffect_export::{Job, JobOptions, Sink, export};
+use artheffect_keyframe::Value;
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{BitDepth, Comp, ItemId, ItemKind, LayerSource, Project, Solid};
+use artheffect_render::NoFootage;
+use artheffect_time::{FrameRate, Tick};
 
 const W: u32 = 1024;
 const H: u32 = 16;
@@ -30,9 +30,9 @@ fn ramp_project(depth: BitDepth) -> (Project, ItemId) {
     comp.background = [0.0, 0.0, 0.0];
     let sid = p.add_item("Ramp", Label::Red, None, ItemKind::Solid(Solid { color: [1.0, 1.0, 1.0], width: W, height: H, pixel_aspect: 1.0 }));
     let mut layer = build::layer(&mut p, &comp, "Ramp", LayerSource::Solid { item: sid }, (W, H), None);
-    let spec = effectcraft_effects::find("ec.generate.gradientramp").expect("gradient ramp effect");
+    let spec = artheffect_effects::find("ec.generate.gradientramp").expect("gradient ramp effect");
     let mut next = p.next_id;
-    let mut group = effectcraft_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [W as f64, H as f64]);
+    let mut group = artheffect_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [W as f64, H as f64]);
     p.next_id = next;
     for (k, v) in [
         ("start", Value::Vec2([0.0, 0.0])),

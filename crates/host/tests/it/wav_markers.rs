@@ -2,8 +2,8 @@
 //! layer made from the file starts with them, and Update Markers From Source copies them again,
 //! through its bound `layers` parameter as well as the selection, as one undo step.
 
-use effectcraft_engine::Session;
-use effectcraft_project::LayerSource;
+use artheffect_engine::Session;
+use artheffect_project::LayerSource;
 use serde_json::json;
 
 /// The comments of a layer's markers, in time order.
@@ -61,9 +61,9 @@ fn marker_wav(points: &[(u32, u32, &str)]) -> Vec<u8> {
 /// media import included).
 #[test]
 fn a_wav_layer_starts_with_the_markers_in_its_file() {
-    let mut s = effectcraft_host::session();
+    let mut s = artheffect_host::session();
     s.execute_checked("comp.new", json!({"name": "C", "width": 64, "height": 48, "frameRate": 30, "duration": 2})).unwrap();
-    let dir = std::env::temp_dir().join(format!("effectcraft-host-wav-markers-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("artheffect-host-wav-markers-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("cues.wav");
     std::fs::write(&path, marker_wav(&[(1, 0, "Intro"), (2, 4000, "Middle")])).unwrap();
@@ -95,9 +95,9 @@ fn a_wav_layer_starts_with_the_markers_in_its_file() {
 /// import is available to Update Markers From Source (and a layer already made keeps its own).
 #[test]
 fn reloading_a_wav_picks_up_cue_points_added_to_the_file() {
-    let mut s = effectcraft_host::session();
+    let mut s = artheffect_host::session();
     s.execute_checked("comp.new", json!({"name": "C", "width": 64, "height": 48, "frameRate": 30, "duration": 2})).unwrap();
-    let dir = std::env::temp_dir().join(format!("effectcraft-host-wav-reload-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("artheffect-host-wav-reload-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("cues.wav");
     std::fs::write(&path, marker_wav(&[(1, 0, "Intro")])).unwrap();

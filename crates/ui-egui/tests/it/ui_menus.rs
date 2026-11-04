@@ -2,27 +2,27 @@
 //! (egui_kittest, UI logic only).
 
 use crate::gpu_test::RenderSerial;
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
+use artheffect_engine::Session;
+use artheffect_ui_egui::ArtheffectApp;
 use egui::{Event, Key, Modifiers, Pos2, Rect, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
 use serde_json::json;
 
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, ArtheffectApp> {
     let mut s = Session::default();
     s.execute("file.openDemoProject", json!({})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     h
 }
 
-pub(crate) fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+pub(crate) fn rect(h: &Harness<'_, ArtheffectApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
-pub(crate) fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+pub(crate) fn click_at(h: &mut Harness<'_, ArtheffectApp>, p: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.input_mut().events.push(Event::PointerButton { pos: p, button: egui::PointerButton::Primary, pressed: true, modifiers: Default::default() });
     h.step();
@@ -31,26 +31,26 @@ pub(crate) fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
 }
 
 /// Press the primary button at `p` and keep it down.
-pub(crate) fn press(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+pub(crate) fn press(h: &mut Harness<'_, ArtheffectApp>, p: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.input_mut().events.push(Event::PointerButton { pos: p, button: egui::PointerButton::Primary, pressed: true, modifiers: Default::default() });
     h.run_steps(2);
 }
 
 /// Move the pointer to `p` (press or no press, whichever is held).
-pub(crate) fn move_to(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+pub(crate) fn move_to(h: &mut Harness<'_, ArtheffectApp>, p: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.run_steps(2);
 }
 
 /// Release the primary button at `p`.
-fn release(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+fn release(h: &mut Harness<'_, ArtheffectApp>, p: Pos2) {
     h.input_mut().events.push(Event::PointerButton { pos: p, button: egui::PointerButton::Primary, pressed: false, modifiers: Default::default() });
     h.run_steps(2);
 }
 
 /// Press and release `key` (one frame each), then let the UI settle.
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key) {
+fn key(h: &mut Harness<'_, ArtheffectApp>, key: Key) {
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE });
     h.step();
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: false, repeat: false, modifiers: Modifiers::NONE });
@@ -58,21 +58,21 @@ fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key) {
 }
 
 /// The label of the widget with keyboard focus (the highlighted menu entry).
-fn focused(h: &Harness<'_, EffectcraftApp>) -> String {
+fn focused(h: &Harness<'_, ArtheffectApp>) -> String {
     h.query_by(|n| n.is_focused()).and_then(|n| n.accesskit_node().label()).unwrap_or_default().trim().to_string()
 }
 
-fn shown(h: &Harness<'_, EffectcraftApp>, label: &str) -> bool {
+fn shown(h: &Harness<'_, ArtheffectApp>, label: &str) -> bool {
     h.query_by_label_contains(label).is_some()
 }
 
 #[test]
 fn browse_presets_clears_search_and_scrolls_to_the_visible_presets_list() {
-    use effectcraft_ui_egui::dock::PanelKind;
+    use artheffect_ui_egui::dock::PanelKind;
 
     let mut h = harness();
     let ctx = h.ctx.clone();
-    let favorites: Vec<String> = effectcraft_engine::effects::all().iter().map(|effect| effect.id.to_string()).collect();
+    let favorites: Vec<String> = artheffect_engine::effects::all().iter().map(|effect| effect.id.to_string()).collect();
     assert!(!favorites.is_empty(), "the test needs registered effects");
     let recent: Vec<String> = favorites.iter().take(8).cloned().collect();
 
@@ -82,7 +82,7 @@ fn browse_presets_clears_search_and_scrolls_to_the_visible_presets_list() {
     h.state_mut().ui.effects_search = "no matching animation preset".into();
     h.state_mut().ui.effects_view.presets = true;
 
-    let managed = effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "effect.manage", json!({}));
+    let managed = artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, "effect.manage", json!({}));
     assert!(managed.is_ok(), "{managed:?}");
     assert_eq!(h.state().ui.focused, PanelKind::EffectsPresets);
     assert_eq!(h.state().ui.effects_search, "no matching animation preset", "Manage Effects keeps its existing search behavior");
@@ -92,7 +92,7 @@ fn browse_presets_clears_search_and_scrolls_to_the_visible_presets_list() {
     assert!(h.state().auto.find("effects.category.presets").is_none(), "the unmatched search hides Animation Presets");
     h.state_mut().ui.effects_view.presets = false;
 
-    let result = effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "anim.browsePresets", json!({}));
+    let result = artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, "anim.browsePresets", json!({}));
 
     assert!(result.is_ok(), "{result:?}");
     assert_eq!(h.state().ui.focused, PanelKind::EffectsPresets);
@@ -171,13 +171,13 @@ fn enter_chooses_the_highlighted_entry() {
     if cfg!(target_os = "macos") {
         assert!(focused(&h).starts_with("Keyboard Shortcuts"), "Up went to the last entry: {:?}", focused(&h));
         key(&mut h, Key::Enter);
-        assert_eq!(h.state().dialog, Some(effectcraft_ui_egui::Dialog::Shortcuts), "Enter chose it");
+        assert_eq!(h.state().dialog, Some(artheffect_ui_egui::Dialog::Shortcuts), "Enter chose it");
     } else {
         assert!(focused(&h).starts_with("Preferences"), "Up went to the last entry: {:?}", focused(&h));
         key(&mut h, Key::Enter);
         assert!(focused(&h).starts_with("General"), "Enter opened the submenu: {:?}", focused(&h));
         key(&mut h, Key::Enter);
-        assert_eq!(h.state().dialog, Some(effectcraft_ui_egui::Dialog::Settings), "Enter chose General...");
+        assert_eq!(h.state().dialog, Some(artheffect_ui_egui::Dialog::Settings), "Enter chose General...");
     }
     assert!(!shown(&h, "Quick Apply"), "and closed the menu");
 }
@@ -187,8 +187,8 @@ fn relink_menu_uses_engine_availability_and_folder_picker_cancel_is_a_noop() {
     use std::cell::Cell;
     use std::rc::Rc;
 
-    let mut app = EffectcraftApp::new(Session::default());
-    let menu = effectcraft_ui_egui::menus::menu_items(&app);
+    let mut app = ArtheffectApp::new(Session::default());
+    let menu = artheffect_ui_egui::menus::menu_items(&app);
     let entry = menu.iter().find(|e| e.id == "file.relinkFootage").unwrap();
     assert_eq!(entry.path, ["File", "Dependencies"]);
     assert_eq!(entry.enabled, app.session.is_enabled("file.relinkFootage"));
@@ -200,7 +200,7 @@ fn relink_menu_uses_engine_availability_and_folder_picker_cancel_is_a_noop() {
         None
     }));
     let revision = app.session.revision;
-    let result = effectcraft_ui_egui::menus::invoke(&mut app, &egui::Context::default(), "file.relinkFootage", json!({})).unwrap();
+    let result = artheffect_ui_egui::menus::invoke(&mut app, &egui::Context::default(), "file.relinkFootage", json!({})).unwrap();
     assert!(picked.get());
     assert!(result.is_null());
     assert_eq!(app.session.revision, revision);
@@ -226,7 +226,7 @@ fn relink_is_reachable_through_the_dependencies_menu() {
     h.input_mut().events.push(Event::PointerMoved(dependencies.center()));
     h.run_steps(8);
     let relink = h.query_by_label_contains("Relink Missing Footage").unwrap().rect();
-    if let Some(path) = std::env::var_os("EFFECTCRAFT_RELINK_MENU_SNAPSHOT") {
+    if let Some(path) = std::env::var_os("ARTHEFFECT_RELINK_MENU_SNAPSHOT") {
         h.render_serialized().unwrap().save(path).unwrap();
     }
     click_at(&mut h, relink.center());
@@ -236,16 +236,16 @@ fn relink_is_reachable_through_the_dependencies_menu() {
 
 #[test]
 fn relink_restores_decoded_pixels_and_invalidates_viewer_content() {
-    use effectcraft_engine::project::{ItemId, ItemKind};
-    use effectcraft_engine::render::RenderOpts;
-    use effectcraft_engine::time::Tick;
+    use artheffect_engine::project::{ItemId, ItemKind};
+    use artheffect_engine::render::RenderOpts;
+    use artheffect_engine::time::Tick;
 
     let dir = std::env::temp_dir().join(format!("ec-ui-relink-{}", std::process::id()));
     std::fs::create_dir_all(dir.join("old")).unwrap();
     std::fs::create_dir_all(dir.join("new/deep")).unwrap();
     let old = dir.join("old/plate.png");
     image::RgbaImage::from_pixel(32, 32, image::Rgba([230, 40, 80, 255])).save(&old).unwrap();
-    let mut s = effectcraft_host::session();
+    let mut s = artheffect_host::session();
     let item = s.execute("file.import", json!({"paths": [old], "sequence": false})).unwrap()["items"][0].as_u64().unwrap();
     s.execute("comp.new", json!({"name": "Relink", "width": 32, "height": 32, "duration": 1})).unwrap();
     s.execute("layer.addItem", json!({"item": item})).unwrap();
@@ -256,12 +256,12 @@ fn relink_restores_decoded_pixels_and_invalidates_viewer_content() {
     s.execute("footage.check", json!({"wait": true})).unwrap();
     let ItemKind::Footage(f) = &s.project.item(ItemId(item)).unwrap().kind else { panic!("footage") };
     assert!(f.missing);
-    let missing_content = effectcraft_ui_egui::frames::comp_content(&s.project, cid);
+    let missing_content = artheffect_ui_egui::frames::comp_content(&s.project, cid);
     let missing = s.render(cid, Tick::ZERO, RenderOpts::default());
     assert_ne!(missing.data, expected.data);
     let r = s.execute("file.relinkFootage", json!({"folder": dir.join("new"), "wait": true})).unwrap();
     assert_eq!(r["relinked"], 1);
-    assert_ne!(effectcraft_ui_egui::frames::comp_content(&s.project, cid), missing_content);
+    assert_ne!(artheffect_ui_egui::frames::comp_content(&s.project, cid), missing_content);
     assert_eq!(s.render(cid, Tick::ZERO, RenderOpts::default()).data, expected.data);
     std::fs::remove_dir_all(dir).unwrap();
 }
@@ -273,7 +273,7 @@ fn import_and_proxy_dialogs_offer_every_movie_type() {
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = ArtheffectApp::new(Session::default());
     let offered = Rc::new(RefCell::new(Vec::<String>::new()));
     let seen = offered.clone();
     app.hooks.pick_files = Some(Box::new(move |exts: &[&str]| {
@@ -281,10 +281,10 @@ fn import_and_proxy_dialogs_offer_every_movie_type() {
         Vec::new()
     }));
     for (command, still) in [("file.import", "psd"), ("file.setProxy", "png")] {
-        let result = effectcraft_ui_egui::menus::invoke(&mut app, &egui::Context::default(), command, json!({})).unwrap();
+        let result = artheffect_ui_egui::menus::invoke(&mut app, &egui::Context::default(), command, json!({})).unwrap();
         assert!(result.is_null(), "{command} cancelled: nothing done");
         let offered = offered.borrow();
-        for ext in effectcraft_project::VIDEO_EXTENSIONS.iter().chain([&still]) {
+        for ext in artheffect_project::VIDEO_EXTENSIONS.iter().chain([&still]) {
             assert!(offered.iter().any(|e| e == ext), "{command} offers {ext}: {offered:?}");
         }
         assert!(offered.iter().any(|e| e == "avi"), "{command}: {offered:?}");
@@ -297,7 +297,7 @@ fn import_and_proxy_dialogs_offer_every_movie_type() {
 fn space_previews_after_opening_the_demo_from_home() {
     let mut h = {
         let s = Session::default();
-        let mut app = EffectcraftApp::new(s);
+        let mut app = ArtheffectApp::new(s);
         app.ui.start_screen = true;
         Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(|_| app)
     };
@@ -321,7 +321,7 @@ fn a_menu_opens_on_press_and_browsing_releases_choose_an_entry() {
     let item = h.query_by_label_contains("Keyboard Shortcuts").expect("the Edit menu is open").rect();
     move_to(&mut h, item.center());
     release(&mut h, item.center());
-    assert_eq!(h.state().dialog, Some(effectcraft_ui_egui::Dialog::Shortcuts), "the release over the entry chose it");
+    assert_eq!(h.state().dialog, Some(artheffect_ui_egui::Dialog::Shortcuts), "the release over the entry chose it");
     assert!(!shown(&h, "Quick Apply"), "and closed the menu");
 }
 
@@ -442,7 +442,7 @@ fn a_disabled_title_does_not_switch_menus() {
     let mut h = harness();
     let (file, edit) = (rect(&h, "menu.File"), rect(&h, "menu.Edit"));
     click_at(&mut h, file.center());
-    h.state_mut().dialog = Some(effectcraft_ui_egui::Dialog::About);
+    h.state_mut().dialog = Some(artheffect_ui_egui::Dialog::About);
     h.run_steps(2);
     move_to(&mut h, edit.center());
     assert!(!shown(&h, "Keyboard Shortcuts"), "Edit didn't open");

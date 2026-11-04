@@ -9,12 +9,12 @@
 //! script through `scriptui.mouse` when a listener wants them (`Widget::mouse`).
 
 use crate::i18n::tr;
-use effectcraft_engine::Services;
-use effectcraft_engine::scriptui::{DrawOp, ImageRef, PathSeg, ScriptWindow, Widget, WidgetKind, WindowKind, layout};
+use artheffect_engine::Services;
+use artheffect_engine::scriptui::{DrawOp, ImageRef, PathSeg, ScriptWindow, Widget, WidgetKind, WindowKind, layout};
 use egui::{Align2, Color32, Rect, Sense, Stroke, StrokeKind, UiBuilder, pos2, vec2};
 use serde_json::{Value, json};
 
-use crate::EffectcraftApp;
+use crate::ArtheffectApp;
 use crate::dock::{PanelKind, WorkspaceExt as _};
 use crate::theme::Tokens;
 
@@ -34,7 +34,7 @@ fn rect_of(origin: egui::Pos2, b: [f64; 4]) -> Rect {
     Rect::from_min_size(origin + vec2(b[0] as f32, b[1] as f32), vec2(b[2] as f32, b[3] as f32))
 }
 
-fn register(app: &mut EffectcraftApp, win: u32, w: &Widget, rect: Rect) {
+fn register(app: &mut ArtheffectApp, win: u32, w: &Widget, rect: Rect) {
     let label = if w.text.is_empty() { format!("{:?}", w.kind) } else { w.text.clone() };
     app.auto.add(&format!("scriptui.{win}.{}", w.id), rect, &label);
     if !w.name.is_empty() {
@@ -43,7 +43,7 @@ fn register(app: &mut EffectcraftApp, win: u32, w: &Widget, rect: Rect) {
 }
 
 /// Draw `w`'s children (and, for containers, their children) at `origin` + bounds.
-fn draw_children(app: &mut EffectcraftApp, ui: &mut egui::Ui, origin: egui::Pos2, win: u32, w: &Widget, acts: &mut Vec<Act>) {
+fn draw_children(app: &mut ArtheffectApp, ui: &mut egui::Ui, origin: egui::Pos2, win: u32, w: &Widget, acts: &mut Vec<Act>) {
     let t = app.tokens;
     if w.kind == WidgetKind::TabbedPanel {
         // Tab headers, then the active tab only.
@@ -88,7 +88,7 @@ fn draw_children(app: &mut EffectcraftApp, ui: &mut egui::Ui, origin: egui::Pos2
 /// script (replacing the default look, or on top of it when it called `drawOSControl()`) while
 /// buttons, checkboxes and radios still take clicks. Edits and clicks are appended to `acts` for
 /// [`perform`]; while a field or slider is in use its live value lives in egui temp data.
-fn draw_widget(app: &mut EffectcraftApp, ui: &mut egui::Ui, origin: egui::Pos2, win: u32, w: &Widget, acts: &mut Vec<Act>) {
+fn draw_widget(app: &mut ArtheffectApp, ui: &mut egui::Ui, origin: egui::Pos2, win: u32, w: &Widget, acts: &mut Vec<Act>) {
     let t = app.tokens;
     let services = app.session.services.clone();
     let rect = rect_of(origin, w.bounds);
@@ -495,7 +495,7 @@ fn snug(r: Rect, text: &str) -> Rect {
 /// Runs the actions collected while drawing a ScriptUI window as `scriptui.*` commands, in order.
 /// A reply carrying an `error` becomes a toast with the script's message; otherwise a non-empty
 /// `output` becomes the status line (its last line). Command failures also go to `app.ui.status`.
-fn perform(app: &mut EffectcraftApp, ctx: &egui::Context, acts: Vec<Act>) {
+fn perform(app: &mut ArtheffectApp, ctx: &egui::Context, acts: Vec<Act>) {
     for a in acts {
         let (cmd, p) = match a {
             Act::Click(w, id) => ("scriptui.click", json!({"window": w, "widget": id})),
@@ -526,7 +526,7 @@ fn perform(app: &mut EffectcraftApp, ctx: &egui::Context, acts: Vec<Act>) {
 }
 
 /// The floating script windows (dialogs, palettes, windows), drawn over the app.
-pub fn show_windows(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub fn show_windows(app: &mut ArtheffectApp, ctx: &egui::Context) {
     let windows: Vec<ScriptWindow> = app.session.script_ui.windows.iter().filter(|w| w.kind != WindowKind::Panel).cloned().collect();
     if windows.is_empty() {
         return;
@@ -572,7 +572,7 @@ pub fn show_windows(app: &mut EffectcraftApp, ctx: &egui::Context) {
 }
 
 /// A dockable ScriptUI panel's content (Window ▸ `<panel>.jsx`).
-pub fn panel(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect, id: u32) {
+pub fn panel(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect, id: u32) {
     let t = app.tokens;
     let Some(mut w) = app.session.script_ui.window(id).cloned() else {
         ui.painter().text(rect.center(), Align2::CENTER_CENTER, tr("This ScriptUI panel has closed"), Tokens::ui(12.0), t.text_faint);
@@ -605,13 +605,13 @@ pub fn panel(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect, id: u32) {
 }
 
 /// Tab title of a script panel.
-pub fn panel_title(app: &EffectcraftApp, id: u32) -> Option<String> {
+pub fn panel_title(app: &ArtheffectApp, id: u32) -> Option<String> {
     app.session.script_ui.window(id).map(|w| if w.title.is_empty() { w.script.clone() } else { w.title.clone() })
 }
 
 /// Close the dock panels whose script window has gone (the script closed it, or a saved
 /// workspace from an earlier run).
-pub fn sync_panels(app: &mut EffectcraftApp) {
+pub fn sync_panels(app: &mut ArtheffectApp) {
     for p in app.ui.dock.panels() {
         if let PanelKind::ScriptPanel(id) = p
             && app.session.script_ui.window(id).is_none()
@@ -648,7 +648,7 @@ mod tests {
         ];
         let t = Tokens::for_kind(crate::theme::ThemeKind::Dark);
         let mut out = egui::Context::default().run_ui(egui::RawInput::default(), |ui| {
-            paint_draw(ui, Rect::from_min_size(pos2(0.0, 0.0), vec2(50.0, 50.0)), &ops, &t, &effectcraft_engine::FsServices);
+            paint_draw(ui, Rect::from_min_size(pos2(0.0, 0.0), vec2(50.0, 50.0)), &ops, &t, &artheffect_engine::FsServices);
         });
         out.textures_delta.clear();
         let want = Color32::from_rgb(43, 43, 43);

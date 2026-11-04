@@ -1,10 +1,10 @@
 //! Commands behind the Progress, Media Browser, Metadata and Lumetri Scopes panels.
 
-use effectcraft_project::ItemId;
-use effectcraft_raster::Image;
-use effectcraft_raster::scopes::{self, ColorStandard, ScopeKind, ScopeOpts};
-use effectcraft_render::RenderOpts;
-use effectcraft_time::Tick;
+use artheffect_project::ItemId;
+use artheffect_raster::Image;
+use artheffect_raster::scopes::{self, ColorStandard, ScopeKind, ScopeOpts};
+use artheffect_render::RenderOpts;
+use artheffect_time::Tick;
 use serde_json::{Value, json};
 
 use super::{CommandSpec, always, b_p, bad, f_p, str_p};

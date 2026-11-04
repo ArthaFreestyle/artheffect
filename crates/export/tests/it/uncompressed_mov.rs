@@ -8,13 +8,13 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use effectcraft_color::Label;
-use effectcraft_export::render_queue::{AudioFormat, AudioOutput, Channels, OutputFormat, OutputModule, RenderSettings, TimeSpan, sequence_path};
-use effectcraft_export::{Job, export};
-use effectcraft_media::MediaPool;
-use effectcraft_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid, build};
-use effectcraft_render::FootageSource;
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_export::render_queue::{AudioFormat, AudioOutput, Channels, OutputFormat, OutputModule, RenderSettings, TimeSpan, sequence_path};
+use artheffect_export::{Job, export};
+use artheffect_media::MediaPool;
+use artheffect_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid, build};
+use artheffect_render::FootageSource;
+use artheffect_time::{FrameRate, Tick};
 use filmcraft_isobmff::TrackKind;
 
 const W: u32 = 33;
@@ -64,7 +64,7 @@ fn project(audio: Option<&Path>) -> (Project, ItemId) {
     l.in_point = comp.frame_rate.tick_of(2);
     comp.layers.push(l);
     if let Some(path) = audio {
-        let f = effectcraft_media::probe(path).expect("probe wav");
+        let f = artheffect_media::probe(path).expect("probe wav");
         let fid = p.add_item("tone.wav", Label::SeaFoam, None, ItemKind::Footage(f));
         let l = build::layer(&mut p, &comp, "tone", LayerSource::Footage { item: fid }, (0, 0), None);
         comp.layers.push(l);
@@ -73,7 +73,7 @@ fn project(audio: Option<&Path>) -> (Project, ItemId) {
     (p, cid)
 }
 
-fn run(p: &Project, cid: ItemId, footage: &dyn FootageSource, om: &OutputModule, path: &Path) -> effectcraft_export::Report {
+fn run(p: &Project, cid: ItemId, footage: &dyn FootageSource, om: &OutputModule, path: &Path) -> artheffect_export::Report {
     let s = RenderSettings { time_span: TimeSpan::LengthOfComp, ..Default::default() };
     let path = path.to_string_lossy().to_string();
     let job = Job {
@@ -159,9 +159,9 @@ fn check(name: &str, channels: Channels) {
     let (p, cid) = project(None);
     let om = OutputModule { channels, ..OutputModule::for_format(OutputFormat::Uncompressed) };
     let path = d.join("comp.mov");
-    let r = run(&p, cid, &effectcraft_render::NoFootage, &om, &path);
+    let r = run(&p, cid, &artheffect_render::NoFootage, &om, &path);
     assert_eq!((r.width, r.height, r.frames, r.audio), (W, H, FRAMES, false));
-    let mut want_rgba = reference_frames(&p, cid, &effectcraft_render::NoFootage, &om, &d);
+    let mut want_rgba = reference_frames(&p, cid, &artheffect_render::NoFootage, &om, &d);
     let alpha = channels == Channels::Rgba;
     if !alpha {
         // The PNG is RGB (opaque); `to_rgba8` already filled alpha with 255.

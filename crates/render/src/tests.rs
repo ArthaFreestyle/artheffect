@@ -1,8 +1,8 @@
-use effectcraft_color::{BlendMode, Label};
-use effectcraft_keyframe::{Keyframe, ShapePath, TextDoc, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{Comp, ItemId, ItemKind, LayerSource, MaskMode, MatteKind, Project, Solid, TrackMatte};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::{BlendMode, Label};
+use artheffect_keyframe::{Keyframe, ShapePath, TextDoc, Value};
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{Comp, ItemId, ItemKind, LayerSource, MaskMode, MatteKind, Project, Solid, TrackMatte};
+use artheffect_time::{FrameRate, Tick};
 
 use crate::render_frame;
 
@@ -28,13 +28,13 @@ mod time;
 fn setup() -> (Project, ItemId, Comp) {
     let mut p = Project::default();
     // Exact float maths; 8/16 bpc quantisation has its own tests (tests_color).
-    p.settings.bit_depth = effectcraft_project::BitDepth::Bpc32;
+    p.settings.bit_depth = artheffect_project::BitDepth::Bpc32;
     let comp = Comp::new(200, 100, FrameRate::FPS_30, Tick::from_seconds_f64(2.0));
     let cid = p.add_item("Comp", Label::Sandstone, None, ItemKind::Comp(comp.clone().into()));
     (p, cid, comp)
 }
 
-fn solid(p: &mut Project, comp: &Comp, color: [f32; 3], w: u32, h: u32) -> effectcraft_project::Layer {
+fn solid(p: &mut Project, comp: &Comp, color: [f32; 3], w: u32, h: u32) -> artheffect_project::Layer {
     let sid = p.add_item("Solid", Label::Red, None, ItemKind::Solid(Solid { color, width: w, height: h, pixel_aspect: 1.0 }));
     build::layer(p, comp, "Solid", LayerSource::Solid { item: sid }, (w, h), None)
 }
@@ -285,9 +285,9 @@ fn precomp_and_3d_render() {
 fn effects_run_in_pipeline() {
     let (mut p, cid, comp) = setup();
     let mut l = solid(&mut p, &comp, [1.0, 1.0, 1.0], 50, 50);
-    let spec = effectcraft_effects::find("ec.color.tint").unwrap();
+    let spec = artheffect_effects::find("ec.color.tint").unwrap();
     let mut next = p.next_id;
-    let mut g = effectcraft_effects::instantiate(spec, &mut Ids(&mut next), "Tint", [50.0, 50.0]);
+    let mut g = artheffect_effects::instantiate(spec, &mut Ids(&mut next), "Tint", [50.0, 50.0]);
     p.next_id = next;
     if let Some(pr) = g.prop_mut("white") {
         pr.value = Value::Color([0.0, 1.0, 0.0, 1.0]);
@@ -305,7 +305,7 @@ fn effects_run_in_pipeline() {
 fn tint_in_an_srgb_working_space_matches_after_effects_greys() {
     for (col, want) in [([1.0, 0.0, 0.0], 76.0), ([0.0, 1.0, 0.0], 150.0), ([0.0, 0.0, 1.0], 29.0), ([0.5, 0.5, 0.5], 128.0)] {
         let (mut p, cid, comp) = setup();
-        p.settings.working_space = Some(effectcraft_color::ColorSpace::Srgb);
+        p.settings.working_space = Some(artheffect_color::ColorSpace::Srgb);
         let mut l = solid(&mut p, &comp, col, 200, 100);
         add_effect(&mut p, &mut l, "ec.color.tint", [200.0, 100.0], &[]);
         p.comp_mut(cid).unwrap().layers.push(l);
@@ -387,7 +387,7 @@ fn burst_scene_keys(cut: Option<f64>, start: f64, stretch: f64, hold: bool) -> (
     add_effect(&mut p, &mut l, "ec.sim.ccparticleworld", [200.0, 100.0], &vals);
     if let Some(cut) = cut {
         let fx = l.props.sub_mut("effects").unwrap().children.iter_mut().find_map(|c| match c {
-            effectcraft_project::Node::Group(g) => Some(g),
+            artheffect_project::Node::Group(g) => Some(g),
             _ => None,
         });
         let fx = fx.unwrap();
@@ -472,7 +472,7 @@ fn particle_world_reads_a_hold_cut_at_its_exact_layer_time_under_any_stretch() {
 struct ControllerRate;
 
 impl crate::eval::ExprHost for ControllerRate {
-    fn eval(&self, ctx: &crate::eval::EvalCtx, layer: &effectcraft_project::Layer, _: &effectcraft_project::Property, _: &Value) -> Result<Value, String> {
+    fn eval(&self, ctx: &crate::eval::EvalCtx, layer: &artheffect_project::Layer, _: &artheffect_project::Property, _: &Value) -> Result<Value, String> {
         if layer.layer_time(ctx.time).seconds() >= 0.5 {
             return Ok(Value::Scalar(0.0));
         }
@@ -496,10 +496,10 @@ fn particle_world_with_a_birth_rate_expression_is_not_served_from_the_layer_cach
         ctl.props.prop_mut("transform/opacity").unwrap().value = Value::Scalar(opacity);
         let c = p.comp_mut(cid).unwrap();
         let fx = c.layers[0].props.sub_mut("effects").unwrap().children.iter_mut().find_map(|n| match n {
-            effectcraft_project::Node::Group(g) => Some(g),
+            artheffect_project::Node::Group(g) => Some(g),
             _ => None,
         });
-        fx.unwrap().prop_mut("birthRate").unwrap().expr = Some(effectcraft_project::Expression { text: "controller".into(), enabled: true });
+        fx.unwrap().prop_mut("birthRate").unwrap().expr = Some(artheffect_project::Expression { text: "controller".into(), enabled: true });
         c.layers.push(ctl);
         (p, cid)
     };
@@ -527,7 +527,7 @@ fn system_scene(id: &str, rate: Option<f64>) -> (Project, ItemId) {
     add_effect(&mut p, &mut l, id, [200.0, 100.0], &vals);
     if rate.is_none() {
         let fx = l.props.sub_mut("effects").unwrap().children.iter_mut().find_map(|c| match c {
-            effectcraft_project::Node::Group(g) => Some(g),
+            artheffect_project::Node::Group(g) => Some(g),
             _ => None,
         });
         let key = |t: f64, v: f64| Keyframe::new(Tick::from_seconds_f64(t), Value::Scalar(v));
@@ -567,10 +567,10 @@ fn stepped_particle_layers_with_a_birth_rate_expression_are_not_layer_cached() {
         };
         assert!(key(&p).is_some(), "{id}: cached without an expression");
         let fx = p.comp_mut(cid).unwrap().layers[0].props.sub_mut("effects").unwrap().children.iter_mut().find_map(|c| match c {
-            effectcraft_project::Node::Group(g) => Some(g),
+            artheffect_project::Node::Group(g) => Some(g),
             _ => None,
         });
-        fx.unwrap().prop_mut("birthRate").unwrap().expr = Some(effectcraft_project::Expression { text: "time < 0.5 ? 3 : 0".into(), enabled: true });
+        fx.unwrap().prop_mut("birthRate").unwrap().expr = Some(artheffect_project::Expression { text: "time < 0.5 ? 3 : 0".into(), enabled: true });
         assert!(key(&p).is_none(), "{id}: not cached with a Birth Rate expression");
     }
 }
@@ -601,14 +601,14 @@ fn a_called_off_render_keeps_nothing_in_the_layer_cache() {
 }
 
 /// [`add_effect`] for a 200×100 layer.
-fn add_effect_200(p: &mut Project, l: &mut effectcraft_project::Layer, id: &str, vals: &[(&str, Value)]) {
+fn add_effect_200(p: &mut Project, l: &mut artheffect_project::Layer, id: &str, vals: &[(&str, Value)]) {
     add_effect(p, l, id, [200.0, 100.0], vals);
 }
 
-fn add_effect(p: &mut Project, l: &mut effectcraft_project::Layer, id: &str, size: [f64; 2], vals: &[(&str, Value)]) {
-    let spec = effectcraft_effects::find(id).unwrap();
+fn add_effect(p: &mut Project, l: &mut artheffect_project::Layer, id: &str, size: [f64; 2], vals: &[(&str, Value)]) {
+    let spec = artheffect_effects::find(id).unwrap();
     let mut next = p.next_id;
-    let mut g = effectcraft_effects::instantiate(spec, &mut Ids(&mut next), spec.name, size);
+    let mut g = artheffect_effects::instantiate(spec, &mut Ids(&mut next), spec.name, size);
     p.next_id = next;
     for (k, v) in vals {
         g.prop_mut(k).unwrap().value = v.clone();
@@ -1061,7 +1061,7 @@ fn cc_smear_trails_text_past_its_bounds() {
     l.props.prop_mut("text/sourceText").unwrap().value = Value::Text(Box::new(TextDoc { text: "HI".into(), size: 24.0, ..Default::default() }));
     l.props.prop_mut("transform/position").unwrap().value = Value::Vec3([60.0, 60.0, 0.0]);
     p.comp_mut(cid).unwrap().layers.push(l.clone());
-    let right = |img: &effectcraft_raster::Image| (0..100).map(|y| (0..200).filter(|x| img.get(*x, y)[3] > 0.5).max().unwrap_or(0)).max().unwrap_or(0);
+    let right = |img: &artheffect_raster::Image| (0..100).map(|y| (0..200).filter(|x| img.get(*x, y)[3] > 0.5).max().unwrap_or(0)).max().unwrap_or(0);
     let plain = right(&render_frame(&p, cid, Tick::ZERO, 1.0));
     add_effect_200(
         &mut p,
@@ -1113,7 +1113,7 @@ fn set_matte_self_source_and_masks_precede_effects() {
         p.next_id = next;
         l.props.sub_mut("masks").unwrap().children.push(mask.into());
         let id = l.id.0;
-        add_effect_200(&mut p, &mut l, "ec.channel.invert", &[("channel", Value::Enum(effectcraft_effects::INVERT_ALPHA))]);
+        add_effect_200(&mut p, &mut l, "ec.channel.invert", &[("channel", Value::Enum(artheffect_effects::INVERT_ALPHA))]);
         add_effect_200(
             &mut p,
             &mut l,
@@ -1192,7 +1192,7 @@ fn self_inputs_share_source_semantics_across_effects_and_times() {
 
 #[test]
 fn timed_source_reads_preserve_other_layer_masks() {
-    use effectcraft_effects::EffectHost;
+    use artheffect_effects::EffectHost;
     let (mut p, cid, comp) = setup();
     let owner = solid(&mut p, &comp, [1.0, 0.0, 0.0], 200, 100);
     let mut other = solid(&mut p, &comp, [0.0, 1.0, 0.0], 200, 100);
@@ -1419,11 +1419,11 @@ const TRIANGLE: &str = r#"{
 struct SoloModels;
 
 impl crate::FootageSource for SoloModels {
-    fn frame(&self, _: ItemId, _: &effectcraft_project::Footage, _: Tick) -> Option<std::sync::Arc<crate::Image>> {
+    fn frame(&self, _: ItemId, _: &artheffect_project::Footage, _: Tick) -> Option<std::sync::Arc<crate::Image>> {
         None
     }
-    fn model(&self, _: ItemId, f: &effectcraft_project::Footage) -> Option<std::sync::Arc<effectcraft_model::Model>> {
-        effectcraft_model::load(&f.path, TRIANGLE.as_bytes(), &|_| None).ok().map(std::sync::Arc::new)
+    fn model(&self, _: ItemId, f: &artheffect_project::Footage) -> Option<std::sync::Arc<artheffect_model::Model>> {
+        artheffect_model::load(&f.path, TRIANGLE.as_bytes(), &|_| None).ok().map(std::sync::Arc::new)
     }
 }
 
@@ -1432,14 +1432,14 @@ impl crate::FootageSource for SoloModels {
 fn instance_scene(pan: f64) -> (Project, ItemId) {
     let (mut p, cid, comp) = setup();
     // Models are Advanced 3D (layer.newModel switches a Classic comp over).
-    p.comp_mut(cid).unwrap().renderer = effectcraft_project::Renderer::Advanced3D;
+    p.comp_mut(cid).unwrap().renderer = artheffect_project::Renderer::Advanced3D;
     let mid = p.add_item(
         "Triangle",
         Label::Red,
         None,
-        ItemKind::Footage(effectcraft_project::Footage {
+        ItemKind::Footage(artheffect_project::Footage {
             path: "Triangle.gltf".into(),
-            kind: effectcraft_project::FootageKind::Model,
+            kind: artheffect_project::FootageKind::Model,
             frame_rate: FrameRate::FPS_30,
             codec: "glTF".into(),
             ..Default::default()
@@ -1568,7 +1568,7 @@ fn an_environment_light_makes_the_copy_uncached() {
     let (p, cid) = instance_scene(0.0);
     let mut q = p.clone();
     let comp = q.comp(cid).unwrap().clone();
-    let env = build::layer(&mut q, &comp, "Env", LayerSource::Light { kind: effectcraft_project::LightKind::Environment }, (200, 100), None);
+    let env = build::layer(&mut q, &comp, "Env", LayerSource::Light { kind: artheffect_project::LightKind::Environment }, (200, 100), None);
     q.comp_mut(cid).unwrap().layers.insert(0, env);
     let t = Tick::from_seconds_f64(1.0);
     let key_at = |p: &Project| {
@@ -1614,26 +1614,26 @@ const SLIDING_TRIANGLE: &str = r#"{
 struct SlidingModels;
 
 impl crate::FootageSource for SlidingModels {
-    fn frame(&self, _: ItemId, _: &effectcraft_project::Footage, _: Tick) -> Option<std::sync::Arc<crate::Image>> {
+    fn frame(&self, _: ItemId, _: &artheffect_project::Footage, _: Tick) -> Option<std::sync::Arc<crate::Image>> {
         None
     }
-    fn model(&self, _: ItemId, f: &effectcraft_project::Footage) -> Option<std::sync::Arc<effectcraft_model::Model>> {
-        effectcraft_model::load(&f.path, SLIDING_TRIANGLE.as_bytes(), &|_| None).ok().map(std::sync::Arc::new)
+    fn model(&self, _: ItemId, f: &artheffect_project::Footage) -> Option<std::sync::Arc<artheffect_model::Model>> {
+        artheffect_model::load(&f.path, SLIDING_TRIANGLE.as_bytes(), &|_| None).ok().map(std::sync::Arc::new)
     }
 }
 
 fn clip_comp() -> Comp {
     let mut c = Comp::new(200, 100, FrameRate::FPS_30, Tick::from_seconds_f64(6.0));
-    c.renderer = effectcraft_project::Renderer::Advanced3D;
+    c.renderer = artheffect_project::Renderer::Advanced3D;
     c
 }
 
 /// The sliding triangle at 20 px a model unit. `keys` key Geometry Options ▸ Animation as
 /// (layer seconds, popup value); with none, clip 1 is selected statically.
-fn sliding_model(p: &mut Project, comp: &Comp, keys: &[(f64, u32)], looping: bool) -> effectcraft_project::Layer {
-    let footage = effectcraft_project::Footage {
+fn sliding_model(p: &mut Project, comp: &Comp, keys: &[(f64, u32)], looping: bool) -> artheffect_project::Layer {
+    let footage = artheffect_project::Footage {
         path: "Sliding.gltf".into(),
-        kind: effectcraft_project::FootageKind::Model,
+        kind: artheffect_project::FootageKind::Model,
         frame_rate: FrameRate::FPS_30,
         codec: "glTF".into(),
         ..Default::default()
@@ -1650,7 +1650,7 @@ fn sliding_model(p: &mut Project, comp: &Comp, keys: &[(f64, u32)], looping: boo
 
 fn clip_scene(keys: &[(f64, u32)], looping: bool, stretch: f64, start: f64) -> (Project, ItemId) {
     let (mut p, mut comp) = (Project::default(), clip_comp());
-    p.settings.bit_depth = effectcraft_project::BitDepth::Bpc32;
+    p.settings.bit_depth = artheffect_project::BitDepth::Bpc32;
     let mut l = sliding_model(&mut p, &comp, keys, looping);
     l.stretch = stretch;
     l.start_time = Tick::from_seconds_f64(start);
@@ -1740,7 +1740,7 @@ fn a_reversed_layer_times_its_clip_from_activation_in_layer_time() {
 fn an_expression_driven_clip_keeps_the_layer_clock() {
     let (mut p, cid) = clip_scene(&[(0.0, 0), (2.5, 1)], true, 100.0, 0.0);
     let clip = p.comp_mut(cid).unwrap().layers[0].props.prop_mut("geometryOptions/animation").unwrap();
-    clip.expr = Some(effectcraft_project::Expression { text: "value".into(), enabled: true });
+    clip.expr = Some(artheffect_project::Expression { text: "value".into(), enabled: true });
     assert_poses(&p, cid, true, &[(3.25, 3.25)]);
     assert!((cover_x(&clip_pose(true, 3.25)) - cover_x(&clip_pose(true, 0.75))).abs() > 5.0, "the layer clock and the activation clock disagree");
 }
@@ -1748,9 +1748,9 @@ fn an_expression_driven_clip_keeps_the_layer_clock() {
 /// The sliding model keyed None, then clip 1 at 3 s, in a collapsed 3D precomp; `overridden`
 /// sets the clip through its Essential Property, and `copy` adds a 3D Layer Instance of it.
 fn collapsed_clip_scene(overridden: bool, copy: bool) -> (Project, ItemId) {
-    use effectcraft_project::essential::{self, EgControl, EgKind, EssentialGraphics};
+    use artheffect_project::essential::{self, EgControl, EgKind, EssentialGraphics};
     let mut p = Project::default();
-    p.settings.bit_depth = effectcraft_project::BitDepth::Bpc32;
+    p.settings.bit_depth = artheffect_project::BitDepth::Bpc32;
     let (mut inner, mut outer) = (clip_comp(), clip_comp());
     let model = sliding_model(&mut p, &inner, &[(0.0, 0), (3.0, 1)], false);
     let prop = model.props.prop("geometryOptions/animation").unwrap().uid;
@@ -1772,7 +1772,7 @@ fn collapsed_clip_scene(overridden: bool, copy: bool) -> (Project, ItemId) {
         let mut ids = Ids(&mut p.next_id);
         let control = ids.prop(&essential::match_id(1), "Clip", Value::Enum(1));
         let mut group = ids.group(essential::GROUP, "Essential Properties");
-        group.kind = effectcraft_project::GroupKind::Essential { overridden: vec![control.uid] };
+        group.kind = artheffect_project::GroupKind::Essential { overridden: vec![control.uid] };
         group.children.push(control.into());
         pre.props.children.push(group.into());
     }

@@ -1,6 +1,6 @@
 [package]
-name = "effectcraft-export"
-description = "Render Queue jobs and output modules: H.264 MP4 (+AAC), ProRes and uncompressed MOV (+PCM) via FilmCraft, HEVC / AV1 MP4 (+AAC) and WebM (VP9 or AV1 + Opus) via EffectCraft encoders, PNG/JPEG/TIFF/EXR/Targa sequences, animated GIF, WAV/AIFF"
+name = "artheffect-export"
+description = "Render Queue jobs and output modules: H.264 MP4 (+AAC), ProRes and uncompressed MOV (+PCM) via FilmCraft, HEVC / AV1 MP4 (+AAC) and WebM (VP9 or AV1 + Opus) via Artheffect encoders, PNG/JPEG/TIFF/EXR/Targa sequences, animated GIF, WAV/AIFF"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,18 +10,18 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-effectcraft-time = { workspace = true }
-effectcraft-project = { workspace = true }
-effectcraft-raster = { workspace = true }
-effectcraft-render = { workspace = true }
+artheffect-time = { workspace = true }
+artheffect-project = { workspace = true }
+artheffect-raster = { workspace = true }
+artheffect-render = { workspace = true }
 filmcraft-h264enc = { workspace = true }
 filmcraft-prores = { workspace = true }
 filmcraft-aac = { workspace = true }
 filmcraft-isobmff = { workspace = true }
-effectcraft-opusenc = { workspace = true }
-effectcraft-vp9enc = { workspace = true }
-effectcraft-hevcenc = { workspace = true }
-effectcraft-av1enc = { workspace = true }
+artheffect-opusenc = { workspace = true }
+artheffect-vp9enc = { workspace = true }
+artheffect-hevcenc = { workspace = true }
+artheffect-av1enc = { workspace = true }
 image = { workspace = true, features = ["png", "jpeg", "tiff", "exr", "tga"] }
 exr = { workspace = true }
 gif = { workspace = true }
@@ -31,9 +31,9 @@ thiserror = { workspace = true }
 log = { workspace = true }
 
 [dev-dependencies]
-effectcraft-media = { workspace = true }
-effectcraft-effects = { workspace = true }
-effectcraft-color = { workspace = true }
+artheffect-media = { workspace = true }
+artheffect-effects = { workspace = true }
+artheffect-color = { workspace = true }
 filmcraft-opus = { workspace = true }
 filmcraft-vp9 = { workspace = true }
-effectcraft-keyframe = { workspace = true }
+artheffect-keyframe = { workspace = true }

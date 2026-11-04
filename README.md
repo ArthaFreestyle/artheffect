@@ -1,18 +1,10 @@
-<p align="center">
-  <a href="https://getartcraft.com/">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="docs/brand/artcraft-logo-white.svg">
-      <img alt="ArtCraft" src="docs/brand/artcraft-logo.svg" width="200">
-    </picture>
-  </a>
-</p>
 
 
 <p align="center">
-  <img src="assets/app-icon/hicolor/256x256/apps/ai.storyteller.effectcraft.png" width="128" height="128" alt="EffectCraft icon: an engraved unicorn on a pink tile">
+  <img src="assets/app-icon/hicolor/256x256/apps/ai.storyteller.artheffect.png" width="128" height="128" alt="Artheffect icon: an engraved unicorn on a pink tile">
 </p>
 
-<h1 align="center">EffectCraft</h1>
+<h1 align="center">Artheffect</h1>
 
 <p align="center">
   <b>Motion graphics and visual effects; an open-source, professional motion graphics and visual effects studio, built in pure Rust.</b>
@@ -28,33 +20,16 @@
   <img alt="Status: young and moving fast" src="https://img.shields.io/badge/status-young%20and%20moving%20fast-e0368f?style=flat-square">
   <img alt="Written in Rust" src="https://img.shields.io/badge/rust-1.95%2B-b0206c?style=flat-square&logo=rust&logoColor=white">
   <img alt="License: MIT OR Apache-2.0" src="https://img.shields.io/badge/license-MIT%20%2F%20Apache--2.0-555?style=flat-square">
-  <br>
-  <a href="https://sonarcloud.io/project/overview?id=storytold_effectcraft"><img alt="Scanned by SonarCloud" src="https://img.shields.io/badge/Scanned_by-SonarCloud-4b9fd5?style=flat-square&logo=sonarqubecloud&logoColor=white"></a>
-  <a href="https://coderabbit.ai"><img alt="Reviewed by CodeRabbit" src="https://img.shields.io/coderabbit/prs/github/storytold/effectcraft?style=flat-square&label=Reviewed%20by%20CodeRabbit&logo=coderabbit"></a>
-</p>
-
-<p align="center">
-  <a href="https://discord.gg/artcraft"><img alt="Join the ArtCraft community on Discord" src="https://img.shields.io/badge/Join%20us%20on%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" height="40"></a>
-</p>
-
-<p align="center">
-  <a href="https://getartcraft.com/apps/effectcraft"><b>EffectCraft on getartcraft.com</b></a> ·
-  <a href="https://getartcraft.com/">ArtCraft</a> ·
-  <a href="https://getartcraft.com/apps">All Crafting Apps</a>
 </p>
 
 <br>
 
 <p align="center">
-  <img src="docs/images/effectcraft-hero.png" alt="EffectCraft's main window: the animated demo composition in the Composition panel, the Project panel, a Timeline with text, shape and solid layers, and the Properties panel showing the selected text layer's transform, font and paragraph settings" width="100%">
+  <img src="docs/images/artheffect-hero.png" alt="Artheffect's main window: the animated demo composition in the Composition panel, the Project panel, a Timeline with text, shape and solid layers, and the Properties panel showing the selected text layer's transform, font and paragraph settings" width="100%">
 </p>
 
-> [!NOTE]
-> **ArtCraft is a community of artists from all walks of life.** Digital, generative, music,
-> games &mdash; if you make things, you're one of us. **[Come say hi on Discord](https://discord.gg/artcraft).**
-
 <p align="center">
-  <a href="#what-effectcraft-is">What it is</a> ·
+  <a href="#what-artheffect-is">What it is</a> ·
   <a href="#animate">Animate</a> ·
   <a href="#effects">Effects</a> ·
   <a href="#3d">3D</a> ·
@@ -64,13 +39,12 @@
   <a href="#where-it-stands">Status</a> ·
   <a href="#how-its-made">How it's made</a> ·
   <a href="#downloads">Downloads</a> ·
-  <a href="#the-crafting-apps">The Crafting Apps</a> ·
   <a href="#license-and-credits">License</a>
 </p>
 
-## What EffectCraft is
+## What Artheffect is
 
-EffectCraft is for animated titles, motion graphics and compositing work: the kind of thing
+Artheffect is for animated titles, motion graphics and compositing work: the kind of thing
 motion designers and VFX artists need. You build a composition out of layers (solids, shapes,
 text, footage, other compositions), animate their properties with keyframes, stack effects on
 them and render the result.
@@ -89,7 +63,7 @@ a few places where it matters to us:
   UI-only commands use the frontend dispatcher and can be invoked through the control channel
   or an attached MCP bridge.
 - **No FFmpeg.** Video and audio decoding and encoding are pure Rust: FilmCraft's codecs and
-  EffectCraft's own VP9, AV1, HEVC and Opus encoders.
+  Artheffect's own VP9, AV1, HEVC and Opus encoders.
 
 ## Animate
 
@@ -122,7 +96,7 @@ or into the Timeline, between layers and at the time you point to.
   rigging, and follow-through for hair and cloth.
 
 <p align="center">
-  <img src="docs/images/effectcraft-graph-editor.png" alt="The Graph Editor showing an eased value curve for a text animator's Range Start, with the graph editor's button bar for hold, linear, auto Bezier and Easy Ease" width="100%">
+  <img src="docs/images/artheffect-graph-editor.png" alt="The Graph Editor showing an eased value curve for a text animator's Range Start, with the graph editor's button bar for hold, linear, auto Bezier and Easy Ease" width="100%">
 </p>
 
 ## Effects
@@ -138,7 +112,7 @@ controls. All nine **Layer Styles** (Drop Shadow, Inner/Outer Glow, Bevel and Em
 overlays, Stroke) with Global Light. Preview plays audio in sync, with meters and waveforms.
 
 <p align="center">
-  <img src="docs/images/effectcraft-effects.png" alt="A CC Particle World burst with Glow, and the Effect Controls panel listing the particle system's parameters" width="100%">
+  <img src="docs/images/artheffect-effects.png" alt="A CC Particle World burst with Glow, and the Effect Controls panel listing the particle system's parameters" width="100%">
 </p>
 
 ## 3D
@@ -149,7 +123,7 @@ with soft ray-traced shadows, layers that intersect correctly, orbit, pan and do
 tools, and Front, Top, Left and Custom views.
 
 <p align="center">
-  <img src="docs/images/effectcraft-3d.png" alt="The 3D Showcase demo in Custom View 1: intersecting cards lit by a spot light with soft shadows on a gridded floor, with the camera frustum and light drawn as wireframes" width="100%">
+  <img src="docs/images/artheffect-3d.png" alt="The 3D Showcase demo in Custom View 1: intersecting cards lit by a spot light with soft shadows on a gridded floor, with the camera frustum and light drawn as wireframes" width="100%">
 </p>
 
 ## Export
@@ -160,7 +134,7 @@ MP4, **WebM** (VP9 with inter frames and alpha, or AV1; Opus audio), PNG, JPEG, 
 rendering with 3:2 pulldown, effect/solo/guide/depth overrides, crop, region of interest and
 resize, Render Settings and Output Module templates with defaults, post-render actions, storage
 overflow and render logs. The same queue runs from the command line. Every encoder is pure
-Rust (FilmCraft's H.264, ProRes and AAC; EffectCraft's own VP9, AV1, HEVC and Opus); there is no
+Rust (FilmCraft's H.264, ProRes and AAC; Artheffect's own VP9, AV1, HEVC and Opus); there is no
 FFmpeg inside.
 
 **Lottie** goes both ways: File ▸ Export ▸ Lottie JSON… writes a composition (precomps, shape,
@@ -169,7 +143,7 @@ modes, time remapping, optionally expressions) as `.json` or `.lottie`, and list
 cannot express; File ▸ Import ▸ Lottie… opens one as a new composition.
 
 <p align="center">
-  <img src="docs/images/effectcraft-render-queue.png" alt="The Render Queue panel with two compositions queued" width="100%">
+  <img src="docs/images/artheffect-render-queue.png" alt="The Render Queue panel with two compositions queued" width="100%">
 </p>
 
 ## Built for agents
@@ -179,21 +153,21 @@ need the running app's frontend dispatcher: complete menu access requires the ap
 channel or an attached MCP bridge. Headless MCP sessions expose supported engine commands,
 but not UI-only commands or bridge-only `ui_*` tools.
 
-- **MCP server:** `effectcraft-cli mcp` speaks the Model Context Protocol over stdio, headless
+- **MCP server:** `artheffect-cli mcp` speaks the Model Context Protocol over stdio, headless
   or bridged to the running app (`--bridge 9877`). Tools cover commands, the project and property
   tree, keyframes and rendered frames. This repository ships a ready [`.mcp.json`](.mcp.json).
 - **Command line:** one-shot calls with JSON output, for example
-  `effectcraft-cli set Main '#1' transform/position '[100,360]' --time 0 main.ecproj --save`
-  or `effectcraft-cli render --comp Main --out main.mp4`, or
-  `effectcraft-cli exec file.exportLottie '{"comp":"Main","path":"main.json"}' main.ecproj`.
-- **Control channel:** `effectcraft --control 9877` accepts JSON lines to run commands, inspect
+  `artheffect-cli set Main '#1' transform/position '[100,360]' --time 0 main.ecproj --save`
+  or `artheffect-cli render --comp Main --out main.mp4`, or
+  `artheffect-cli exec file.exportLottie '{"comp":"Main","path":"main.json"}' main.ecproj`.
+- **Control channel:** `artheffect --control 9877` accepts JSON lines to run commands, inspect
   and click any widget by its automation id, and take screenshots.
 
 See [docs/agents.md](docs/agents.md) and [docs/control-protocol.md](docs/control-protocol.md).
 
 ## Get started
 
-Installers for each version are on the [Releases](https://github.com/storytold/effectcraft/releases)
+Installers for each version are on the [Releases](https://github.com/ArthaFreestyle/artheffect/releases)
 page: a universal macOS app; Windows MSIs and portable zips for x64, x86 and ARM64; Linux
 AppImage, Flatpak, deb, rpm and tar.gz for x86_64 and aarch64, plus a riscv64 tar.gz; a FreeBSD x86_64 tarball; and the
 web build. [Downloads](#downloads) lists every file. The Windows ARM64 build runs natively on
@@ -202,22 +176,22 @@ both programs are ARM64 and runs the command-line tool there, but it doesn't ope
 or run the test suite natively on ARM64 yet, so please report anything that behaves differently.
 
 On Gentoo, the community [::snakebyte overlay](https://github.com/switch87/snakebyte-overlay) packages
-the Linux release as `media-video/effectcraft-bin` (not maintained by the EffectCraft team):
+the Linux release as `media-video/artheffect-bin` (not maintained by the Artheffect team):
 
 ```sh
 eselect repository add snakebyte git https://github.com/switch87/snakebyte-overlay.git
 emaint sync -r snakebyte
-echo 'media-video/effectcraft-bin ~amd64' >> /etc/portage/package.accept_keywords/effectcraft
-emerge --ask media-video/effectcraft-bin
+echo 'media-video/artheffect-bin ~amd64' >> /etc/portage/package.accept_keywords/artheffect
+emerge --ask media-video/artheffect-bin
 ```
 
 To build it yourself you need [Rust](https://rustup.rs/) 1.95 or newer.
 
 ```sh
-git clone https://github.com/storytold/effectcraft
-cd effectcraft
-cargo run --release -p effectcraft          # the app (add `-- --demo` to open the demo project)
-cargo run --release -p effectcraft-cli -- render --out intro.mp4    # render the demo headless
+git clone https://github.com/ArthaFreestyle/artheffect
+cd artheffect
+cargo run --release -p artheffect          # the app (add `-- --demo` to open the demo project)
+cargo run --release -p artheffect-cli -- render --out intro.mp4    # render the demo headless
 cargo xtask web --serve 8765                # the browser build on http://127.0.0.1:8765/ (docs/web.md)
 ```
 
@@ -230,7 +204,7 @@ tests, layering, asset attribution and the WebAssembly build). See [CONTRIBUTING
 
 ## Where it stands
 
-EffectCraft is young: its first commit was on 1 October 2026. A comprehensive feature set
+Artheffect is young: its first commit was on 1 October 2026. A comprehensive feature set
 exists, including 308 effects, but breadth is not the same as full maturity across every edge
 case. Today it's a good place to try things and to tell us what breaks. It isn't yet recommended
 for production client work. In particular:
@@ -245,12 +219,12 @@ for production client work. In particular:
   Settings ▸ Roto Brush) and face tracking can use Google's MediaPipe Face Landmarker (an optional
   3.8 MB download in Settings ▸ Face Tracking). Both are actively undergoing evaluation and tuning.
 
-EffectCraft is in **alpha**: about 91% of the features tracked in
+Artheffect is in **alpha**: about 91% of the features tracked in
 [docs/target-app-parity.md](docs/target-app-parity.md) exist, and we estimate it is about 45% of the
 way to being ready for full professional production work. The [ROADMAP](ROADMAP.md) has the plan,
 [docs/target-app-parity.md](docs/target-app-parity.md) the measurement and [docs/gaps.md](docs/gaps.md)
 every known shortfall. The web build ([docs/web.md](docs/web.md)) runs the full app in the browser.
-[Bug reports](https://github.com/storytold/effectcraft/issues) are the most useful thing you can
+[Bug reports](https://github.com/ArthaFreestyle/artheffect/issues) are the most useful thing you can
 send us right now.
 
 ## How it's made
@@ -261,28 +235,26 @@ send us right now.
   from proprietary files, icons, presets or code. No code is copied from GPL projects. The full rules
   are in [AGENTS.md](AGENTS.md).
 - **Private by default.** No telemetry, and no network access unless you ask for it.
-- **One family.** EffectCraft shares its time model and text engine design with FilmCraft, and
+- **One family.** Artheffect shares its time model and text engine design with FilmCraft, and
   gets its video and audio codecs from it.
 
 ## Downloads
 
-**New to EffectCraft?** Download it from the [EffectCraft page on getartcraft.com](https://getartcraft.com/apps/effectcraft). That's the easiest way to install it.
-
-**Want a specific build or format?** On GitHub, the [latest release](https://github.com/storytold/effectcraft/releases/latest) has every build listed below, and [all releases](https://github.com/storytold/effectcraft/releases) has earlier versions and their notes. `<ver>` in the file names is the version number, and `SHA256SUMS.txt` lists a checksum for every file.
+On GitHub, the [latest release](https://github.com/ArthaFreestyle/artheffect/releases/latest) has every build listed below, and [all releases](https://github.com/ArthaFreestyle/artheffect/releases) has earlier versions and their notes. `<ver>` in the file names is the version number, and `SHA256SUMS.txt` lists a checksum for every file.
 
 ### Windows
 
 | Build | Installer | Portable |
 |---|---|---|
-| x64 (64-bit Intel/AMD) | `effectcraft-<ver>-windows-x64.msi` | `effectcraft-<ver>-windows-x64-portable.zip` |
-| arm64 (Snapdragon and other ARM PCs) | `effectcraft-<ver>-windows-arm64.msi` | `effectcraft-<ver>-windows-arm64-portable.zip` |
-| x86 (32-bit) | `effectcraft-<ver>-windows-x86.msi` | `effectcraft-<ver>-windows-x86-portable.zip` |
+| x64 (64-bit Intel/AMD) | `artheffect-<ver>-windows-x64.msi` | `artheffect-<ver>-windows-x64-portable.zip` |
+| arm64 (Snapdragon and other ARM PCs) | `artheffect-<ver>-windows-arm64.msi` | `artheffect-<ver>-windows-arm64-portable.zip` |
+| x86 (32-bit) | `artheffect-<ver>-windows-x86.msi` | `artheffect-<ver>-windows-x86-portable.zip` |
 
-Installers and executables are code-signed. The installer asks who to install EffectCraft for and where. By default it installs for your
-account only, into `%LOCALAPPDATA%\Programs\ArtCraft\EffectCraft`, without an administrator prompt;
-"Everyone on this computer" installs into `C:\Program Files\ArtCraft\EffectCraft` (`Program Files (x86)` for the 32-bit build). Later versions
+Installers and executables are code-signed. The installer asks who to install Artheffect for and where. By default it installs for your
+account only, into `%LOCALAPPDATA%\Programs\Artheffect`, without an administrator prompt;
+"Everyone on this computer" installs into `C:\Program Files\Artheffect` (`Program Files (x86)` for the 32-bit build). Later versions
 install into the same folder. To install silently
-into a folder of your choice: `msiexec /i effectcraft-<ver>-windows-x64.msi /qn INSTALLFOLDER="D:\Apps\EffectCraft"`.
+into a folder of your choice: `msiexec /i artheffect-<ver>-windows-x64.msi /qn INSTALLFOLDER="D:\Apps\Artheffect"`.
 A silent install is per-user by default. `INSTALLFOLDER` chooses the folder, not who it is installed for;
 add `ALLUSERS=1`, from an elevated terminal or deployment tool, for an all-users install.
 
@@ -290,28 +262,28 @@ add `ALLUSERS=1`, from an elevated terminal or deployment tool, for an all-users
 
 | Build | File | Notes |
 |---|---|---|
-| App, universal (Apple silicon + Intel) | `effectcraft-<ver>-macos-universal.dmg` | Signed and notarized |
-| Command-line tool, universal | `effectcraft-cli-<ver>-macos-universal.zip` | Signed and notarized |
+| App, universal (Apple silicon + Intel) | `artheffect-<ver>-macos-universal.dmg` | Signed and notarized |
+| Command-line tool, universal | `artheffect-cli-<ver>-macos-universal.zip` | Signed and notarized |
 
 ### Linux
 
 | Format | x86_64 | aarch64 (ARM64) | Notes |
 |---|---|---|---|
-| AppImage | `effectcraft-<ver>-linux-x86_64.AppImage` | `effectcraft-<ver>-linux-aarch64.AppImage` | Runs anywhere; updates itself with [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) (`.zsync` files) |
-| Flatpak | `effectcraft-<ver>-linux-x86_64.flatpak` | `effectcraft-<ver>-linux-aarch64.flatpak` | Sandboxed; `flatpak install --user <file>` |
-| Debian/Ubuntu | `effectcraft-<ver>-linux-x86_64.deb` | `effectcraft-<ver>-linux-aarch64.deb` | |
-| Fedora/RHEL/openSUSE | `effectcraft-<ver>-linux-x86_64.rpm` | `effectcraft-<ver>-linux-aarch64.rpm` | |
-| Tarball | `effectcraft-<ver>-linux-x86_64.tar.gz` | `effectcraft-<ver>-linux-aarch64.tar.gz` | Unpack anywhere |
+| AppImage | `artheffect-<ver>-linux-x86_64.AppImage` | `artheffect-<ver>-linux-aarch64.AppImage` | Runs anywhere; updates itself with [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) (`.zsync` files) |
+| Flatpak | `artheffect-<ver>-linux-x86_64.flatpak` | `artheffect-<ver>-linux-aarch64.flatpak` | Sandboxed; `flatpak install --user <file>` |
+| Debian/Ubuntu | `artheffect-<ver>-linux-x86_64.deb` | `artheffect-<ver>-linux-aarch64.deb` | |
+| Fedora/RHEL/openSUSE | `artheffect-<ver>-linux-x86_64.rpm` | `artheffect-<ver>-linux-aarch64.rpm` | |
+| Tarball | `artheffect-<ver>-linux-x86_64.tar.gz` | `artheffect-<ver>-linux-aarch64.tar.gz` | Unpack anywhere |
 
-RISC-V 64-bit: `effectcraft-<ver>-linux-riscv64.tar.gz` (tarball only; needs glibc 2.39+, e.g. Ubuntu 24.04+ or Debian 13+).
+RISC-V 64-bit: `artheffect-<ver>-linux-riscv64.tar.gz` (tarball only; needs glibc 2.39+, e.g. Ubuntu 24.04+ or Debian 13+).
 
 **File drag-and-drop on Linux:** The current eframe/winit 0.30 native Wayland backend does not
 deliver file-hover or file-drop events. On Hyprland and other native Wayland sessions, use
-**File ▸ Import ▸ File…** (which accepts multiple files), or start EffectCraft via XWayland if
+**File ▸ Import ▸ File…** (which accepts multiple files), or start Artheffect via XWayland if
 XWayland is installed and `DISPLAY` is set:
 
 ```sh
-env -u WAYLAND_DISPLAY effectcraft
+env -u WAYLAND_DISPLAY artheffect
 ```
 
 When the backend delivers events (X11/XWayland, Windows and macOS), dropping media anywhere
@@ -323,81 +295,27 @@ File ▸ Import fallback instead.
 
 | Build | File |
 |---|---|
-| x86_64 | `effectcraft-<ver>-freebsd-x86_64.tar.gz` |
+| x86_64 | `artheffect-<ver>-freebsd-x86_64.tar.gz` |
 
 ### Web (WebAssembly)
 
 | Build | File | Notes |
 |---|---|---|
-| Static site | `effectcraft-web-<ver>.zip` | Runs in a modern browser; host it on any static server |
-
-## The Crafting Apps
-
-EffectCraft is one of the **Crafting Apps**: free, open-source creative tools from the
-[ArtCraft](https://getartcraft.com/) team, each written from scratch in Rust and each able to
-stand on its own.
-
-| | App | What it's for | Code | Learn more |
-|:-:|---|---|---|---|
-| <img src="https://raw.githubusercontent.com/storytold/photocraft/main/assets/app-icon/hicolor/64x64/apps/ai.storyteller.photocraft.png" alt="" width="32" height="32"> | **PhotoCraft** | Image editing: layers, masks, type and real PSD files | [GitHub](https://github.com/storytold/photocraft) | [Website](https://getartcraft.com/apps/photocraft) |
-| <img src="https://raw.githubusercontent.com/storytold/vectorcraft/main/assets/app-icon/hicolor/64x64/apps/ai.storyteller.vectorcraft.png" alt="" width="32" height="32"> | **VectorCraft** | Vector illustration | [GitHub](https://github.com/storytold/vectorcraft) | [Website](https://getartcraft.com/apps/vectorcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/filmcraft/main/assets/app-icon/hicolor/64x64/apps/ai.storyteller.filmcraft.png" alt="" width="32" height="32"> | **FilmCraft** | Video editing, color and sound | [GitHub](https://github.com/storytold/filmcraft) | [Website](https://getartcraft.com/apps/filmcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/lightcraft/main/assets/app-icon/hicolor/64x64/apps/ai.storyteller.lightcraft.png" alt="" width="32" height="32"> | **LightCraft** | Photo library and raw development | [GitHub](https://github.com/storytold/lightcraft) | [Website](https://getartcraft.com/apps/lightcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/pdfcraft/main/assets/app-icon/hicolor/64x64/apps/ai.storyteller.pdfcraft.png" alt="" width="32" height="32"> | **PdfCraft** | Reading, organizing and protecting PDFs | [GitHub](https://github.com/storytold/pdfcraft) | [Website](https://getartcraft.com/apps/pdfcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/effectcraft/main/assets/app-icon/hicolor/64x64/apps/ai.storyteller.effectcraft.png" alt="" width="32" height="32"> | **EffectCraft** | Motion graphics and visual effects | [GitHub](https://github.com/storytold/effectcraft) | [Website](https://getartcraft.com/apps/effectcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/designcraft/main/assets/app-icon/hicolor/64x64/apps/ai.storyteller.designcraft.png" alt="" width="32" height="32"> | **DesignCraft** | Page layout and publishing | [GitHub](https://github.com/storytold/designcraft) | [Website](https://getartcraft.com/apps/designcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/figcraft/main/assets/app-icon/hicolor/64x64/apps/ai.storyteller.figcraft.png" alt="" width="32" height="32"> | **FigCraft** | Interface design and prototyping | [GitHub](https://github.com/storytold/figcraft) | [Website](https://getartcraft.com/apps/figcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/wordcraft/main/assets/app-icon/hicolor/64x64/apps/ai.storyteller.wordcraft.png" alt="" width="32" height="32"> | **WordCraft** | Word processing and documents | [GitHub](https://github.com/storytold/wordcraft) | [Website](https://getartcraft.com/apps/wordcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/soundcraft/main/assets/app-icon/hicolor/64x64/apps/ai.storyteller.soundcraft.png" alt="" width="32" height="32"> | **SoundCraft** | Audio recording and editing | [GitHub](https://github.com/storytold/soundcraft) | [Website](https://getartcraft.com/apps/soundcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/deckcraft/main/assets/app-icon/hicolor/64x64/apps/ai.storyteller.deckcraft.png" alt="" width="32" height="32"> | **DeckCraft** | Presentations and slide decks | [GitHub](https://github.com/storytold/deckcraft) | [Website](https://getartcraft.com/apps/deckcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/cadcraft/main/assets/app-icon/hicolor/64x64/apps/ai.storyteller.cadcraft.png" alt="" width="32" height="32"> | **CADCraft** | Computer-aided design | [GitHub](https://github.com/storytold/cadcraft) | [Website](https://getartcraft.com/apps/cadcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/gridcraft/main/assets/app-icon/hicolor/64x64/apps/ai.storyteller.gridcraft.png" alt="" width="32" height="32"> | **GridCraft** | Spreadsheets and data | [GitHub](https://github.com/storytold/gridcraft) | [Website](https://getartcraft.com/apps/gridcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/texturecraft/main/assets/app-icon/hicolor/64x64/apps/ai.storyteller.texturecraft.png" alt="" width="32" height="32"> | **TextureCraft** | 3D texture painting | [GitHub](https://github.com/storytold/texturecraft) | [Website](https://getartcraft.com/apps/texturecraft) |
-| <img src="https://raw.githubusercontent.com/storytold/craft-anything/main/assets/app-icon/hicolor/64x64/apps/ai.storyteller.craft-anything.png" alt="" width="32" height="32"> | **Craft Anything** | See how any software works, then build your own | [GitHub](https://github.com/storytold/craft-anything) | [Website](https://getartcraft.com/apps/craft-anything) |
-| <img src="https://raw.githubusercontent.com/tangency-labs/solidcraft/main/assets/icons/app/linux/exports/hicolor/64x64/apps/io.tangencylabs.solidcraft.png" alt="" width="32" height="32"> | **SolidCraft** | Parametric 3D CAD by Tangency Labs (community app) | [GitHub](https://github.com/tangency-labs/solidcraft) | |
-
-And [**ArtCraft**](https://getartcraft.com/) itself, our AI image and video studio for artists who want real control.
-
-<br>
-
-<p align="center">
-  <a href="https://discord.gg/artcraft"><img alt="Join the ArtCraft community on Discord" src="https://img.shields.io/badge/Join%20us%20on%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" height="40"></a>
-</p>
-
-<h3 align="center">Come make things with us</h3>
-
-<p align="center">
-  Our Discord is where artists of every kind hang out: people who paint, shoot, draw, cut film,
-  set type, and people still figuring out what they like to make. Share what you're working on,
-  ask for help, tell us what's broken, or tell us what you wish these tools could do.
-  Whatever your medium and however long you've been at it, you're welcome here.
-</p>
-
-<p align="center">
-  <a href="https://discord.gg/artcraft"><b>discord.gg/artcraft</b></a> ·
-  <a href="https://getartcraft.com/">getartcraft.com</a> ·
-  <a href="https://getartcraft.com/apps">The Crafting Apps</a> ·
-  <a href="https://getartcraft.com/apps/effectcraft">EffectCraft</a>
-</p>
+| Static site | `artheffect-web-<ver>.zip` | Runs in a modern browser; host it on any static server |
 
 ## License and credits
 
-EffectCraft is dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option.
+Artheffect is dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option.
 Copyright (c) 2026 ArtCraft Team and the EffectCraft contributors. Required notices are in [NOTICE](NOTICE).
 
 Bundled fonts, icons, images and other assets keep their own open licenses; each one is listed
 with its author, source and license in [ATTRIBUTION.md](ATTRIBUTION.md).
 
-The ArtCraft name, wordmark and logos in [`docs/brand/`](docs/brand/) are trademarks of the
-ArtCraft Team and are not covered by this license. They may be used only unmodified, and only as
-part of this repository and EffectCraft, under [`docs/brand/LICENSE-brand.txt`](docs/brand/LICENSE-brand.txt).
-Forks and modified versions must remove them.
-
-<p align="center">
-  <a href="https://getartcraft.com/"><img alt="ArtCraft" src="docs/brand/artcraft-mark.svg" width="28"></a><br>
-  <sub>Made by the <a href="https://getartcraft.com/">ArtCraft</a> team and community.</sub>
-</p>
+Artheffect is based on [EffectCraft](https://github.com/storytold/effectcraft) by the ArtCraft team.
+It is an independent fork, not an ArtCraft product, and is not affiliated with or endorsed by the
+ArtCraft Team. The ArtCraft name and logos are trademarks of the ArtCraft Team; this fork carries
+none of their logos.
 
 ## Star history
 
-[![Star History Chart](https://api.star-history.com/svg?repos=storytold/effectcraft&type=Date&legend=top-left)](https://www.star-history.com/?repos=storytold%2Feffectcraft&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=ArthaFreestyle/artheffect&type=Date&legend=top-left)](https://www.star-history.com/?repos=storytold%2Fartheffect&type=date&legend=top-left)

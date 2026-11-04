@@ -29,7 +29,7 @@ refuses, and the load goes on in the background. Deselecting SAM 2 (choosing Cla
 and Roto Brush 1.0 never uses a model.
 
 Tracked frames are saved in the project with the instance, as Freeze's are, so a saved project renders the same when it
-reopens, in the app or with `effectcraft-cli`, without the model being loaded or chosen there. They apply while the
+reopens, in the app or with `artheffect-cli`, without the model being loaded or chosen there. They apply while the
 strokes and span they came from are unchanged. Changing a stroke or the span makes them stale until the next Propagate.
 Choosing another model, or the classic engine, leaves them in place and `roto.status` says so. They retain the original
 model tag and per-object cache keys when rendered or re-saved; the next Propagate replaces them using the selected
@@ -72,7 +72,7 @@ pinned to a Hugging Face commit with its SHA-256. All run the same tracker; a bi
 | SAM 2.1 Large (`sam2.1-hiera-large`) | 897.9 MB | 0.72 s | encoder 5.2e-4 |
 
 ### How the sizes compare on the benchmark clips
-`effectcraft-cli bench --roto --frames 24 --fixes --sam2 FILE`, release build, SAM 2 on the GPU (RX 7900 GRE), one run each.
+`artheffect-cli bench --roto --frames 24 --fixes --sam2 FILE`, release build, SAM 2 on the GPU (RX 7900 GRE), one run each.
 Mean IoU (after the object returns, in brackets) and seconds per tracked frame:
 
 | Clip | Tiny | Small | Base+ | Large |
@@ -94,7 +94,7 @@ measured for the others; Base+ and Large also warn when no GPU was found (they t
 The list carries `recommended` and `hint` per model (`roto.models`).
 
 ### Half-precision weights (optional)
-`EFFECTCRAFT_SAM2_F16=1` keeps the weight matrices on the GPU as half precision, halving their memory (Large: about
+`ARTHEFFECT_SAM2_F16=1` keeps the weight matrices on the GPU as half precision, halving their memory (Large: about
 900 MB to 450 MB). It is off by default: the video logit error against PyTorch grows from about 0.003 to 0.06 (Tiny)
 and 0.12 (Large) with the same masks, and the speed gain is under 10% (Large encode 0.72 s to 0.66 s).
 
@@ -154,7 +154,7 @@ of clicks, and measured confidence collapses with many (0.99 with 1–7 points, 
 
 ## Speed (this PC: AMD RX 7900 GRE and a 16-thread CPU, release build)
 SAM 2 runs on the GPU when there is one (wgpu compute kernels, so AMD, NVIDIA and Intel alike; candle itself has no AMD
-backend) and on the CPU otherwise. The model loads on the GPU automatically; `EFFECTCRAFT_SAM2_DEVICE=cpu` (or `gpu`)
+backend) and on the CPU otherwise. The model loads on the GPU automatically; `ARTHEFFECT_SAM2_DEVICE=cpu` (or `gpu`)
 overrides it. wgpu's environment variables apply to the adapter it picks (`WGPU_BACKEND`, `WGPU_POWER_PREF`,
 `WGPU_ALLOW_UNDERLYING_NONCOMPLIANT_ADAPTER`…); a software adapter, or one without compute shaders, leaves SAM 2 on
 the CPU. A GPU that fails (no adapter, out of memory, a lost device) makes the CPU take over for the rest of the
@@ -174,11 +174,11 @@ next 16 % of a GPU frame. The CPU numbers came down from 3.4 s per encode at the
 work (parallel GELU and bias add, cached position encodings, pooling without permutes); chunking the attention queries was
 tried and did not help. The GPU kernels (`crates/sam2/src/gpu`) are tested against CPU definitions and PyTorch: the
 encoder's 64 × 64 level matches PyTorch to 7e-6, the memory attention to 1.8e-5, and a clip tracked on the GPU matches
-`Sam2VideoModel` as the CPU does (worst logit error 0.0032). `cargo run --release -p effectcraft-sam2 --example sam2_bench`
-times the pieces on both devices (`EFFECTCRAFT_SAM2_PROFILE=1` prints a frame's breakdown).
+`Sam2VideoModel` as the CPU does (worst logit error 0.0032). `cargo run --release -p artheffect-sam2 --example sam2_bench`
+times the pieces on both devices (`ARTHEFFECT_SAM2_PROFILE=1` prints a frame's breakdown).
 
 ## Benchmark
-`effectcraft-cli bench --roto [--frames N] [--sam2 model.safetensors (any size; default: the first installed)] [--mobilesam mobile_sam.pt]` runs synthetic clips with
+`artheffect-cli bench --roto [--frames N] [--sam2 model.safetensors (any size; default: the first installed)] [--mobilesam mobile_sam.pt]` runs synthetic clips with
 known mattes through all three. 24 frames, debug build, SAM 2 on the GPU; mean IoU (mean IoU after the object returns), seconds
 per frame:
 

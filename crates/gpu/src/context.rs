@@ -3,8 +3,8 @@
 use std::collections::{BTreeSet, HashMap};
 use std::sync::{Arc, Mutex, Weak};
 
-use effectcraft_effects::Buf;
-use effectcraft_raster::Image;
+use artheffect_effects::Buf;
+use artheffect_raster::Image;
 
 /// Compute entry points in `kernels.wgsl` (one pipeline each).
 const ENTRIES: &[&str] = &[
@@ -805,7 +805,7 @@ pub(crate) fn buffer_init(device: &wgpu::Device, queue: &wgpu::Queue, label: Opt
 /// The descriptor for a device the compositor owns: `MemoryUsage` so freed textures give their
 /// allocator blocks back instead of a few long-lived objects pinning large ones.
 pub(crate) fn device_descriptor(required_limits: wgpu::Limits) -> wgpu::DeviceDescriptor<'static> {
-    wgpu::DeviceDescriptor { label: Some("effectcraft gpu"), required_limits, memory_hints: wgpu::MemoryHints::MemoryUsage, ..Default::default() }
+    wgpu::DeviceDescriptor { label: Some("artheffect gpu"), required_limits, memory_hints: wgpu::MemoryHints::MemoryUsage, ..Default::default() }
 }
 
 impl GpuContext {
@@ -859,10 +859,10 @@ impl GpuContext {
         if let Some(why) = &adv3d_unsupported {
             log::info!("gpu {name}: Advanced 3D renders on the CPU ({why})");
         }
-        let module = kernel_module(&device, "effectcraft kernels", &[])?;
+        let module = kernel_module(&device, "artheffect kernels", &[])?;
         let bgl = init_resource(&device, "kernels bind-group layout", || {
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("effectcraft kernels"),
+                label: Some("artheffect kernels"),
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
@@ -888,7 +888,7 @@ impl GpuContext {
         })?;
         let layout = init_resource(&device, "kernels pipeline layout", || {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("effectcraft kernels"),
+                label: Some("artheffect kernels"),
                 bind_group_layouts: &[Some(&bgl)],
                 immediate_size: 0,
             })
@@ -901,13 +901,13 @@ impl GpuContext {
         };
         let bgl_ext = init_resource(&device, "extended kernels bind-group layout", || {
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("effectcraft kernels (ext)"),
+                label: Some("artheffect kernels (ext)"),
                 entries: &[storage(0), storage(1), storage(2), storage(3)],
             })
         })?;
         let layout_ext = init_resource(&device, "extended kernels pipeline layout", || {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("effectcraft kernels (ext)"),
+                label: Some("artheffect kernels (ext)"),
                 bind_group_layouts: &[Some(&bgl), Some(&bgl_ext)],
                 immediate_size: 0,
             })
@@ -916,7 +916,7 @@ impl GpuContext {
         // doesn't build is left out (its 3D runs render on the CPU), and effect kernels are built
         // on first use (`GpuContext::pipeline`); one that doesn't build leaves its effects to the
         // CPU (see `Enc::take_missing`).
-        let sky = kernel_module(&device, "effectcraft sky", &[include_str!("shaders/sky.wgsl")])?;
+        let sky = kernel_module(&device, "artheffect sky", &[include_str!("shaders/sky.wgsl")])?;
         let mut pipelines = ENTRIES
             .iter()
             .map(|e| (e, &module))
@@ -924,7 +924,7 @@ impl GpuContext {
             .map(|(e, module)| Ok((*e, build_pipeline(&device, module, &layout, e)?)))
             .collect::<Result<HashMap<_, _>, String>>()?;
         let mut unavailable = vec![];
-        let classic3d = kernel_module(&device, "effectcraft classic3d", &[include_str!("shaders/classic3d.wgsl")]);
+        let classic3d = kernel_module(&device, "artheffect classic3d", &[include_str!("shaders/classic3d.wgsl")]);
         for e in EXT_ENTRIES {
             match classic3d.as_ref().map_err(Clone::clone).and_then(|m| build_pipeline(&device, m, &layout_ext, e)) {
                 Ok(p) => {
@@ -939,7 +939,7 @@ impl GpuContext {
         #[cfg(test)]
         {
             // The numerical probe (tests) calls `fx_stylize.wgsl` helpers.
-            let probe = kernel_module(&device, "effectcraft math probe", &[include_str!("shaders/fx_stylize.wgsl"), crate::tests::MATH_PROBE_SHADER])?;
+            let probe = kernel_module(&device, "artheffect math probe", &[include_str!("shaders/fx_stylize.wgsl"), crate::tests::MATH_PROBE_SHADER])?;
             pipelines.insert("math_probe", build_pipeline(&device, &probe, &layout, "math_probe")?);
         }
         let effect_pipelines =
@@ -947,19 +947,19 @@ impl GpuContext {
         let modules = std::iter::once(std::sync::OnceLock::from(Ok(module))).chain(FAMILIES.iter().skip(1).map(|_| std::sync::OnceLock::new())).collect();
         let dmodule = init_resource(&device, "display shader module", || {
             device.create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some("effectcraft display"),
+                label: Some("artheffect display"),
                 source: wgpu::ShaderSource::Wgsl(include_str!("shaders/display.wgsl").into()),
             })
         })?;
         let display_bgl = init_resource(&device, "display bind-group layout", || {
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("effectcraft display"),
+                label: Some("artheffect display"),
                 entries: &[tex_entry(1), storage_tex_entry(3, wgpu::TextureFormat::Rgba8Unorm)],
             })
         })?;
         let dlayout = init_resource(&device, "display pipeline layout", || {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("effectcraft display"),
+                label: Some("artheffect display"),
                 bind_group_layouts: &[Some(&display_bgl)],
                 immediate_size: 0,
             })
@@ -1048,7 +1048,7 @@ impl GpuContext {
         self.yuv
             .get_or_init(|| {
                 crate::yuv::YuvPipe::new(&self.device).inspect_err(|e| {
-                    log::warn!(target: "effectcraft_gpu", "yuv420 kernel unavailable: {e}");
+                    log::warn!(target: "artheffect_gpu", "yuv420 kernel unavailable: {e}");
                 })
             })
             .as_ref()
@@ -1675,7 +1675,7 @@ impl GpuContext {
             }
             if u.bytes > budget && !self.upload_full_warned.swap(true, std::sync::atomic::Ordering::Relaxed) {
                 log::warn!(
-                    target: "effectcraft_gpu",
+                    target: "artheffect_gpu",
                     "GPU upload cache full ({} MB): evicting layer textures, which upload again when next used; a frame whose static layers exceed it re-uploads them every frame",
                     budget >> 20
                 );
@@ -1810,7 +1810,7 @@ impl<'g> Enc<'g> {
             .enc
             .get_or_insert_with(|| {
                 let id = g.pool.lock().map(|mut p| p.open()).unwrap_or(0);
-                (g.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("effectcraft") }), id)
+                (g.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("artheffect") }), id)
             })
             .0
     }

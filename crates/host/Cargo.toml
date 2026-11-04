@@ -1,6 +1,6 @@
 [package]
-name = "effectcraft-host"
-description = "Builds a fully wired EffectCraft session: media decoding (FilmCraft codecs), importer, the expression engine and scripting"
+name = "artheffect-host"
+description = "Builds a fully wired Artheffect session: media decoding (FilmCraft codecs), importer, the expression engine and scripting"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,27 +10,27 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-effectcraft-engine = { workspace = true }
-effectcraft-project = { workspace = true }
+artheffect-engine = { workspace = true }
+artheffect-project = { workspace = true }
 log = { workspace = true }
-effectcraft-media = { workspace = true }
-effectcraft-expr = { workspace = true }
-effectcraft-script = { workspace = true }
-effectcraft-export = { workspace = true }
-effectcraft-plugin = { workspace = true }
+artheffect-media = { workspace = true }
+artheffect-expr = { workspace = true }
+artheffect-script = { workspace = true }
+artheffect-export = { workspace = true }
+artheffect-plugin = { workspace = true }
 
 # WebAssembly effect plug-ins run in wasmi on native builds.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-effectcraft-plugin = { workspace = true, features = ["wasm"] }
+artheffect-plugin = { workspace = true, features = ["wasm"] }
 
 [dev-dependencies]
 serde_json = { workspace = true }
-effectcraft-psd = { workspace = true }
-effectcraft-svg = { workspace = true }
-effectcraft-pdf = { workspace = true }
-effectcraft-raster = { workspace = true }
-effectcraft-time = { workspace = true }
-effectcraft-interchange = { workspace = true }
+artheffect-psd = { workspace = true }
+artheffect-svg = { workspace = true }
+artheffect-pdf = { workspace = true }
+artheffect-raster = { workspace = true }
+artheffect-time = { workspace = true }
+artheffect-interchange = { workspace = true }
 image = { workspace = true }
 gif = { workspace = true }
 exr = { workspace = true }

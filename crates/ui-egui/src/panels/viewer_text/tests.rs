@@ -3,24 +3,24 @@
 //! to, so the deletion and the insert must share one undo step.
 
 use super::*;
-use effectcraft_engine::Session;
-use effectcraft_engine::commands::text_edit::TextEdit;
+use artheffect_engine::Session;
+use artheffect_engine::commands::text_edit::TextEdit;
 use serde_json::json;
 
-fn editor(text: &str, anchor: usize, caret: usize) -> (EffectcraftApp, LayerId) {
+fn editor(text: &str, anchor: usize, caret: usize) -> (ArtheffectApp, LayerId) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "IME", "width": 160, "height": 90, "duration": 1})).unwrap();
     let layer = s.execute("layer.newText", json!({"text": text})).unwrap()["layer"].as_u64().unwrap();
     let lid = LayerId(layer);
     s.state.text_edit = Some(TextEdit { layer: lid, anchor, caret, ..Default::default() });
-    (EffectcraftApp::new(s), lid)
+    (ArtheffectApp::new(s), lid)
 }
 
-fn doc_text(app: &EffectcraftApp, lid: LayerId) -> String {
+fn doc_text(app: &ArtheffectApp, lid: LayerId) -> String {
     layer_doc(&app.session, lid).map(|d| d.text).unwrap_or_default()
 }
 
-fn feed(app: &mut EffectcraftApp, events: Vec<egui::Event>) {
+fn feed(app: &mut ArtheffectApp, events: Vec<egui::Event>) {
     let ctx = egui::Context::default();
     let raw = egui::RawInput { screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(320.0, 180.0))), events, ..Default::default() };
     let mut out = ctx.run_ui(raw, |ui| keyboard(app, ui, egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(320.0, 180.0))));
@@ -113,7 +113,7 @@ impl ImePass {
 
     /// Run one `Context` frame. `overlay` is false for a pass in which the viewer (and so
     /// the edit overlay) never drew; `discard` forces a second pass of the same frame.
-    fn frame(&mut self, app: &mut EffectcraftApp, events: Vec<egui::Event>, overlay: bool, discard: bool) -> Option<egui::output::IMEOutput> {
+    fn frame(&mut self, app: &mut ArtheffectApp, events: Vec<egui::Event>, overlay: bool, discard: bool) -> Option<egui::output::IMEOutput> {
         let ctx = self.ctx.clone();
         let rect = self.rect;
         let viewport = self.viewport;
@@ -154,7 +154,7 @@ impl ImePass {
     /// body. Returns the descriptor and the preedit the pass ended with.
     fn window(
         &mut self,
-        app: &mut EffectcraftApp,
+        app: &mut ArtheffectApp,
         window: &craft_ui::docking::Floating<PanelKind>,
         events: Vec<egui::Event>,
         viewer_first: bool,
@@ -656,8 +656,8 @@ fn two_viewports_keep_independent_ime_contexts() {
     assert_eq!(again.context_generation, one.context_generation, "the second viewport did not disturb the first");
 }
 
-/// Draw one real `EffectcraftApp::draw` pass, so `draw`'s all-exit finalizer runs.
-fn draw_app_pass(app: &mut EffectcraftApp, ctx: &egui::Context, frame: &eframe::Frame, events: Vec<egui::Event>) -> egui::FullOutput {
+/// Draw one real `ArtheffectApp::draw` pass, so `draw`'s all-exit finalizer runs.
+fn draw_app_pass(app: &mut ArtheffectApp, ctx: &egui::Context, frame: &eframe::Frame, events: Vec<egui::Event>) -> egui::FullOutput {
     let raw = egui::RawInput { screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1200.0, 800.0))), events, ..Default::default() };
     let mut out = ctx.run_ui(raw, |ui| app.draw(ui, frame));
     out.textures_delta.clear();
@@ -671,7 +671,7 @@ fn draw_app_pass(app: &mut EffectcraftApp, ctx: &egui::Context, frame: &eframe::
 /// is published by the same `output.ime` writer that an unrelated field would use.
 fn stock_pass(
     pass: &mut ImePass,
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     events: Vec<egui::Event>,
     stock: &mut String,
     custom_focus: bool,
@@ -680,7 +680,7 @@ fn stock_pass(
     let viewport = pass.viewport;
     let custom = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(160.0, 90.0));
     let stock_rect = egui::Rect::from_min_size(egui::pos2(180.0, 30.0), egui::vec2(120.0, 24.0));
-    let stock_id = egui::Id::unique("effectcraft-ime-test-stock");
+    let stock_id = egui::Id::unique("artheffect-ime-test-stock");
     let mut viewports = egui::ViewportIdMap::default();
     viewports.insert(viewport, egui::ViewportInfo::default());
     let raw = egui::RawInput { viewport_id: viewport, viewports, screen_rect: Some(pass.rect), events, ..Default::default() };

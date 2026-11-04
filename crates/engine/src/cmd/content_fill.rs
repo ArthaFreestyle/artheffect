@@ -1,7 +1,7 @@
 //! Content-Aware Fill (Window ▸ Content-Aware Fill, Layer ▸ New ▸ Content-Aware Fill Layer):
 //! fill the transparent area of a layer (what its masks cut away) across the work area or the
 //! whole layer, render the result as a PNG sequence and add it as a "Fill" layer above the
-//! source, like After Effects. The algorithms are `effectcraft_raster::inpaint` (Object:
+//! source, like After Effects. The algorithms are `artheffect_raster::inpaint` (Object:
 //! flow-guided propagation + PatchMatch; Surface: propagation + one synthesised fill carried by
 //! the flow; Edge Blend: membrane fill). It runs as a background job (Window ▸ Progress); in
 //! the browser the job goes to a job worker ([`FillPlan`], `offload::WorkerJob::ContentFill`),
@@ -10,12 +10,12 @@
 
 use std::sync::Arc;
 
-use effectcraft_color::Label;
-use effectcraft_project::{Footage, FootageKind, ItemId, ItemKind, LayerId, LayerSource, build};
-use effectcraft_raster::Image;
-use effectcraft_raster::inpaint::{FillInput, FillMethod, FillOpts, dilate};
-use effectcraft_render::{Accelerator, EvalCtx, ExprHost, FootageSource, LayerCache, Renderer};
-use effectcraft_time::Tick;
+use artheffect_color::Label;
+use artheffect_project::{Footage, FootageKind, ItemId, ItemKind, LayerId, LayerSource, build};
+use artheffect_raster::Image;
+use artheffect_raster::inpaint::{FillInput, FillMethod, FillOpts, dilate};
+use artheffect_render::{Accelerator, EvalCtx, ExprHost, FootageSource, LayerCache, Renderer};
+use artheffect_time::Tick;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -103,7 +103,7 @@ fn set(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// A layer's masked source at comp time `t` on a `w × h` canvas in layer pixels (straight colour
 /// with alpha 1 where kept), and the hole (`true` where the alpha is under one half).
-fn masked_frame(r: &Renderer, ctx: &EvalCtx, layer: &effectcraft_project::Layer, w: u32, h: u32) -> (Image, Vec<bool>) {
+fn masked_frame(r: &Renderer, ctx: &EvalCtx, layer: &artheffect_project::Layer, w: u32, h: u32) -> (Image, Vec<bool>) {
     let mut img = Image::new(w, h);
     let mut hole = vec![true; (w * h) as usize];
     if let Some(buf) = r.layer_input(ctx, layer, 0) {
@@ -132,7 +132,7 @@ fn png(img: &Image) -> std::result::Result<Vec<u8>, String> {
 fn default_dir(s: &Session, name: &str) -> String {
     let base = s.path.as_deref().and_then(|p| std::path::Path::new(p).parent().map(|d| d.join("Fill"))).unwrap_or_else(|| {
         // (the browser has no temporary folder: its storage)
-        if cfg!(target_arch = "wasm32") { std::path::PathBuf::from("/Fill") } else { std::env::temp_dir().join("effectcraft-fill") }
+        if cfg!(target_arch = "wasm32") { std::path::PathBuf::from("/Fill") } else { std::env::temp_dir().join("artheffect-fill") }
     });
     let safe: String = name.chars().map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' }).collect();
     let mut k = 1;
@@ -197,19 +197,19 @@ fn filling_status(on_device: bool, method: FillMethod) -> &'static str {
 ///
 /// `accel` renders the frames (a job worker's GPU, as for every analysis: `None` on the
 /// desktop, whose analysis threads render on the CPU by design); `fill` is the fill's own
-/// backend ([`effectcraft_raster::inpaint::FillBackend`]), which is what makes Content-Aware
+/// backend ([`artheffect_raster::inpaint::FillBackend`]), which is what makes Content-Aware
 /// Fill itself run on the GPU. They are separate on purpose: a desktop fill can run on the GPU
 /// while its input frames are composited on the CPU.
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn run_plan(
     plan: &FillPlan,
-    project: &effectcraft_project::Project,
+    project: &artheffect_project::Project,
     footage: &dyn FootageSource,
     expr: Option<&dyn ExprHost>,
     cache: &LayerCache,
     services: &dyn crate::Services,
     accel: Option<&dyn Accelerator>,
-    fill: Option<&dyn effectcraft_raster::inpaint::FillBackend>,
+    fill: Option<&dyn artheffect_raster::inpaint::FillBackend>,
     progress: &mut dyn FnMut(u64, u64) -> bool,
     message: &mut dyn FnMut(&str),
 ) -> std::result::Result<Vec<String>, String> {
@@ -250,9 +250,9 @@ pub(crate) async fn run_plan(
     let opts = FillOpts { method: FillMethod::from_name(&plan.method).unwrap_or_default(), lighting: plan.lighting, ..Default::default() };
     message(filling_status(fill.is_some(), opts.method));
     let input = FillInput { frames, holes, references };
-    let cpu = effectcraft_raster::inpaint::CpuFill;
-    let backend: &dyn effectcraft_raster::inpaint::FillBackend = fill.unwrap_or(&cpu);
-    let out = effectcraft_raster::inpaint::fill_sequence_with(&input, &opts, backend, &mut |d, t| progress(n + (d as u64 * n / t.max(1) as u64), n * 3))
+    let cpu = artheffect_raster::inpaint::CpuFill;
+    let backend: &dyn artheffect_raster::inpaint::FillBackend = fill.unwrap_or(&cpu);
+    let out = artheffect_raster::inpaint::fill_sequence_with(&input, &opts, backend, &mut |d, t| progress(n + (d as u64 * n / t.max(1) as u64), n * 3))
         .ok_or(crate::render_queue::CANCELLED)?;
     message("Writing the fill layer");
     let dir = &plan.dir;
@@ -294,7 +294,7 @@ fn generate(s: &mut Session, p: &Value) -> Result<Value> {
     if !layer.source.is_av() || layer.source.item().is_none() {
         return Err(bad(c, "Content-Aware Fill needs a footage, solid or precomp layer"));
     }
-    let (w, h) = effectcraft_render::source_size(&s.project, &layer);
+    let (w, h) = artheffect_render::source_size(&s.project, &layer);
     if w == 0 || h == 0 {
         return Err(bad(c, "the layer has no pixels"));
     }
@@ -347,7 +347,7 @@ fn generate(s: &mut Session, p: &Value) -> Result<Value> {
     let accel = if s.project.settings.gpu_acceleration { s.accel.clone() } else { None };
     s.spawn_task("contentFill", format!("Content-Aware Fill: {name}"), wait, move |ctl| {
         let fill = accel.as_deref().and_then(|a| a.inpaint());
-        let paths = effectcraft_render::passes::block_on(run_plan(
+        let paths = artheffect_render::passes::block_on(run_plan(
             &plan,
             &lf.project,
             lf.footage.as_ref(),
@@ -474,7 +474,7 @@ mod tests {
     /// it must not claim a GPU fill just because a backend is available.
     #[test]
     fn edge_blend_is_not_reported_as_a_device_fill() {
-        use effectcraft_raster::inpaint::FillMethod;
+        use artheffect_raster::inpaint::FillMethod;
         assert_eq!(filling_status(true, FillMethod::Object), "Filling (GPU)");
         assert_eq!(filling_status(true, FillMethod::Surface), "Filling (GPU)");
         assert_eq!(filling_status(true, FillMethod::EdgeBlend), "Filling");

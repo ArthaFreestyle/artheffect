@@ -10,8 +10,8 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use effectcraft_raster::AuxChannels;
-use effectcraft_raster::channels3d::{BACKGROUND_DEPTH, split_channel};
+use artheffect_raster::AuxChannels;
+use artheffect_raster::channels3d::{BACKGROUND_DEPTH, split_channel};
 
 /// The largest display window decoded (16384²; vector footage and Continuously Rasterize
 /// stop at the same size).
@@ -338,7 +338,7 @@ mod tests {
         let pool = crate::MediaPool::new();
         pool.add_bytes(path, b.clone());
         let f = crate::probe_bytes(path, b).unwrap();
-        pool.frame_at(&f, effectcraft_time::Tick::ZERO).unwrap();
+        pool.frame_at(&f, artheffect_time::Tick::ZERO).unwrap();
         let aux = cached(path, || panic!("the frame's decode is reused, the file is not read again")).unwrap();
         assert_eq!(aux.get("GlossDir.R").and_then(|p| p.first()).copied(), Some(0.25));
     }
@@ -366,10 +366,10 @@ mod tests {
         image.write().to_buffered(&mut bytes).unwrap();
         let b: Arc<[u8]> = bytes.into_inner().into();
         let f = crate::probe_bytes("/layers.exr", b.clone()).unwrap();
-        assert_eq!((f.width, f.height, f.alpha), (4, 2, effectcraft_project::AlphaMode::Ignore));
+        assert_eq!((f.width, f.height, f.alpha), (4, 2, artheffect_project::AlphaMode::Ignore));
         let pool = crate::MediaPool::new();
         pool.add_bytes("/layers.exr", b.clone());
-        let px = pool.frame_at(&f, effectcraft_time::Tick::ZERO).unwrap().get(1, 1);
+        let px = pool.frame_at(&f, artheffect_time::Tick::ZERO).unwrap().get(1, 1);
         assert!((px[0] - 1.0).abs() < 1e-4 && px[1] > 0.3 && px[1] < 0.6 && px[2] < 1e-4 && px[3] == 1.0, "diffuse, sRGB-encoded: {px:?}");
         let aux = read_exr_channels(&b).unwrap();
         assert_eq!(aux.layers(), ["depth", "diffuse"]);

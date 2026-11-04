@@ -6,13 +6,13 @@
 //! keyframe navigator, scrubbable values). Right: time navigator, ruler with work area and cache
 //! bar, layer duration bars, keyframes, the CTI, and the value graph editor.
 
-use effectcraft_engine::color::BlendMode;
-use effectcraft_engine::keyframe::{Interp, Value};
-use effectcraft_engine::project::{
+use artheffect_engine::color::BlendMode;
+use artheffect_engine::keyframe::{Interp, Value};
+use artheffect_engine::project::{
     Comp, FootageKind, GroupKind, ItemId, ItemKind, Layer, LayerId, LayerSource, MatteKind, Node, ParamUi, Project, PropGroup, Property,
 };
-use effectcraft_engine::render::EvalCtx;
-use effectcraft_engine::time::Tick;
+use artheffect_engine::render::EvalCtx;
+use artheffect_engine::time::Tick;
 use egui::{Align2, Color32, Pos2, Rect, Sense, Stroke, StrokeKind, Vec2, pos2, vec2};
 use serde_json::json;
 use std::sync::Arc;
@@ -20,7 +20,7 @@ use std::sync::Arc;
 use crate::i18n::{tr, tr_args};
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{ArtheffectApp, widgets};
 
 #[derive(Clone, Debug)]
 enum RowKind {
@@ -58,7 +58,7 @@ const GEOM_BIT: u64 = 1 << 59;
 /// Classic 3D comps don't extrude: a 3D text or shape layer's Geometry Options row offers to
 /// change the renderer instead, as in After Effects.
 fn classic_geometry_row(comp: &Comp, l: &Layer) -> bool {
-    comp.renderer == effectcraft_engine::project::Renderer::Classic3D && l.is_3d() && matches!(l.source, LayerSource::Text | LayerSource::Shape)
+    comp.renderer == artheffect_engine::project::Renderer::Classic3D && l.is_3d() && matches!(l.source, LayerSource::Text | LayerSource::Shape)
 }
 
 /// Background of the selected layer's name cell.
@@ -197,14 +197,7 @@ struct WhipText<'a> {
 
 /// A pick whip at `rect`: dragging it starts a pick whip of `kind` from `layer`'s `prop` (0 for
 /// the layer's own), drawn and dropped at the end of [`show`].
-fn pick_whip(
-    app: &mut EffectcraftApp,
-    ui: &egui::Ui,
-    p: &egui::Painter,
-    rect: Rect,
-    (kind, layer, prop): (u8, u64, u64),
-    text: WhipText<'_>,
-) -> egui::Response {
+fn pick_whip(app: &mut ArtheffectApp, ui: &egui::Ui, p: &egui::Painter, rect: Rect, (kind, layer, prop): (u8, u64, u64), text: WhipText<'_>) -> egui::Response {
     let WhipText { auto, label, hint } = text;
     let resp = ui.interact(rect, egui::Id::unique(("pick-whip", kind, layer, prop)), Sense::drag()).on_hover_text(hint);
     icons::paint(p, rect.shrink(1.0), Icon::PickWhip, if resp.hovered() || resp.dragged() { app.tokens.text } else { app.tokens.text_dim });
@@ -546,7 +539,7 @@ fn snap_candidates(comp: &Comp, rows: &[Row]) -> Vec<f64> {
 /// Shift-dragging the work area or one of its ends (#252): the correction (seconds) that puts
 /// the nearest of the `moving` times on the current time, a key, a layer in / out point or a
 /// marker within 8 px (the work area's own ends are no targets).
-fn work_area_snap(app: &EffectcraftApp, comp: &Comp, moving: &[f64], pps: f64) -> f64 {
+fn work_area_snap(app: &ArtheffectApp, comp: &Comp, moving: &[f64], pps: f64) -> f64 {
     let (a, b) = (comp.work_area.0.seconds(), comp.work_area.1.seconds());
     let mut cands = snap_candidates(comp, &build_rows(app, comp));
     cands.retain(|c| (c - a).abs() > 1e-9 && (c - b).abs() > 1e-9);
@@ -588,8 +581,8 @@ fn disk_bar_range(tm: &TMap, clip: Rect, fd: f64, frames: i64) -> std::ops::Rang
 /// A Timeline ruler tick label for comp frame `fno`: seconds:frames (`00:15f`, AE) or, when
 /// the project's Time Display Style is Frames, the frame number the current-time display shows
 /// (`00015`, counted from Start Numbering Frames At) (#710).
-fn ruler_label(fno: i64, fps_i: i64, settings: &effectcraft_engine::project::ProjectSettings) -> String {
-    if settings.time_display == effectcraft_engine::project::TimeDisplayStyle::Frames {
+fn ruler_label(fno: i64, fps_i: i64, settings: &artheffect_engine::project::ProjectSettings) -> String {
+    if settings.time_display == artheffect_engine::project::TimeDisplayStyle::Frames {
         return format!("{:05}", fno.saturating_add(settings.frame_start));
     }
     let fps_i = fps_i.max(1);
@@ -635,7 +628,7 @@ pub(crate) fn set_zoom(tl: &mut crate::state::TimelineState, comp: &Comp, pps: f
 }
 
 /// `;`: from the whole comp, zoom in to frame level around the CTI; otherwise show the whole comp.
-pub fn toggle_frame_zoom(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub fn toggle_frame_zoom(app: &mut ArtheffectApp, ctx: &egui::Context) {
     let Some((_, w)) = ctx.data(|d| d.get_temp::<(f32, f32)>(egui::Id::unique("timeline-graph-area"))) else { return };
     let Some(comp) = app.session.active_comp_arc() else { return };
     let fit = fit_pps(w, &comp);
@@ -648,7 +641,7 @@ pub fn toggle_frame_zoom(app: &mut EffectcraftApp, ctx: &egui::Context) {
 }
 
 /// `Shift+;`: show the whole comp; from there, go back to the span it was pressed in.
-pub fn toggle_fit_zoom(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub fn toggle_fit_zoom(app: &mut ArtheffectApp, ctx: &egui::Context) {
     let tl = &mut app.ui.timeline;
     if let Some(pps) = tl.pps {
         tl.before_fit = Some((tl.start, pps));
@@ -663,7 +656,7 @@ pub fn toggle_fit_zoom(app: &mut EffectcraftApp, ctx: &egui::Context) {
 }
 
 /// Zoom the time ruler around the CTI.
-pub fn zoom(app: &mut EffectcraftApp, ctx: &egui::Context, k: f64) {
+pub fn zoom(app: &mut ArtheffectApp, ctx: &egui::Context, k: f64) {
     let Some((_, w)) = ctx.data(|d| d.get_temp::<(f32, f32)>(egui::Id::unique("timeline-graph-area"))) else { return };
     let Some(comp) = app.session.active_comp_arc() else { return };
     let fit = fit_pps(w, &comp);
@@ -674,7 +667,7 @@ pub fn zoom(app: &mut EffectcraftApp, ctx: &egui::Context, k: f64) {
 }
 
 /// Screen point of a layer bar (centre, or at a comp time).
-pub fn locate(app: &EffectcraftApp, layer: u64, time: Option<f64>) -> Option<(f32, f32)> {
+pub fn locate(app: &ArtheffectApp, layer: u64, time: Option<f64>) -> Option<(f32, f32)> {
     let e = app.auto.find(&format!("timeline.layer.{layer}.bar"))?;
     let y = e.rect[1] + e.rect[3] / 2.0;
     match time {
@@ -689,7 +682,7 @@ pub fn locate(app: &EffectcraftApp, layer: u64, time: Option<f64>) -> Option<(f3
 }
 
 /// Start renaming the first selected layer (Enter in the Timeline).
-pub fn begin_rename(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub fn begin_rename(app: &mut ArtheffectApp, ctx: &egui::Context) {
     // A selected effect, mask, shape group or text animator renames before its layer (as in
     // After Effects, #1061).
     let group = app.session.state.selected_props.iter().rev().find_map(|(lid, uid)| {
@@ -789,7 +782,7 @@ fn prop_visible(p: &Property, layer: &Layer) -> bool {
         return false;
     }
     // One-node cameras (and lights with auto-orient off) have no Point of Interest.
-    if p.match_id == "poi" && (layer.is_camera() || layer.is_light()) && layer.auto_orient != effectcraft_engine::project::AutoOrient::TowardsPointOfInterest {
+    if p.match_id == "poi" && (layer.is_camera() || layer.is_light()) && layer.auto_orient != artheffect_engine::project::AutoOrient::TowardsPointOfInterest {
         return false;
     }
     // Separate Dimensions: X/Y/Z Position replace Position.
@@ -808,7 +801,7 @@ fn reveal_matches(p: &Property, path_matches: &[&str], kind: &str) -> bool {
 }
 
 /// The name shown for a layer: its name, or its source's name (Source Name column).
-fn display_name(app: &EffectcraftApp, l: &Layer) -> String {
+fn display_name(app: &ArtheffectApp, l: &Layer) -> String {
     if app.ui.timeline.source_name
         && let Some(item) = l.source.item().and_then(|i| app.session.project.item(i))
     {
@@ -903,7 +896,7 @@ fn reveal_targets(kind: &str) -> Option<(&'static str, &'static [&'static str])>
 
 /// The properties the Timeline shows (revealed rows), as `{layer, prop}`: J / K and Select All
 /// Keyframes act on these, as in After Effects.
-pub(crate) fn visible_props(app: &EffectcraftApp, comp: &Comp) -> Vec<serde_json::Value> {
+pub(crate) fn visible_props(app: &ArtheffectApp, comp: &Comp) -> Vec<serde_json::Value> {
     build_rows(app, comp)
         .iter()
         .filter_map(|r| match r.kind {
@@ -913,7 +906,7 @@ pub(crate) fn visible_props(app: &EffectcraftApp, comp: &Comp) -> Vec<serde_json
         .collect()
 }
 
-fn build_rows(app: &EffectcraftApp, comp: &Comp) -> Vec<Row> {
+fn build_rows(app: &ArtheffectApp, comp: &Comp) -> Vec<Row> {
     let tl = &app.ui.timeline;
     let search = tl.search.trim().to_lowercase();
     let mut rows = Vec::new();
@@ -936,11 +929,11 @@ fn build_rows(app: &EffectcraftApp, comp: &Comp) -> Vec<Row> {
         if app.session.state.essential_solo {
             let mut v = vec![];
             for (i, c) in l.props.children.iter().enumerate() {
-                if c.match_id() == effectcraft_engine::project::essential::GROUP {
+                if c.match_id() == artheffect_engine::project::essential::GROUP {
                     continue;
                 }
                 let g = PropGroup { children: vec![l.props.children[i].clone()], ..PropGroup::new(0, "", "") };
-                collect_props(&g, &mut v, &|p| prop_visible(p, l) && effectcraft_engine::project::essential::control_type(p).is_some());
+                collect_props(&g, &mut v, &|p| prop_visible(p, l) && artheffect_engine::project::essential::control_type(p).is_some());
             }
             rows.extend(v.into_iter().map(|uid| Row { layer: l.id, depth: 1, kind: RowKind::Prop { uid } }));
             continue;
@@ -968,7 +961,7 @@ fn build_rows(app: &EffectcraftApp, comp: &Comp) -> Vec<Row> {
                             open,
                             has_children: !g.children.is_empty(),
                             fx: None,
-                            eye: (g.match_id == effectcraft_engine::project::styles::GROUP).then_some(g.enabled),
+                            eye: (g.match_id == artheffect_engine::project::styles::GROUP).then_some(g.enabled),
                         },
                     });
                     if open {
@@ -1015,7 +1008,7 @@ fn build_rows(app: &EffectcraftApp, comp: &Comp) -> Vec<Row> {
 /// Rows of a twirled-open layer under the reveal shortcuts (one, or several added with Shift):
 /// masks, effects, the revealed properties in property-tree order, the Reveal Properties
 /// selection, then the waveform.
-fn reveal_rows(app: &EffectcraftApp, l: &Layer, kinds: &[String], rows: &mut Vec<Row>) {
+fn reveal_rows(app: &ArtheffectApp, l: &Layer, kinds: &[String], rows: &mut Vec<Row>) {
     let tl = &app.ui.timeline;
     let has = |k: &str| kinds.iter().any(|r| r == k);
     // Groups shown with their whole contents: the revealed properties inside aren't listed again.
@@ -1053,7 +1046,7 @@ fn reveal_rows(app: &EffectcraftApp, l: &Layer, kinds: &[String], rows: &mut Vec
     // PP: paint, Roto Brush and Puppet effects; FF: effects whose plug-in is missing.
     for (k, keep) in [
         ("paint", &(|id: &str| matches!(id, "ec.paint.paint" | "ec.matte.rotobrush" | "ec.distort.puppet")) as &dyn Fn(&str) -> bool),
-        ("missingEffects", &|id: &str| effectcraft_engine::effects::find(id).is_none()),
+        ("missingEffects", &|id: &str| artheffect_engine::effects::find(id).is_none()),
     ] {
         if has(k)
             && let Some(fx) = l.effects()
@@ -1206,7 +1199,7 @@ fn enclosing_groups(l: &Layer, uid: u64) -> Vec<u64> {
 
 /// Twirl open the groups holding `props` of `layer` that sit inside effects, so their rows show
 /// (a U reveal, an EE reveal, a puppet pin placed or moved in the viewer).
-pub(crate) fn open_effect_paths(app: &mut EffectcraftApp, layer: u64, props: &[u64]) {
+pub(crate) fn open_effect_paths(app: &mut ArtheffectApp, layer: u64, props: &[u64]) {
     let Some(l) = app.session.active_comp().and_then(|c| c.layer(LayerId(layer))) else { return };
     let Some(fx) = l.effects().map(|g| g.uid) else { return };
     let mut open = vec![];
@@ -1221,7 +1214,7 @@ pub(crate) fn open_effect_paths(app: &mut EffectcraftApp, layer: u64, props: &[u
 
 /// After a reveal shortcut that picks properties by state (EE expressions): those inside effects
 /// on `layers` show under their effect, twirled open.
-pub(crate) fn open_revealed(app: &mut EffectcraftApp, layers: &[u64], kinds: &[String]) {
+pub(crate) fn open_revealed(app: &mut ArtheffectApp, layers: &[u64], kinds: &[String]) {
     for kind in kinds.iter().filter(|k| matches!(k.as_str(), "animated" | "expressions")) {
         for id in layers {
             let Some(l) = app.session.active_comp().and_then(|c| c.layer(LayerId(*id))) else { continue };
@@ -1235,7 +1228,7 @@ pub(crate) fn open_revealed(app: &mut EffectcraftApp, layers: &[u64], kinds: &[S
 /// After the viewer edits a property (a puppet pin placed, moved or recorded): when `layer` is
 /// twirled open, its groups open, and a U reveal of the layer takes it in, so its keyframes show
 /// (#273). A collapsed layer stays collapsed, as in After Effects.
-pub fn keep_in_view(app: &mut EffectcraftApp, layer: LayerId, prop: u64) {
+pub fn keep_in_view(app: &mut ArtheffectApp, layer: LayerId, prop: u64) {
     if !app.ui.timeline.open_layers.contains(&layer.0) {
         return;
     }
@@ -1263,7 +1256,7 @@ fn collect_props(g: &PropGroup, out: &mut Vec<u64>, f: &dyn Fn(&Property) -> boo
 /// The eye switch of group `g` inside `parent`, as in After Effects: layer styles (not Blending
 /// Options) and every item in a shape layer's Contents (#959), which the renderer skips when off.
 fn eye_of(parent: &PropGroup, g: &PropGroup) -> Option<bool> {
-    let style = parent.match_id == effectcraft_engine::project::styles::GROUP && g.match_id != effectcraft_engine::project::styles::BLENDING;
+    let style = parent.match_id == artheffect_engine::project::styles::GROUP && g.match_id != artheffect_engine::project::styles::BLENDING;
     let shape_item = parent.match_id == "contents" && g.match_id != "transform";
     (style || shape_item).then_some(g.enabled)
 }
@@ -1299,7 +1292,7 @@ fn push_group(rows: &mut Vec<Row>, l: &Layer, g: &PropGroup, depth: usize, open:
     }
 }
 
-fn layer_icon(l: &Layer, project: &effectcraft_engine::project::Project) -> Icon {
+fn layer_icon(l: &Layer, project: &artheffect_engine::project::Project) -> Icon {
     match &l.source {
         LayerSource::Text => Icon::TextLayer,
         LayerSource::Shape => Icon::ShapeLayer,
@@ -1572,7 +1565,7 @@ fn layer_drop_target(rows: &[Row], visible: &[(Rect, LayerId)], at: Option<usize
 
 /// Whether a Project item can replace a layer's source (the same set `layer.replaceSource`
 /// accepts): compositions, footage and solids; not folders, data files or 3D models.
-fn replaceable_item(it: &effectcraft_engine::project::Item) -> bool {
+fn replaceable_item(it: &artheffect_engine::project::Item) -> bool {
     match &it.kind {
         ItemKind::Comp(_) | ItemKind::Solid(_) => true,
         ItemKind::Footage(f) => !matches!(f.kind, FootageKind::Data | FootageKind::Model),
@@ -1582,7 +1575,7 @@ fn replaceable_item(it: &effectcraft_engine::project::Item) -> bool {
 
 /// The Alt/Option-drag target: the layer under the pointer can take this item as its source, and
 /// the item wouldn't put the composition inside itself.
-pub(crate) fn replace_source_target(app: &EffectcraftApp, cid: ItemId, item: ItemId, lid: LayerId, comp: &Comp) -> bool {
+pub(crate) fn replace_source_target(app: &ArtheffectApp, cid: ItemId, item: ItemId, lid: LayerId, comp: &Comp) -> bool {
     app.session.project.item(item).is_some_and(replaceable_item)
         && !app.session.project.comp_contains(item, cid)
         && comp
@@ -1595,7 +1588,7 @@ struct Tl {
     t: Tokens,
     cid: ItemId,
     time: Tick,
-    fr: effectcraft_engine::time::FrameRate,
+    fr: artheffect_engine::time::FrameRate,
     rect: Rect,
     header_h: f32,
     colhdr_h: f32,
@@ -1641,7 +1634,7 @@ struct Rw {
     empty: egui::Response,
     outline_empty: egui::Response,
     selected: Vec<LayerId>,
-    sel_keys: Vec<effectcraft_engine::KeyRef>,
+    sel_keys: Vec<artheffect_engine::KeyRef>,
     ui_actions: Vec<UiAct>,
     hit_rows: Vec<(Rect, Row)>,
     dim_hits: Vec<(u64, Vec<Rect>)>,
@@ -1670,14 +1663,14 @@ struct BarResps {
 #[derive(Clone, Copy)]
 struct ExprRow<'a> {
     prop: &'a Property,
-    ex: &'a effectcraft_engine::project::Expression,
+    ex: &'a artheffect_engine::project::Expression,
     buf_id: egui::Id,
     edit_id: egui::Id,
 }
 
 /// A keyframe marker's hit result.
 struct KeyHit<'a> {
-    k: &'a effectcraft_engine::keyframe::Keyframe,
+    k: &'a artheffect_engine::keyframe::Keyframe,
     ct: Tick,
     ks: bool,
     kresp: egui::Response,
@@ -1686,7 +1679,7 @@ struct KeyHit<'a> {
 }
 
 /// Computes this frame's layout: zoom, scroll and the panel's regions.
-fn layout(app: &mut EffectcraftApp, ui: &egui::Ui, rect: Rect, cid: ItemId, comp: &Arc<Comp>) -> Tl {
+fn layout(app: &mut ArtheffectApp, ui: &egui::Ui, rect: Rect, cid: ItemId, comp: &Arc<Comp>) -> Tl {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let p = ui.painter().clone();
@@ -1780,7 +1773,7 @@ fn layout(app: &mut EffectcraftApp, ui: &egui::Ui, rect: Rect, cid: ItemId, comp
 }
 
 /// Without an active composition: a hint, and dropping footage creates the first composition.
-fn empty_timeline(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+fn empty_timeline(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     ui.painter().text(rect.center(), Align2::CENTER_CENTER, crate::i18n::tr("(no composition)"), Tokens::ui(12.0), t.text_faint);
@@ -1794,8 +1787,8 @@ fn empty_timeline(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
             .map(ItemId)
             .filter(|id| {
                 app.session.project.item(*id).is_some_and(|item| match &item.kind {
-                    effectcraft_engine::project::ItemKind::Footage(footage) => footage.kind != effectcraft_engine::project::FootageKind::Data,
-                    effectcraft_engine::project::ItemKind::Solid(_) | effectcraft_engine::project::ItemKind::Comp(_) => true,
+                    artheffect_engine::project::ItemKind::Footage(footage) => footage.kind != artheffect_engine::project::FootageKind::Data,
+                    artheffect_engine::project::ItemKind::Solid(_) | artheffect_engine::project::ItemKind::Comp(_) => true,
                     _ => false,
                 })
             })
@@ -1815,7 +1808,7 @@ fn empty_timeline(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 }
 
 /// Starts the rows pass: the clipped painters and the background responses.
-fn begin_rows(app: &mut EffectcraftApp, ui: &mut egui::Ui, tl: Tl) -> Rw {
+fn begin_rows(app: &mut ArtheffectApp, ui: &mut egui::Ui, tl: Tl) -> Rw {
     let rows_rect = tl.rows_rect;
     let graph_x0 = tl.graph_x0;
     let rect = tl.rect;
@@ -1865,7 +1858,7 @@ fn begin_rows(app: &mut EffectcraftApp, ui: &mut egui::Ui, tl: Tl) -> Rw {
 /// directly and ignore errors. Reported failures go to `app.ui.status`. UI state (scroll, zoom,
 /// open rows and the drags in progress) lives in
 /// `app.ui.timeline` and egui's temp data.
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     ignore_middle_press(ui, rect);
     let Some(cid) = app.session.active_comp_id() else {
         empty_timeline(app, ui, rect);
@@ -1932,7 +1925,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 }
 
 /// Applies the UI-only changes the frame collected (twirls, time, ending an undo merge).
-fn apply_ui_acts(app: &mut EffectcraftApp, comp: &Comp, ui_actions: Vec<UiAct>) {
+fn apply_ui_acts(app: &mut ArtheffectApp, comp: &Comp, ui_actions: Vec<UiAct>) {
     for a in ui_actions {
         match a {
             UiAct::ToggleLayer(id, all) => {
@@ -1987,7 +1980,7 @@ fn apply_ui_acts(app: &mut EffectcraftApp, comp: &Comp, ui_actions: Vec<UiAct>) 
 }
 
 /// Runs the commands the frame collected through [`crate::menus::invoke`].
-fn apply_actions(app: &mut EffectcraftApp, ui: &mut egui::Ui, ctx: &egui::Context, actions: Vec<(String, serde_json::Value)>) {
+fn apply_actions(app: &mut ArtheffectApp, ui: &mut egui::Ui, ctx: &egui::Context, actions: Vec<(String, serde_json::Value)>) {
     if ui.input(|i| i.pointer.primary_down()) && actions.iter().any(|(id, _)| id == "prop.set") {
         app.ui.viewer.property_interacting = true;
         ctx.request_repaint();
@@ -2004,7 +1997,7 @@ fn apply_actions(app: &mut EffectcraftApp, ui: &mut egui::Ui, ctx: &egui::Contex
 }
 
 /// Draws the visible rows, top to bottom, each by its kind.
-fn draw_rows(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, ectx: &EvalCtx<'_>) {
+fn draw_rows(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, ectx: &EvalCtx<'_>) {
     let comp = g.tl.comp.clone();
     let rows = g.tl.rows.clone();
     let (rect, rows_rect, rh, cw_name) = (g.tl.rect, g.tl.rows_rect, g.tl.rh, g.tl.cw.name);
@@ -2051,7 +2044,7 @@ fn draw_rows(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, ectx: &Eva
 }
 
 /// A layer row: switches, label, name, cells and the layer bar.
-fn layer_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
+fn layer_row(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
     layer_row_background(g, rc);
     layer_av_switches(app, ui, g, rc);
     layer_label_swatch(app, ui, g, rc);
@@ -2074,7 +2067,7 @@ fn layer_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCt
 }
 
 /// The layer's duration bar: source extent, move and trim, markers.
-fn layer_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
+fn layer_bar(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
     let (bar, lc) = layer_bar_paint(g, rc);
     layer_source_extent(app, ui, g, rc, bar, lc);
     let bars = layer_bar_hits(app, ui, g, rc, bar);
@@ -2084,7 +2077,7 @@ fn layer_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCt
 }
 
 /// A group row (effect, mask, shape group, layer style).
-fn group_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
+fn group_row(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
     let shown = group_background(app, g, rc);
     group_switches(app, ui, g, rc);
     group_name(app, ui, g, rc, &shown);
@@ -2094,7 +2087,7 @@ fn group_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCt
 }
 
 /// An expression row: its controls and the editor.
-fn expr_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
+fn expr_row(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
     let RowKind::Expr { uid, .. } = &rc.row.kind else { return };
     let Some(prop) = rc.layer.props.find(*uid) else { return };
     let Some(ex) = prop.expr.as_ref() else { return };
@@ -2105,7 +2098,7 @@ fn expr_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx
 }
 
 /// A property row: keyframe navigator, stopwatch, name, value editors and the keyframes.
-fn prop_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, ectx: &EvalCtx<'_>) {
+fn prop_row(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, ectx: &EvalCtx<'_>) {
     let RowKind::Prop { uid } = &rc.row.kind else { return };
     let Some(prop) = rc.layer.props.find(*uid) else { return };
     prop_background(app, g, rc, prop);
@@ -2122,14 +2115,14 @@ fn prop_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx
 }
 
 /// One keyframe marker: its look, selection, menu and drag.
-fn key_marker(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, prop: &Property, k: &effectcraft_engine::keyframe::Keyframe) {
+fn key_marker(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, prop: &Property, k: &artheffect_engine::keyframe::Keyframe) {
     let RowKind::Prop { uid } = &rc.row.kind else { return };
     let ct = rc.layer.comp_time(k.time);
     let x = g.tl.tm.x(ct.seconds());
     if x < g.tl.graph_x0 - 8.0 || x > g.tl.rect.max.x + 8.0 {
         return;
     }
-    let kref = effectcraft_engine::KeyRef { layer: rc.layer.id, prop: *uid, time: k.time };
+    let kref = artheffect_engine::KeyRef { layer: rc.layer.id, prop: *uid, time: k.time };
     let ks = g.sel_keys.contains(&kref);
     let kr = key_paint(g, rc, k, x, ks);
     let kresp = key_hit(app, ui, g, rc, prop, k, kr);
@@ -2143,7 +2136,7 @@ fn key_marker(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowC
 }
 
 /// Drop targets: effects and presets on a layer, footage and files into the stack.
-fn drop_targets(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw) {
+fn drop_targets(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw) {
     let ctx = g.tl.ctx.clone();
     let rows_rect = g.tl.rows_rect;
     if let Some(payload) = egui::DragAndDrop::payload::<crate::panels::DragPayload>(&ctx)
@@ -2168,7 +2161,7 @@ fn drop_targets(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw) {
 }
 
 /// The header's time display: click to switch style, drag to scrub, double-click to type a time.
-fn header_timecode(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Tl) {
+fn header_timecode(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &Tl) {
     let t = g.t;
     let time = g.time;
     let fr = g.fr;
@@ -2181,15 +2174,15 @@ fn header_timecode(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Tl) {
     p.text(tc_rect.left_center(), Align2::LEFT_CENTER, &tc, Tokens::semibold(16.0), t.timecode);
     // Under it the other style (frames under timecode, timecode under frames) and the rate.
     let settings = &app.session.project.settings;
-    let other = if settings.time_display == effectcraft_engine::project::TimeDisplayStyle::Timecode {
+    let other = if settings.time_display == artheffect_engine::project::TimeDisplayStyle::Timecode {
         format!("{:05}", fr.frame_at(time) + settings.frame_start)
     } else {
-        effectcraft_engine::time::format_timecode_ae(fr.frame_at(time + comp.display_start), fr, false)
+        artheffect_engine::time::format_timecode_ae(fr.frame_at(time + comp.display_start), fr, false)
     };
     // Audio-only preview (Video off in the Preview panel): the current time stays put, so that
     // line says why and where the sound is instead (#1118).
     if let Some(af) = app.video_preview_off() {
-        let at = af.map(|f| format!(" · {}", effectcraft_engine::time::format_timecode_ae(f + fr.frame_at(comp.display_start), fr, false))).unwrap_or_default();
+        let at = af.map(|f| format!(" · {}", artheffect_engine::time::format_timecode_ae(f + fr.frame_at(comp.display_start), fr, false))).unwrap_or_default();
         let msg = format!("{}{at}", crate::i18n::tr("Video preview off: audio only"));
         p.text(pos2(tc_rect.min.x, tc_rect.max.y + 8.0), Align2::LEFT_CENTER, msg, Tokens::ui(10.5), t.cache_green);
     } else {
@@ -2221,7 +2214,7 @@ fn header_timecode(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Tl) {
 }
 
 /// The header's search field and the composition switches.
-fn header_search_and_switches(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Tl) {
+fn header_search_and_switches(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &Tl) {
     let t = g.t;
     let rect = g.rect;
     let left_w = g.left_w;
@@ -2259,7 +2252,7 @@ fn header_search_and_switches(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &T
 }
 
 /// The time navigator: the visible span as a bar with end handles.
-fn time_navigator(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Tl) {
+fn time_navigator(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &Tl) {
     let t = g.t;
     let graph_x0 = g.graph_x0;
     let graph_x1 = g.graph_x1;
@@ -2312,7 +2305,7 @@ fn time_navigator(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Tl) {
     }
 }
 
-fn ruler_background(app: &mut EffectcraftApp, g: &Tl) {
+fn ruler_background(app: &mut ArtheffectApp, g: &Tl) {
     let t = g.t;
     let tm = g.tm;
     let ruler = g.ruler;
@@ -2322,7 +2315,7 @@ fn ruler_background(app: &mut EffectcraftApp, g: &Tl) {
 }
 
 /// The work area bar beside the column headers, with its begin / end handles.
-fn work_area_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Tl) {
+fn work_area_bar(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Tl) {
     let t = g.t;
     let fr = g.fr;
     let pps = g.pps;
@@ -2393,7 +2386,7 @@ fn work_area_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Tl) {
 }
 
 /// The RAM (green) and disk (blue) cache bars under the work area.
-fn cache_bars(app: &mut EffectcraftApp, g: &Tl) {
+fn cache_bars(app: &mut ArtheffectApp, g: &Tl) {
     let t = g.t;
     let cid = g.cid;
     let tm = g.tm;
@@ -2455,7 +2448,7 @@ fn cache_bars(app: &mut EffectcraftApp, g: &Tl) {
 }
 
 /// The ruler's tick marks and labels.
-fn ruler_ticks(app: &mut EffectcraftApp, g: &Tl) {
+fn ruler_ticks(app: &mut ArtheffectApp, g: &Tl) {
     let t = g.t;
     let fr = g.fr;
     let graph_x0 = g.graph_x0;
@@ -2497,7 +2490,7 @@ fn ruler_ticks(app: &mut EffectcraftApp, g: &Tl) {
 }
 
 /// Scrubbing in the ruler: the current time follows the pointer.
-fn ruler_scrub(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Tl) {
+fn ruler_scrub(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &Tl) {
     let graph_x0 = g.graph_x0;
     let graph_x1 = g.graph_x1;
     let pps = g.pps;
@@ -2566,7 +2559,7 @@ fn ruler_scrub(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Tl) {
 }
 
 /// The column headers' background, icons and titles.
-fn column_header_icons(app: &mut EffectcraftApp, g: &Tl) {
+fn column_header_icons(app: &mut ArtheffectApp, g: &Tl) {
     let t = g.t;
     let rect = g.rect;
     let header_h = g.header_h;
@@ -2628,7 +2621,7 @@ fn column_header_icons(app: &mut EffectcraftApp, g: &Tl) {
 }
 
 /// Column header clicks, automation ids and the right-click column menu.
-fn column_header_interact(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Tl) {
+fn column_header_interact(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Tl) {
     let rect = g.rect;
     let header_h = g.header_h;
     let colhdr_h = g.colhdr_h;
@@ -2696,7 +2689,7 @@ fn column_header_interact(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut T
 }
 
 /// Scrolls an expression editor or the requested layer / property into view.
-fn reveal_scroll(app: &mut EffectcraftApp, g: &Tl) {
+fn reveal_scroll(app: &mut ArtheffectApp, g: &Tl) {
     let scroll_to = g.scroll_to;
     let rows_rect = g.rows_rect;
     let rh = g.rh;
@@ -2731,7 +2724,7 @@ fn reveal_scroll(app: &mut EffectcraftApp, g: &Tl) {
 }
 
 /// Mouse wheel and pinch over the rows: zoom time or scroll.
-fn wheel_zoom_scroll(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Tl) {
+fn wheel_zoom_scroll(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &Tl) {
     let overflow = g.overflow;
     let graph_x0 = g.graph_x0;
     let fit_pps = g.fit_pps;
@@ -2768,7 +2761,7 @@ fn wheel_zoom_scroll(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Tl) {
 }
 
 /// A held pick whip near the top or bottom scrolls the rows.
-fn pick_whip_edge_scroll(app: &mut EffectcraftApp, g: &Tl) {
+fn pick_whip_edge_scroll(app: &mut ArtheffectApp, g: &Tl) {
     let rect = g.rect;
     let rows_rect = g.rows_rect;
     let rh = g.rh;
@@ -2804,7 +2797,7 @@ fn layer_row_background(g: &Rw, rc: &RowCtx<'_>) {
 }
 
 /// The A/V feature switches (video, audio, solo, lock).
-fn layer_av_switches(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
+fn layer_av_switches(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
     let t = g.tl.t;
     let vis = g.tl.vis;
     let comp = g.tl.comp.clone();
@@ -2845,7 +2838,7 @@ fn layer_av_switches(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc
 }
 
 /// The label swatch and its colour menu.
-fn layer_label_swatch(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
+fn layer_label_swatch(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
     let t = g.tl.t;
     let vis = g.tl.vis;
     let cw = &g.tl.cw;
@@ -2871,7 +2864,7 @@ fn layer_label_swatch(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, r
     }
 }
 
-fn layer_number_and_cells(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
+fn layer_number_and_cells(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
     let t = g.tl.t;
     let vis = g.tl.vis;
     let comp = g.tl.comp.clone();
@@ -2887,7 +2880,7 @@ fn layer_number_and_cells(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut R
 }
 
 /// The row's click target, twirl, icon and guide mark; returns the row response and the name's x.
-fn layer_twirl_and_icon(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) -> (egui::Response, f32) {
+fn layer_twirl_and_icon(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) -> (egui::Response, f32) {
     let t = g.tl.t;
     let vis = g.tl.vis;
     let cw = &g.tl.cw;
@@ -2922,7 +2915,7 @@ fn layer_twirl_and_icon(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw,
 }
 
 /// The layer name: the rename field or the (selected) name cell.
-fn layer_name(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, name_x: f32) {
+fn layer_name(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, name_x: f32) {
     let t = g.tl.t;
     let ctx = g.tl.ctx.clone();
     let cw = &g.tl.cw;
@@ -2969,7 +2962,7 @@ fn layer_name(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowC
 }
 
 /// Row click, drag, double-click and context menu.
-fn layer_row_actions(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, row_resp: &egui::Response) {
+fn layer_row_actions(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, row_resp: &egui::Response) {
     let cid = g.tl.cid;
     let ctx = g.tl.ctx.clone();
     let comp = g.tl.comp.clone();
@@ -3006,7 +2999,7 @@ fn layer_row_actions(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc
 }
 
 /// The eight layer switches.
-fn layer_switches(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
+fn layer_switches(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
     let t = g.tl.t;
     let vis = g.tl.vis;
     let comp = g.tl.comp.clone();
@@ -3021,11 +3014,11 @@ fn layer_switches(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &
     let sws: [(Icon, bool, &str, bool); 8] = [
         (Icon::Shy, sw.shy, "shy", switch_applies(layer, "shy", &app.session.project)),
         (Icon::Collapse, sw.collapse, "collapse", switch_applies(layer, "collapse", &app.session.project)),
-        (Icon::Quality, sw.quality == effectcraft_engine::project::Quality::Best, "quality", switch_applies(layer, "quality", &app.session.project)),
+        (Icon::Quality, sw.quality == artheffect_engine::project::Quality::Best, "quality", switch_applies(layer, "quality", &app.session.project)),
         (Icon::Fx, sw.effects, "fx", switch_applies(layer, "fx", &app.session.project)),
         (
             Icon::FrameBlend,
-            sw.frame_blend != effectcraft_engine::project::FrameBlend::Off,
+            sw.frame_blend != artheffect_engine::project::FrameBlend::Off,
             "frameBlend",
             switch_applies(layer, "frameBlend", &app.session.project),
         ),
@@ -3053,7 +3046,7 @@ fn layer_switches(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &
 }
 
 /// The blend mode dropdown and Preserve Transparency.
-fn layer_mode_cell(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
+fn layer_mode_cell(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
     let t = g.tl.t;
     let comp = g.tl.comp.clone();
     let cw = &g.tl.cw;
@@ -3090,7 +3083,7 @@ fn layer_mode_cell(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: 
 }
 
 /// The track matte picker.
-fn layer_matte_cell(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
+fn layer_matte_cell(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
     let t = g.tl.t;
     let comp = g.tl.comp.clone();
     let cw = &g.tl.cw;
@@ -3154,7 +3147,7 @@ fn layer_matte_cell(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc:
 }
 
 /// The parent pick whip and dropdown.
-fn layer_parent_cell(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
+fn layer_parent_cell(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
     let t = g.tl.t;
     let comp = g.tl.comp.clone();
     let cw = &g.tl.cw;
@@ -3220,7 +3213,7 @@ fn layer_bar_paint(g: &Rw, rc: &RowCtx<'_>) -> (Rect, Color32) {
 }
 
 /// Dragging the source bar outside the in/out span slips the source.
-fn slip_source_handles(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, ghost: Rect, bar: Rect) {
+fn slip_source_handles(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, ghost: Rect, bar: Rect) {
     let pps = g.tl.pps;
     let fd = g.tl.fd;
     let ctx = g.tl.ctx.clone();
@@ -3261,7 +3254,7 @@ fn slip_source_handles(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, 
 }
 
 /// The source extent behind the bar (striped past its ends).
-fn layer_source_extent(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, bar: Rect, lc: Color32) {
+fn layer_source_extent(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, bar: Rect, lc: Color32) {
     let tm = g.tl.tm;
     let gp = g.gp.clone();
     let layer = rc.layer;
@@ -3292,7 +3285,7 @@ fn layer_source_extent(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, 
 }
 
 /// The bar's move body and trim edges, click selection.
-fn layer_bar_hits(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, bar: Rect) -> BarResps {
+fn layer_bar_hits(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, bar: Rect) -> BarResps {
     let cid = g.tl.cid;
     let ctx = g.tl.ctx.clone();
     let comp = g.tl.comp.clone();
@@ -3395,7 +3388,7 @@ fn layer_bar_drag(g: &mut Rw, rc: &RowCtx<'_>, bars: &BarResps, quick: bool) {
     }
 }
 
-fn layer_bar_markers(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Rw, rc: &RowCtx<'_>) {
+fn layer_bar_markers(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &Rw, rc: &RowCtx<'_>) {
     let graph_x0 = g.tl.graph_x0;
     let tm = g.tl.tm;
     let rows_rect = g.tl.rows_rect;
@@ -3407,7 +3400,7 @@ fn layer_bar_markers(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Rw, rc: &R
 }
 
 /// The group row's background and effect label bar; returns the name to draw.
-fn group_background(app: &mut EffectcraftApp, g: &Rw, rc: &RowCtx<'_>) -> String {
+fn group_background(app: &mut ArtheffectApp, g: &Rw, rc: &RowCtx<'_>) -> String {
     let t = g.tl.t;
     let graph_x0 = g.tl.graph_x0;
     let lp = g.lp.clone();
@@ -3443,7 +3436,7 @@ fn group_background(app: &mut EffectcraftApp, g: &Rw, rc: &RowCtx<'_>) -> String
     // An effect's colour label (26.5): the same bar the Effect Controls header wears,
     // on the row's left edge.
     if let Some(lab) =
-        group.filter(|g| matches!(g.kind, GroupKind::Effect { .. })).and_then(|g| g.label).filter(|l| *l != effectcraft_engine::color::Label::None)
+        group.filter(|g| matches!(g.kind, GroupKind::Effect { .. })).and_then(|g| g.label).filter(|l| *l != artheffect_engine::color::Label::None)
     {
         let [lr, lg, lb] = app.session.prefs.label_rgb(lab);
         let bar = Rect::from_min_size(left.min, vec2(4.0, left.height()));
@@ -3454,7 +3447,7 @@ fn group_background(app: &mut EffectcraftApp, g: &Rw, rc: &RowCtx<'_>) -> String
 }
 
 /// The group's twirl, effect switch and style eye.
-fn group_switches(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
+fn group_switches(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
     let t = g.tl.t;
     let cw = &g.tl.cw;
     let actions = &mut g.tl.actions;
@@ -3484,7 +3477,7 @@ fn group_switches(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &
         let er = Rect::from_center_size(pos2(cw.av + 10.0, cy), vec2(15.0, 15.0));
         lp.rect_stroke(er.shrink(1.5), 2.0, Stroke::new(1.0, t.separator), StrokeKind::Inside);
         if widgets::icon_toggle(ui, er, Icon::Eye, *en, &t, egui::Id::unique(("geye", uid)), Sense::click()).clicked() {
-            let style = layer.props.sub(effectcraft_engine::project::styles::GROUP).is_some_and(|s| s.find_group(*uid).is_some());
+            let style = layer.props.sub(artheffect_engine::project::styles::GROUP).is_some_and(|s| s.find_group(*uid).is_some());
             actions.push(if style {
                 ("layer.style.toggle".into(), json!({"layer": layer.id.0, "style": uid}))
             } else {
@@ -3496,7 +3489,7 @@ fn group_switches(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &
 }
 
 /// The group name, or its rename field.
-fn group_name(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, shown: &str) {
+fn group_name(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, shown: &str) {
     let t = g.tl.t;
     let ctx = g.tl.ctx.clone();
     let cw = &g.tl.cw;
@@ -3531,7 +3524,7 @@ fn group_name(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowC
 }
 
 /// Add / animate popups, Change Renderer and dash buttons.
-fn group_popups(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
+fn group_popups(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
     let t = g.tl.t;
     let ctx = g.tl.ctx.clone();
     let cw = &g.tl.cw;
@@ -3577,7 +3570,7 @@ fn group_mask_mode(ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
         if widgets::dropdown(ui, mr, mode.label(), &t, egui::Id::unique(("mm", uid))).clicked() {
             widgets::open_popup(ui, pop);
         }
-        let opts: Vec<String> = effectcraft_engine::project::MaskMode::ALL.iter().map(|m| m.label().to_string()).collect();
+        let opts: Vec<String> = artheffect_engine::project::MaskMode::ALL.iter().map(|m| m.label().to_string()).collect();
         if let Some(i) = widgets::popup_menu(ui, pop, mr.left_bottom(), &opts, None) {
             actions.push(("layer.setMask".into(), json!({"layer": layer.id.0, "mask": uid, "mode": opts[i]})));
         }
@@ -3590,7 +3583,7 @@ fn group_mask_mode(ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
 }
 
 /// Group row click and double-click.
-fn group_row_click(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
+fn group_row_click(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>) {
     let cid = g.tl.cid;
     let cw = &g.tl.cw;
     let actions = &mut g.tl.actions;
@@ -3630,7 +3623,7 @@ fn group_row_click(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: 
     }
 }
 
-fn waveform_row(app: &mut EffectcraftApp, g: &Rw, rc: &RowCtx<'_>) {
+fn waveform_row(app: &mut ArtheffectApp, g: &Rw, rc: &RowCtx<'_>) {
     let t = g.tl.t;
     let graph_x0 = g.tl.graph_x0;
     let tm = g.tl.tm;
@@ -3666,7 +3659,7 @@ fn waveform_row(app: &mut EffectcraftApp, g: &Rw, rc: &RowCtx<'_>) {
 }
 
 /// The expression row's outline side: enable, pick whip and syntax warning.
-fn expr_controls(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, st: &ExprRow<'_>) {
+fn expr_controls(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, st: &ExprRow<'_>) {
     let ExprRow { prop, ex, buf_id, edit_id, .. } = *st;
     let t = g.tl.t;
     let ctx = g.tl.ctx.clone();
@@ -3746,7 +3739,7 @@ fn expr_controls(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &R
 }
 
 /// The Expression Language menu inserts at the cursor.
-fn expr_language_menu(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, st: &ExprRow<'_>) {
+fn expr_language_menu(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, st: &ExprRow<'_>) {
     let ExprRow { ex, buf_id, edit_id, .. } = *st;
     let t = g.tl.t;
     let ctx = g.tl.ctx.clone();
@@ -3764,7 +3757,7 @@ fn expr_language_menu(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, r
     app.auto.add(&format!("timeline.prop.{uid}.exprLanguage"), lang_r, "Expression Language Menu");
     let mut picked: Option<&'static str> = None;
     egui::Popup::menu(&lang).style(crate::widgets::menu_style).show(|ui| {
-        for (cat, items) in effectcraft_engine::commands::expr_tools::language_menu() {
+        for (cat, items) in artheffect_engine::commands::expr_tools::language_menu() {
             ui.menu_button(cat, |ui| {
                 widgets::menu_scroll(ui, false, |ui| {
                     for (label, text) in items {
@@ -3793,7 +3786,7 @@ fn expr_language_menu(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, r
 }
 
 /// The expression editor in the time-graph area.
-fn expr_editor_cell(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, st: &ExprRow<'_>) {
+fn expr_editor_cell(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, st: &ExprRow<'_>) {
     let ExprRow { prop, ex, buf_id, edit_id, .. } = *st;
     let t = g.tl.t;
     let rect = g.tl.rect;
@@ -3860,7 +3853,7 @@ fn expr_editor_cell(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc:
     }
 }
 
-fn prop_background(app: &mut EffectcraftApp, g: &Rw, rc: &RowCtx<'_>, prop: &Property) {
+fn prop_background(app: &mut ArtheffectApp, g: &Rw, rc: &RowCtx<'_>, prop: &Property) {
     let t = g.tl.t;
     let graph_x0 = g.tl.graph_x0;
     let lp = g.lp.clone();
@@ -3888,7 +3881,7 @@ fn prop_background(app: &mut EffectcraftApp, g: &Rw, rc: &RowCtx<'_>, prop: &Pro
 }
 
 /// The keyframe navigator (previous, toggle, next).
-fn prop_key_navigator(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, prop: &Property) {
+fn prop_key_navigator(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, prop: &Property) {
     let t = g.tl.t;
     let time = g.tl.time;
     let fr = g.tl.fr;
@@ -3905,7 +3898,7 @@ fn prop_key_navigator(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, r
     // (in the Keys column when it is shown).
     if prop.is_animated() && (vis.keys || vis.av) {
         let lt = layer.layer_time(time);
-        let at_key = effectcraft_engine::keyframe::key_at(&prop.keys, lt).is_some();
+        let at_key = artheffect_engine::keyframe::key_at(&prop.keys, lt).is_some();
         let nav_x = if vis.keys { cw.keys + 12.0 } else { cw.av + 18.0 };
         let prev = Rect::from_center_size(pos2(nav_x, cy), vec2(12.0, 14.0));
         let mid = Rect::from_center_size(pos2(nav_x + 16.0, cy), vec2(14.0, 14.0));
@@ -3936,7 +3929,7 @@ fn prop_key_navigator(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, r
 }
 
 /// The stopwatch.
-fn prop_stopwatch(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, prop: &Property) {
+fn prop_stopwatch(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, prop: &Property) {
     let t = g.tl.t;
     let ctx = g.tl.ctx.clone();
     let actions = &mut g.tl.actions;
@@ -3984,7 +3977,7 @@ fn prop_stopwatch(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &
 }
 
 /// The property name; returns its x.
-fn prop_name(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, prop: &Property) -> f32 {
+fn prop_name(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, prop: &Property) -> f32 {
     let t = g.tl.t;
     let cid = g.tl.cid;
     let ctx = g.tl.ctx.clone();
@@ -4021,7 +4014,7 @@ fn prop_name(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCt
 }
 
 /// The value editors and the property pick whip.
-fn prop_value_cell(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, ectx: &EvalCtx<'_>, prop: &Property, name_x: f32) {
+fn prop_value_cell(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>, ectx: &EvalCtx<'_>, prop: &Property, name_x: f32) {
     let vis = g.tl.vis;
     let cw = &g.tl.cw;
     let actions = &mut g.tl.actions;
@@ -4057,7 +4050,7 @@ fn prop_value_cell(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, rc: 
 }
 
 /// The one-line expression hint when its editor is closed.
-fn prop_expression_hint(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Rw, rc: &RowCtx<'_>, prop: &Property) {
+fn prop_expression_hint(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &Rw, rc: &RowCtx<'_>, prop: &Property) {
     let t = g.tl.t;
     let graph_x0 = g.tl.graph_x0;
     let right_clip = g.right_clip;
@@ -4115,7 +4108,7 @@ fn key_double_click(g: &mut Rw, rc: &RowCtx<'_>, prop: &Property, kh: &KeyHit<'_
 }
 
 /// The keyframe right-click menu.
-fn key_context_menu(app: &mut EffectcraftApp, g: &mut Rw, rc: &RowCtx<'_>, prop: &Property, kh: &KeyHit<'_>) {
+fn key_context_menu(app: &mut ArtheffectApp, g: &mut Rw, rc: &RowCtx<'_>, prop: &Property, kh: &KeyHit<'_>) {
     let KeyHit { k, ks, ref kresp, .. } = *kh;
     let actions = &mut g.tl.actions;
     let layer = rc.layer;
@@ -4127,10 +4120,10 @@ fn key_context_menu(app: &mut EffectcraftApp, g: &mut Rw, rc: &RowCtx<'_>, prop:
 /// can still be copied and selected, but not edited.
 pub(crate) fn key_menu(
     ui: &mut egui::Ui,
-    app: &EffectcraftApp,
+    app: &ArtheffectApp,
     layer: &Layer,
     prop: &Property,
-    k: &effectcraft_engine::keyframe::Keyframe,
+    k: &artheffect_engine::keyframe::Keyframe,
     selected: bool,
     actions: &mut Vec<(String, serde_json::Value)>,
 ) {
@@ -4169,7 +4162,7 @@ pub(crate) fn key_menu(
             // Keyframe colour labels.
             ui.add_enabled_ui(!locked, |ui| {
                 ui.menu_button(crate::i18n::tr("Label"), |ui| {
-                    for (i, l) in effectcraft_engine::color::Label::ALL.into_iter().enumerate() {
+                    for (i, l) in artheffect_engine::color::Label::ALL.into_iter().enumerate() {
                         if widgets::label_entry(ui, l, &app.session.prefs.label_name(l), k.label as usize == i, &t).clicked() {
                             if !selected {
                                 actions.push(("keys.select".into(), json!({"keys": [this_key.clone()]})));
@@ -4205,7 +4198,7 @@ pub(crate) fn key_menu(
 }
 
 /// Starts a key drag (or Alt-scale).
-fn key_drag_begin(app: &mut EffectcraftApp, g: &Rw, kh: &KeyHit<'_>) {
+fn key_drag_begin(app: &mut ArtheffectApp, g: &Rw, kh: &KeyHit<'_>) {
     let KeyHit { ct, ks, mods, ref kresp, .. } = *kh;
     let ctx = g.tl.ctx.clone();
     let comp = g.tl.comp.clone();
@@ -4237,7 +4230,7 @@ const KEY_GLYPH_SIZE: f32 = 11.0;
 const ROVING_KEY_RADIUS: f32 = 2.5;
 
 /// The rect a key's marker covers on screen (its hit rect is larger).
-fn key_glyph_rect(k: &effectcraft_engine::keyframe::Keyframe, center: Pos2) -> Rect {
+fn key_glyph_rect(k: &artheffect_engine::keyframe::Keyframe, center: Pos2) -> Rect {
     if k.roving {
         Rect::from_center_size(center, Vec2::splat(ROVING_KEY_RADIUS * 2.0))
     } else {
@@ -4247,14 +4240,14 @@ fn key_glyph_rect(k: &effectcraft_engine::keyframe::Keyframe, center: Pos2) -> R
 }
 
 /// Paints one keyframe marker; returns its hit rect.
-fn key_paint(g: &Rw, rc: &RowCtx<'_>, k: &effectcraft_engine::keyframe::Keyframe, x: f32, ks: bool) -> Rect {
+fn key_paint(g: &Rw, rc: &RowCtx<'_>, k: &artheffect_engine::keyframe::Keyframe, x: f32, ks: bool) -> Rect {
     let t = g.tl.t;
     let gp = g.gp.clone();
     let cy = rc.cy;
     let icon = k.icon();
     let c = pos2(x, cy);
     // Labelled keys take their label colour (brighter when selected).
-    let kcol = match effectcraft_engine::color::Label::ALL.get(k.label as usize).filter(|_| k.label > 0) {
+    let kcol = match artheffect_engine::color::Label::ALL.get(k.label as usize).filter(|_| k.label > 0) {
         Some(l) => {
             let c = t.label(*l);
             if ks { c } else { c.gamma_multiply(0.75) }
@@ -4275,12 +4268,12 @@ fn key_paint(g: &Rw, rc: &RowCtx<'_>, k: &effectcraft_engine::keyframe::Keyframe
 
 /// The key's hit target and automation ids.
 fn key_hit(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     g: &Rw,
     rc: &RowCtx<'_>,
     prop: &Property,
-    k: &effectcraft_engine::keyframe::Keyframe,
+    k: &artheffect_engine::keyframe::Keyframe,
     kr: Rect,
 ) -> egui::Response {
     let fr = g.tl.fr;
@@ -4295,7 +4288,7 @@ fn key_hit(
 }
 
 /// Right-click menus on the empty outline and graph areas.
-fn background_menus(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw) {
+fn background_menus(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw) {
     let actions = &mut g.tl.actions;
     let graph_on = g.graph_on;
     let full_clip = g.full_clip;
@@ -4461,7 +4454,7 @@ fn pick_whip_drag(g: &mut Rw) {
     // Alt-drag key group scaling (follows the pointer until release).
 }
 
-fn alt_scale_and_graph(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw, ectx: &EvalCtx<'_>) {
+fn alt_scale_and_graph(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw, ectx: &EvalCtx<'_>) {
     let graph_x0 = g.tl.graph_x0;
     let tm = g.tl.tm;
     let rows_rect = g.tl.rows_rect;
@@ -4639,7 +4632,7 @@ fn quick_offset_follow(g: &mut Rw) {
 }
 
 /// The key drag moves the selected keys by whole frames.
-fn key_drag_follow(app: &mut EffectcraftApp, g: &mut Rw) {
+fn key_drag_follow(app: &mut ArtheffectApp, g: &mut Rw) {
     let t = g.tl.t;
     let time = g.tl.time;
     let pps = g.tl.pps;
@@ -4694,7 +4687,7 @@ fn key_drag_follow(app: &mut EffectcraftApp, g: &mut Rw) {
 
 /// The keys whose markers touch box `br`, in row order (the comp's). `top` is the y of the first
 /// row, scrolled.
-fn keys_in_box(comp: &Comp, rows: &[Row], tm: &TMap, top: f32, rh: f32, br: Rect) -> Vec<effectcraft_engine::KeyRef> {
+fn keys_in_box(comp: &Comp, rows: &[Row], tm: &TMap, top: f32, rh: f32, br: Rect) -> Vec<artheffect_engine::KeyRef> {
     let mut keys = vec![];
     let mut yy = top;
     for row in rows {
@@ -4710,7 +4703,7 @@ fn keys_in_box(comp: &Comp, rows: &[Row], tm: &TMap, top: f32, rh: f32, br: Rect
             for k in &pr.keys {
                 let x = tm.x(l.comp_time(k.time).seconds());
                 if key_glyph_rect(k, pos2(x, cy)).intersects(br) {
-                    keys.push(effectcraft_engine::KeyRef { layer: l.id, prop: uid, time: k.time });
+                    keys.push(artheffect_engine::KeyRef { layer: l.id, prop: uid, time: k.time });
                 }
             }
         }
@@ -4719,7 +4712,7 @@ fn keys_in_box(comp: &Comp, rows: &[Row], tm: &TMap, top: f32, rh: f32, br: Rect
 }
 
 /// Releasing the key marquee selects the keys it touches.
-fn key_box_select(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw) {
+fn key_box_select(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &mut Rw) {
     let tm = g.tl.tm;
     let rows_rect = g.tl.rows_rect;
     let rh = g.tl.rh;
@@ -4744,7 +4737,7 @@ fn key_box_select(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &mut Rw) {
     }
 }
 
-fn current_time_indicator(app: &mut EffectcraftApp, g: &Rw) {
+fn current_time_indicator(app: &mut ArtheffectApp, g: &Rw) {
     let t = g.tl.t;
     let time = g.tl.time;
     let rect = g.tl.rect;
@@ -4769,7 +4762,7 @@ fn current_time_indicator(app: &mut EffectcraftApp, g: &Rw) {
 }
 
 /// The footer: scroll bars, the switches / modes toggle and render time.
-fn footer_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Rw) -> Rect {
+fn footer_bar(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &Rw) -> Rect {
     let t = g.tl.t;
     let rect = g.tl.rect;
     let footer_h = g.tl.footer_h;
@@ -4818,7 +4811,7 @@ fn footer_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Rw) -> Rect {
 }
 
 /// The zoom buttons and slider.
-fn footer_zoom(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Rw, footer: Rect) {
+fn footer_zoom(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &Rw, footer: Rect) {
     let t = g.tl.t;
     let time = g.tl.time;
     let rect = g.tl.rect;
@@ -4861,7 +4854,7 @@ fn footer_zoom(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Rw, footer: Rect
     }
 }
 
-fn comp_markers_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Rw) {
+fn comp_markers_ui(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &Rw) {
     let graph_x0 = g.tl.graph_x0;
     let tm = g.tl.tm;
     let rows_rect = g.tl.rows_rect;
@@ -4876,7 +4869,7 @@ fn comp_markers_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Rw) {
 }
 
 /// Spacebar held: the Hand tool. A middle-drag begun in the rows, layer list included, pans too.
-fn hand_tool_pan(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Rw) {
+fn hand_tool_pan(app: &mut ArtheffectApp, ui: &mut egui::Ui, g: &Rw) {
     let rect = g.tl.rect;
     let graph_x0 = g.tl.graph_x0;
     let graph_x1 = g.tl.graph_x1;
@@ -4909,7 +4902,7 @@ fn hand_tool_pan(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &Rw) {
 }
 
 /// Alt-drag of an item over a layer: replace its source.
-fn drop_replace_source(app: &mut EffectcraftApp, g: &mut Rw, payload: &std::sync::Arc<crate::panels::DragPayload>, ptr: Pos2, released: bool) {
+fn drop_replace_source(app: &mut ArtheffectApp, g: &mut Rw, payload: &std::sync::Arc<crate::panels::DragPayload>, ptr: Pos2, released: bool) {
     let t = g.tl.t;
     let cid = g.tl.cid;
     let rows_rect = g.tl.rows_rect;
@@ -4936,7 +4929,7 @@ fn drop_replace_source(app: &mut EffectcraftApp, g: &mut Rw, payload: &std::sync
 }
 
 /// Effects and presets drop onto the layer under the pointer.
-fn drop_on_layer(app: &mut EffectcraftApp, g: &mut Rw, payload: &std::sync::Arc<crate::panels::DragPayload>, ptr: Pos2, released: bool) {
+fn drop_on_layer(app: &mut ArtheffectApp, g: &mut Rw, payload: &std::sync::Arc<crate::panels::DragPayload>, ptr: Pos2, released: bool) {
     let t = g.tl.t;
     let rows_rect = g.tl.rows_rect;
     let p = g.tl.p.clone();
@@ -4967,7 +4960,7 @@ fn drop_on_layer(app: &mut EffectcraftApp, g: &mut Rw, payload: &std::sync::Arc<
 }
 
 /// Footage and files drop into the stack: a line shows the place.
-fn drop_insert_layers(app: &mut EffectcraftApp, g: &mut Rw, payload: &std::sync::Arc<crate::panels::DragPayload>, ptr: Pos2, released: bool) {
+fn drop_insert_layers(app: &mut ArtheffectApp, g: &mut Rw, payload: &std::sync::Arc<crate::panels::DragPayload>, ptr: Pos2, released: bool) {
     let t = g.tl.t;
     let time = g.tl.time;
     let rect = g.tl.rect;
@@ -5021,7 +5014,7 @@ fn drop_insert_layers(app: &mut EffectcraftApp, g: &mut Rw, payload: &std::sync:
 /// The optional per-layer cells: Comment (double-click to edit), In / Out / Duration (drag to
 /// change by frames), Stretch (click: Time Stretch dialog).
 fn layer_cells(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     lp: &egui::Painter,
     cw: &Cols,
@@ -5144,7 +5137,7 @@ fn find_group(g: &PropGroup, uid: u64) -> Option<&PropGroup> {
 
 /// A stroke's Dashes "+" / "−" buttons (add or remove a Dash/Gap pair).
 fn dash_buttons(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -5207,7 +5200,7 @@ const SHAPE_ADD_ITEMS: &[(&str, &str)] = &[
 /// A shape layer's Contents "Add:" pop-up menu: adds a shape, paint or path operation to the
 /// selected shape group, else to the layer's contents.
 fn shape_add_popup(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -5249,7 +5242,7 @@ fn shape_add_popup(
 
 /// The Text group's "Animate:" and an animator's "Add:" pop-up menus (AE's twirl-down menus).
 fn text_anim_popups(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -5258,7 +5251,7 @@ fn text_anim_popups(
     actions: &mut Vec<(String, serde_json::Value)>,
 ) {
     let (x, cy) = (at.x, at.y);
-    use effectcraft_engine::project::build::TEXT_ANIMATOR_KINDS;
+    use artheffect_engine::project::build::TEXT_ANIMATOR_KINDS;
     if !matches!(layer.source, LayerSource::Text) {
         return;
     }
@@ -5304,9 +5297,9 @@ fn text_anim_popups(
             acts.push(if *k == "-" { (String::new(), json!(null)) } else { ("layer.addTextAnimator".into(), json!({"layer": layer.id.0, "property": k})) });
         }
         // Variable Font Axes of the layer's font.
-        if let Some(effectcraft_engine::keyframe::Value::Text(doc)) = layer.props.prop("text/sourceText").map(|p| p.value.clone()) {
-            let face = effectcraft_engine::text::resolve(&doc.font, &doc.style).face;
-            let axes = effectcraft_engine::text::variable::font_axes(face);
+        if let Some(artheffect_engine::keyframe::Value::Text(doc)) = layer.props.prop("text/sourceText").map(|p| p.value.clone()) {
+            let face = artheffect_engine::text::resolve(&doc.font, &doc.style).face;
+            let axes = artheffect_engine::text::variable::font_axes(face);
             if !axes.is_empty() {
                 opts.push("-".into());
                 acts.push((String::new(), json!(null)));
@@ -5403,22 +5396,22 @@ fn prop_menu(
 }
 
 /// Whether `layer` shows vector footage (SVG, PDF, AI, EPS).
-pub(crate) fn vector_footage_layer(project: &effectcraft_engine::project::Project, layer: &Layer) -> bool {
+pub(crate) fn vector_footage_layer(project: &artheffect_engine::project::Project, layer: &Layer) -> bool {
     layer
         .source
         .item()
         .and_then(|item| project.item(item))
-        .is_some_and(|item| matches!(&item.kind, effectcraft_engine::project::ItemKind::Footage(footage) if effectcraft_engine::vector::is_vector(footage)))
+        .is_some_and(|item| matches!(&item.kind, artheffect_engine::project::ItemKind::Footage(footage) if artheffect_engine::vector::is_vector(footage)))
 }
 
 /// Whether the Collapse Transformations / Continuously Rasterize switch applies: precomps, shape and text
 /// layers, and vector footage (SVG, PDF, AI, EPS), which the renderer re-rasterizes at the layer's scale.
-fn collapse_applies(layer: &Layer, project: &effectcraft_engine::project::Project) -> bool {
+fn collapse_applies(layer: &Layer, project: &artheffect_engine::project::Project) -> bool {
     match &layer.source {
         LayerSource::Comp { .. } | LayerSource::Shape | LayerSource::Text => true,
         LayerSource::Footage { item } => {
             let kind = project.item(*item).map(|i| &i.kind);
-            matches!(kind, Some(effectcraft_engine::project::ItemKind::Footage(f)) if effectcraft_engine::render::is_vector_footage(f))
+            matches!(kind, Some(artheffect_engine::project::ItemKind::Footage(f)) if artheffect_engine::render::is_vector_footage(f))
         }
         _ => false,
     }
@@ -5437,7 +5430,7 @@ pub(crate) struct LayerMenuCaps {
 }
 
 impl LayerMenuCaps {
-    pub(crate) fn of(project: &effectcraft_engine::project::Project, layer: &Layer) -> Self {
+    pub(crate) fn of(project: &artheffect_engine::project::Project, layer: &Layer) -> Self {
         Self {
             vector: vector_footage_layer(project, layer),
             text: matches!(layer.source, LayerSource::Text),
@@ -5579,7 +5572,7 @@ fn layer_styles_submenu(ui: &mut egui::Ui, layers: &[u64], item: &mut dyn FnMut(
     item(ui, "Show All", "layer.style.showAll", json!({"layers": layers}));
     item(ui, "Remove All", "layer.style.removeAll", json!({"layers": layers}));
     ui.separator();
-    for (id, label) in effectcraft_engine::project::styles::STYLES {
+    for (id, label) in artheffect_engine::project::styles::STYLES {
         let cmd = match *id {
             "dropShadow" => "layer.style.dropShadow",
             "innerShadow" => "layer.style.innerShadow",
@@ -5599,8 +5592,8 @@ fn layer_styles_submenu(ui: &mut egui::Ui, layers: &[u64], item: &mut dyn FnMut(
 /// The layer context menu's Effects submenu: every effect from the registry grouped by category,
 /// in the same order as the Effect menu's palette, so the two stay in sync automatically.
 fn effects_submenu(ui: &mut egui::Ui, layers: &[u64], item: &mut dyn FnMut(&mut egui::Ui, &str, &str, serde_json::Value)) {
-    let mut cats: Vec<(&str, Vec<&'static effectcraft_engine::effects::EffectSpec>)> = Vec::new();
-    for e in effectcraft_engine::effects::all() {
+    let mut cats: Vec<(&str, Vec<&'static artheffect_engine::effects::EffectSpec>)> = Vec::new();
+    for e in artheffect_engine::effects::all() {
         match cats.iter_mut().find(|(c, _)| *c == e.category) {
             Some((_, v)) => v.push(e),
             None => cats.push((e.category, vec![e])),
@@ -5672,7 +5665,7 @@ impl<'a> ValueEdit<'a> {
 
 /// Inline value editor for a property row; pushes `prop.set` actions. Returns the rects of a
 /// multi-dimension value's fields, one per dimension (none for other values).
-fn value_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, value: &Value, actions: &mut Vec<(String, serde_json::Value)>) -> Vec<Rect> {
+fn value_editor(app: &mut ArtheffectApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, value: &Value, actions: &mut Vec<(String, serde_json::Value)>) -> Vec<Rect> {
     match value {
         Value::Scalar(_) => scalar_editor(app, ui, ve, actions, value),
         Value::Vec2(_) | Value::Vec3(_) => return vector_editor(app, ui, ve, actions, value),
@@ -5693,7 +5686,7 @@ fn value_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>,
 }
 
 /// A number: scrubbable hot text, or the angle field.
-fn scalar_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, actions: &mut Vec<(String, serde_json::Value)>, value: &Value) {
+fn scalar_editor(app: &mut ArtheffectApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, actions: &mut Vec<(String, serde_json::Value)>, value: &Value) {
     let Value::Scalar(v) = value else { return };
     let (layer, prop, at, uid) = (ve.layer, ve.prop, ve.at, ve.uid);
     // The values themselves: red while an expression drives the property (#1306).
@@ -5713,7 +5706,7 @@ fn scalar_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>
         }
     } else {
         // A Range Selector's Start, End and Offset count characters with Units = Index (#1814).
-        let pct = (matches!(prop.ui, ParamUi::Percent) || prop.match_id == "opacity") && !effectcraft_engine::render::text::in_index_units(layer, uid);
+        let pct = (matches!(prop.ui, ParamUi::Percent) || prop.match_id == "opacity") && !artheffect_engine::render::text::in_index_units(layer, uid);
         let suffix = if pct { "%" } else { "" };
         let (r, nv, _) = widgets::hot_number_at(
             ui,
@@ -5731,7 +5724,7 @@ fn scalar_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>
 }
 
 /// A multi-dimension value: one hot-text field per dimension, with the link chain. Returns their rects.
-fn vector_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, actions: &mut Vec<(String, serde_json::Value)>, value: &Value) -> Vec<Rect> {
+fn vector_editor(app: &mut ArtheffectApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, actions: &mut Vec<(String, serde_json::Value)>, value: &Value) -> Vec<Rect> {
     let (p, layer, prop, at, uid) = (ve.p, ve.layer, ve.prop, ve.at, ve.uid);
     let t = app.tokens;
     let vt = t.for_value(prop.has_expression());
@@ -5809,7 +5802,7 @@ fn vector_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>
 }
 
 /// A colour: swatch, eyedropper and picker.
-fn color_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, actions: &mut Vec<(String, serde_json::Value)>, value: &Value) {
+fn color_editor(app: &mut ArtheffectApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, actions: &mut Vec<(String, serde_json::Value)>, value: &Value) {
     let Value::Color(c) = value else { return };
     let (layer, prop, at, uid) = (ve.layer, ve.prop, ve.at, ve.uid);
     let t = app.tokens;
@@ -5839,7 +5832,7 @@ fn color_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>,
 }
 
 /// A checkbox.
-fn bool_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, actions: &mut Vec<(String, serde_json::Value)>, value: &Value) {
+fn bool_editor(app: &mut ArtheffectApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, actions: &mut Vec<(String, serde_json::Value)>, value: &Value) {
     let Value::Bool(b) = value else { return };
     let (prop, at, uid) = (ve.prop, ve.at, ve.uid);
     let t = app.tokens;
@@ -5852,7 +5845,7 @@ fn bool_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, 
 }
 
 /// A popup (or the number when the property has no options).
-fn enum_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, actions: &mut Vec<(String, serde_json::Value)>, value: &Value) {
+fn enum_editor(app: &mut ArtheffectApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, actions: &mut Vec<(String, serde_json::Value)>, value: &Value) {
     let Value::Enum(i) = value else { return };
     let (p, layer, prop, at, uid) = (ve.p, ve.layer, ve.prop, ve.at, ve.uid);
     let t = app.tokens;
@@ -5874,7 +5867,7 @@ fn enum_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, 
 }
 
 /// A layer reference picker.
-fn layer_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, actions: &mut Vec<(String, serde_json::Value)>, value: &Value) {
+fn layer_editor(app: &mut ArtheffectApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, actions: &mut Vec<(String, serde_json::Value)>, value: &Value) {
     let Value::Layer(l) = value else { return };
     let (prop, at, uid) = (ve.prop, ve.at, ve.uid);
     let t = app.tokens;
@@ -5892,7 +5885,7 @@ fn layer_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>,
 }
 
 /// Opens the Gradient Editor at the current time (#612).
-fn gradient_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, actions: &mut Vec<(String, serde_json::Value)>) {
+fn gradient_editor(app: &mut ArtheffectApp, ui: &mut egui::Ui, ve: &ValueEdit<'_>, actions: &mut Vec<(String, serde_json::Value)>) {
     let (p, layer, prop, at, uid) = (ve.p, ve.layer, ve.prop, ve.at, ve.uid);
     let t = app.tokens;
     let x = at.x;

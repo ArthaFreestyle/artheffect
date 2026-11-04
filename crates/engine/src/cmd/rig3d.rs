@@ -2,15 +2,15 @@
 //! Cameras from 3D Model, Layer ▸ Light ▸ Create Lights from 3D Model / Control Light with
 //! Camera / Create Environment Light Background Layer.
 
-use effectcraft_color::Label;
-use effectcraft_effects::controls::{STEREO_CONFIGURATIONS, STEREO_CONTROLS, STEREO_CONVERGENCE};
-use effectcraft_geom::{Mat4, Vec3, vec3};
-use effectcraft_keyframe::Value as KV;
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{AutoOrient, Comp, Expression, ItemId, ItemKind, Layer, LayerId, LayerSource, LightKind, Project};
-use effectcraft_render::EvalCtx;
-use effectcraft_render::three_d::adv::scene::model_to_layer;
-use effectcraft_render::three_d::camera::{self, layer_frame};
+use artheffect_color::Label;
+use artheffect_effects::controls::{STEREO_CONFIGURATIONS, STEREO_CONTROLS, STEREO_CONVERGENCE};
+use artheffect_geom::{Mat4, Vec3, vec3};
+use artheffect_keyframe::Value as KV;
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{AutoOrient, Comp, Expression, ItemId, ItemKind, Layer, LayerId, LayerSource, LightKind, Project};
+use artheffect_render::EvalCtx;
+use artheffect_render::three_d::adv::scene::model_to_layer;
+use artheffect_render::three_d::camera::{self, layer_frame};
 use serde_json::{Value, json};
 
 use super::layer::insert_layer;
@@ -38,9 +38,9 @@ fn set_expr(l: &mut Layer, path: &str, text: String) {
 
 /// What evaluation needs from the session (cloned so edits can evaluate their own project).
 struct Env {
-    time: effectcraft_time::Tick,
-    expr: Option<std::sync::Arc<dyn effectcraft_render::ExprHost>>,
-    footage: std::sync::Arc<dyn effectcraft_render::FootageSource>,
+    time: artheffect_time::Tick,
+    expr: Option<std::sync::Arc<dyn artheffect_render::ExprHost>>,
+    footage: std::sync::Arc<dyn artheffect_render::FootageSource>,
 }
 
 impl Env {
@@ -227,8 +227,8 @@ fn stereo_rig(s: &mut Session, p: &Value) -> Result<Value> {
         let src_now = proj.comp(cid).cloned().ok_or(EngineError::NoComp)?;
         let mut ctl = build::layer(proj, &src_now, &controls_name, LayerSource::Null, (src.width, src.height), None);
         ctl.switches.video = false;
-        let spec = effectcraft_effects::find(STEREO_CONTROLS).ok_or_else(|| bad(cmd, "Stereo 3D Controls effect missing"))?;
-        let mut fx = effectcraft_effects::instantiate(spec, &mut Ids(&mut proj.next_id), spec.name, [100.0, 100.0]);
+        let spec = artheffect_effects::find(STEREO_CONTROLS).ok_or_else(|| bad(cmd, "Stereo 3D Controls effect missing"))?;
+        let mut fx = artheffect_effects::instantiate(spec, &mut Ids(&mut proj.next_id), spec.name, [100.0, 100.0]);
         for (k, v) in [
             ("configuration", KV::Enum(sp.configuration)),
             ("sceneDepth", KV::Scalar(sp.scene_depth)),
@@ -289,8 +289,8 @@ fn stereo_rig(s: &mut Session, p: &Value) -> Result<Value> {
         let mut left = build::layer(proj, &oc, &left_name, LayerSource::Comp { item: eye_comps[0] }, (src.width, src.height), Some(src.duration));
         let mut right = build::layer(proj, &oc, &right_name, LayerSource::Comp { item: eye_comps[1] }, (src.width, src.height), Some(src.duration));
         right.switches.video = false;
-        let glasses = effectcraft_effects::find("ec.perspective.3dglasses").ok_or_else(|| bad(cmd, "3D Glasses effect missing"))?;
-        let mut g = effectcraft_effects::instantiate(glasses, &mut Ids(&mut proj.next_id), glasses.name, [w, src.height as f64]);
+        let glasses = artheffect_effects::find("ec.perspective.3dglasses").ok_or_else(|| bad(cmd, "3D Glasses effect missing"))?;
+        let mut g = artheffect_effects::instantiate(glasses, &mut Ids(&mut proj.next_id), glasses.name, [w, src.height as f64]);
         for (k, v) in [("leftView", KV::Layer(Some(left.id.0))), ("rightView", KV::Layer(Some(right.id.0))), ("view3d", KV::Enum(view3d.min(8)))] {
             if let Some(pr) = g.get_mut(k) {
                 pr.value = v;
@@ -439,7 +439,7 @@ fn model_layers(s: &Session, p: &Value, comp: &Comp, cmd: &str) -> Result<Vec<La
 /// A camera or light found in a model: (name, world eye, world forward, the model data).
 enum FromModel {
     Camera { name: String, eye: Vec3, fwd: Vec3, zoom: f64 },
-    Light { name: String, eye: Vec3, fwd: Vec3, light: effectcraft_model::ModelLight },
+    Light { name: String, eye: Vec3, fwd: Vec3, light: artheffect_model::ModelLight },
 }
 
 fn from_model(s: &mut Session, p: &Value, lights: bool) -> Result<Value> {
@@ -467,9 +467,9 @@ fn from_model(s: &mut Session, p: &Value, lights: bool) -> Result<Value> {
             } else {
                 let mc = &m.cameras[pl.index];
                 let zoom = match mc.projection {
-                    effectcraft_model::CameraProjection::Perspective { yfov, .. } => comp.height as f64 * 0.5 / (yfov * 0.5).tan(),
+                    artheffect_model::CameraProjection::Perspective { yfov, .. } => comp.height as f64 * 0.5 / (yfov * 0.5).tan(),
                     // Orthographic cameras become perspective ones framing the same height.
-                    effectcraft_model::CameraProjection::Orthographic { .. } => effectcraft_geom::default_camera_zoom(comp.width as f64),
+                    artheffect_model::CameraProjection::Orthographic { .. } => artheffect_geom::default_camera_zoom(comp.width as f64),
                 };
                 found.push(FromModel::Camera { name: mc.name.clone(), eye, fwd, zoom });
             }
@@ -493,9 +493,9 @@ fn from_model(s: &mut Session, p: &Value, lights: bool) -> Result<Value> {
                 }
                 FromModel::Light { name, eye, fwd, light } => {
                     let kind = match light.kind {
-                        effectcraft_model::ModelLightKind::Directional => LightKind::Parallel,
-                        effectcraft_model::ModelLightKind::Point => LightKind::Point,
-                        effectcraft_model::ModelLightKind::Spot { .. } => LightKind::Spot,
+                        artheffect_model::ModelLightKind::Directional => LightKind::Parallel,
+                        artheffect_model::ModelLightKind::Point => LightKind::Point,
+                        artheffect_model::ModelLightKind::Spot { .. } => LightKind::Spot,
                     };
                     let mut l = build::layer(proj, &c, &c.unique_layer_name(name), LayerSource::Light { kind }, (c.width, c.height), None);
                     set(&mut l, "transform/position", KV::Vec3(arr(*eye)));
@@ -504,7 +504,7 @@ fn from_model(s: &mut Session, p: &Value, lights: bool) -> Result<Value> {
                     set(&mut l, "lightOptions/color", KV::Color([col[0], col[1], col[2], 1.0]));
                     // Intensity: 1 unit of the file (lux / candela) = 100%.
                     set(&mut l, "lightOptions/intensity", KV::Scalar((light.intensity * 100.0).clamp(0.0, 1000.0)));
-                    if let effectcraft_model::ModelLightKind::Spot { inner, outer } = light.kind {
+                    if let artheffect_model::ModelLightKind::Spot { inner, outer } = light.kind {
                         set(&mut l, "lightOptions/coneAngle", KV::Scalar((outer * 2.0).to_degrees().clamp(0.0, 180.0)));
                         set(&mut l, "lightOptions/coneFeather", KV::Scalar(((1.0 - inner / outer.max(1e-9)) * 100.0).clamp(0.0, 100.0)));
                     }
@@ -556,7 +556,7 @@ fn environment_background(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let light_id = light.id;
     let name = comp.unique_layer_name(&format!("{} Background", src_layer.name));
-    let size = effectcraft_render::source_size(&s.project, &src_layer);
+    let size = artheffect_render::source_size(&s.project, &src_layer);
     let id = s.edit("Create Environment Light Background Layer", None, |proj, st| {
         let mut l = build::layer(proj, &comp, &name, src_layer.source.clone(), size, None);
         l.switches.three_d = true;

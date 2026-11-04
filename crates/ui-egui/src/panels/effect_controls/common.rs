@@ -1,4 +1,4 @@
-use super::{EffectcraftApp, Layer, Node, ParamUi, PropGroup, Value, json};
+use super::{ArtheffectApp, Layer, Node, ParamUi, PropGroup, Value, json};
 
 pub(super) type Actions = Vec<(String, serde_json::Value)>;
 
@@ -14,7 +14,7 @@ pub(super) const TREE_INDENT: f32 = 14.0;
 
 /// Selecting any descendant activates its owning effect without replacing the property
 /// selection used by keyframe editing, copy and delete.
-pub(super) fn effect_active(g: &PropGroup, layer: effectcraft_engine::project::LayerId, selected: &[(effectcraft_engine::project::LayerId, u64)]) -> bool {
+pub(super) fn effect_active(g: &PropGroup, layer: artheffect_engine::project::LayerId, selected: &[(artheffect_engine::project::LayerId, u64)]) -> bool {
     fn contains(g: &PropGroup, uid: u64, depth: usize) -> bool {
         if g.uid == uid {
             return true;
@@ -27,7 +27,7 @@ pub(super) fn effect_active(g: &PropGroup, layer: effectcraft_engine::project::L
     selected.iter().any(|(l, uid)| *l == layer && contains(g, *uid, 0))
 }
 
-pub(super) fn selected_layer(app: &EffectcraftApp) -> Option<Layer> {
+pub(super) fn selected_layer(app: &ArtheffectApp) -> Option<Layer> {
     let comp = app.session.active_comp()?;
     let id = app.session.state.selected_layers.first()?;
     comp.layer(*id).cloned()
@@ -36,7 +36,7 @@ pub(super) fn selected_layer(app: &EffectcraftApp) -> Option<Layer> {
 /// An effect was just applied (`effect.apply` / `effect.applyLast` with `params`): Effect
 /// Controls comes up (opened if closed, brought to the front, the focus left where it is) on the
 /// layer the effect went to, with the new effect selected, as in After Effects.
-pub fn reveal_applied(app: &mut EffectcraftApp, params: &serde_json::Value) {
+pub fn reveal_applied(app: &mut ArtheffectApp, params: &serde_json::Value) {
     // `effect.apply` selects the new effect on (the last of) the layers it went to.
     let target = app.session.state.selected_props.last().map(|(l, _)| *l);
     if let Some(l) = target
@@ -58,7 +58,7 @@ pub fn reveal_applied(app: &mut EffectcraftApp, params: &serde_json::Value) {
 /// dialog for its LUT). For the instances `effect.apply` made (`applied`, its result), open the
 /// file dialog for their first empty file parameter and set the file on each; cancelling
 /// leaves the effect without one. Does nothing without a file dialog (tests, agents).
-pub fn choose_files_after_apply(app: &mut EffectcraftApp, applied: &serde_json::Value) {
+pub fn choose_files_after_apply(app: &mut ArtheffectApp, applied: &serde_json::Value) {
     let Some(pick) = app.hooks.pick_files.as_ref() else { return };
     let Some(comp) = app.session.active_comp() else { return };
     let uids: Vec<u64> = applied.get("effects").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|v| v.as_u64()).collect()).unwrap_or_default();

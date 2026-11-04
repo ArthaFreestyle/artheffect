@@ -1,6 +1,6 @@
 use super::*;
 use crate::Params;
-use effectcraft_raster::Image;
+use artheffect_raster::Image;
 
 fn run(id: &str, set: &[(&str, Value)], img: Image) -> Buf {
     let s = crate::find(id).unwrap();

@@ -13,7 +13,7 @@ fn render_scales_are_the_factors_the_thousandths_stand_for() {
 
 #[test]
 fn converting_a_frame_with_nan_alpha_keeps_the_viewer_alive() {
-    let image = effectcraft_engine::render::Image::filled(1, 1, [0.5, 0.25, 0.1, f32::NAN]);
+    let image = artheffect_engine::render::Image::filled(1, 1, [0.5, 0.25, 0.1, f32::NAN]);
     assert_eq!(to_color_image(&image).pixels, [egui::Color32::TRANSPARENT]);
 }
 
@@ -40,7 +40,7 @@ impl RemoteFrames for ProbeDisk {
 }
 
 fn disk_fixture(stored_frames: &[i64]) -> (Frames, RenderSource, FrameKey, RenderOpts, Arc<ProbeDisk>, u128) {
-    let mut session = effectcraft_engine::Session::default();
+    let mut session = artheffect_engine::Session::default();
     session.execute("comp.new", serde_json::json!({"width": 32, "height": 18, "duration": 1})).unwrap();
     let comp = session.active_comp_id().unwrap();
     let opts = RenderOpts::default();
@@ -85,7 +85,7 @@ fn disk_indicator_does_not_hash_on_ui_thread_and_coalesces_edits() {
             done(Err("test has no renderer".into()));
         }
     }
-    let mut s = effectcraft_engine::Session::default();
+    let mut s = artheffect_engine::Session::default();
     s.execute("comp.new", serde_json::json!({"width":32,"height":18,"duration":1})).unwrap();
     let cid = s.active_comp_id().unwrap();
     let opts = RenderOpts::default();
@@ -225,9 +225,9 @@ fn insert(f: &Frames, k: FrameKey) {
 /// released, not left "in progress" forever, so the viewer can ask for it again (#106).
 #[test]
 fn a_frame_whose_render_panics_is_released() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{Footage, FootageKind};
-    use effectcraft_engine::render::Image;
+    use artheffect_engine::Session;
+    use artheffect_engine::project::{Footage, FootageKind};
+    use artheffect_engine::render::Image;
     use serde_json::json;
     use std::sync::atomic::{AtomicUsize, Ordering};
     #[derive(Default)]
@@ -273,10 +273,10 @@ fn a_frame_whose_render_panics_is_released() {
 /// nest on every thread, each holding its buffers, until memory ran out.
 #[test]
 fn a_waiting_render_never_starts_another_on_its_thread() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{Footage, FootageKind};
-    use effectcraft_engine::render::Image;
-    use effectcraft_engine::time::FrameRate;
+    use artheffect_engine::Session;
+    use artheffect_engine::project::{Footage, FootageKind};
+    use artheffect_engine::render::Image;
+    use artheffect_engine::time::FrameRate;
     use serde_json::json;
     use std::cell::Cell;
     use std::sync::atomic::AtomicUsize;
@@ -348,10 +348,10 @@ fn a_waiting_render_never_starts_another_on_its_thread() {
 /// not cached (its footage may be missing).
 #[test]
 fn a_newer_viewer_frame_calls_off_the_one_rendering() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{Footage, FootageKind};
-    use effectcraft_engine::render::Image;
-    use effectcraft_engine::time::FrameRate;
+    use artheffect_engine::Session;
+    use artheffect_engine::project::{Footage, FootageKind};
+    use artheffect_engine::render::Image;
+    use artheffect_engine::time::FrameRate;
     use serde_json::json;
     use std::cell::RefCell;
     thread_local! {
@@ -447,7 +447,7 @@ fn a_newer_viewer_frame_drops_the_ones_still_waiting() {
     f.set_remote(Some(Arc::new(Idle)));
     let src = RenderSource {
         project: Arc::default(),
-        footage: Arc::new(effectcraft_engine::render::NoFootage),
+        footage: Arc::new(artheffect_engine::render::NoFootage),
         expr: None,
         layer_cache: Arc::default(),
         gpu: None,
@@ -562,7 +562,7 @@ impl RemoteFrames for Idle {
 fn idle_source() -> RenderSource {
     RenderSource {
         project: Arc::default(),
-        footage: Arc::new(effectcraft_engine::render::NoFootage),
+        footage: Arc::new(artheffect_engine::render::NoFootage),
         expr: None,
         layer_cache: Arc::default(),
         gpu: None,
@@ -604,22 +604,22 @@ struct ParallelClip {
 }
 
 impl FootageSource for ParallelClip {
-    fn frame(&self, _: ItemId, _: &effectcraft_engine::project::Footage, t: Tick) -> Option<Arc<effectcraft_engine::render::Image>> {
+    fn frame(&self, _: ItemId, _: &artheffect_engine::project::Footage, t: Tick) -> Option<Arc<artheffect_engine::render::Image>> {
         self.started.fetch_add(1, Ordering::SeqCst);
         (0..16).into_par_iter().for_each(|_| (0..4).into_par_iter().for_each(|_| std::thread::sleep(std::time::Duration::from_millis(1))));
-        if effectcraft_engine::time::FrameRate::FPS_30.frame_at(t) == 1 {
+        if artheffect_engine::time::FrameRate::FPS_30.frame_at(t) == 1 {
             self.started_at_first.store(self.started.load(Ordering::SeqCst), Ordering::SeqCst);
         }
-        Some(Arc::new(effectcraft_engine::render::Image::new(4, 4)))
+        Some(Arc::new(artheffect_engine::render::Image::new(4, 4)))
     }
 }
 
 /// A 10 s comp of a [`ParallelClip`]: the frame cache, the clip, the render source, the comp
 /// and the key of its frame 0.
 fn parallel_clip() -> (Frames, Arc<ParallelClip>, RenderSource, ItemId, FrameKey) {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{Footage, FootageKind};
-    use effectcraft_engine::time::FrameRate;
+    use artheffect_engine::Session;
+    use artheffect_engine::project::{Footage, FootageKind};
+    use artheffect_engine::time::FrameRate;
     use serde_json::json;
     let mut s = Session::default();
     let cid = ItemId(s.execute("comp.new", json!({"name": "A", "width": 8, "height": 8, "duration": 10})).unwrap()["comp"].as_u64().unwrap());
@@ -666,7 +666,7 @@ fn wait_for_renders(f: &Frames) {
 /// Cache Frames When Idle left the same gaps.
 #[test]
 fn frames_started_first_are_done_first() {
-    use effectcraft_engine::time::FrameRate;
+    use artheffect_engine::time::FrameRate;
     for playing in [true, false] {
         let (f, footage, src, cid, series) = parallel_clip();
         let frames = 60;
@@ -696,7 +696,7 @@ fn frames_started_first_are_done_first() {
 /// frame, still render: they change hands between the lanes and the pool.
 #[test]
 fn queued_frames_render_when_a_preview_starts_or_stops() {
-    use effectcraft_engine::time::FrameRate;
+    use artheffect_engine::time::FrameRate;
     let (f, _, src, cid, series) = parallel_clip();
     let playhead = Playhead { series, cur: 0, start: 0, end: 299, step: 1, looping: false };
     let request = |frames: std::ops::Range<i64>| {
@@ -815,7 +815,7 @@ fn live_edits_do_not_substitute_other_times_views_or_render_settings() {
 
 #[test]
 fn an_edit_keeps_the_frames_of_comps_it_does_not_touch() {
-    use effectcraft_engine::Session;
+    use artheffect_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let a = ItemId(s.execute("comp.new", json!({"name": "A", "width": 8, "height": 8, "duration": 1})).unwrap()["comp"].as_u64().unwrap());
@@ -834,7 +834,7 @@ fn an_edit_keeps_the_frames_of_comps_it_does_not_touch() {
 
 #[test]
 fn a_long_drag_keeps_a_bounded_number_of_states() {
-    use effectcraft_engine::Session;
+    use artheffect_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let a = ItemId(s.execute("comp.new", json!({"name": "A", "width": 8, "height": 8, "duration": 1})).unwrap()["comp"].as_u64().unwrap());
@@ -855,7 +855,7 @@ fn a_long_drag_keeps_a_bounded_number_of_states() {
 
 #[test]
 fn an_identity_keeps_its_comps_so_an_edit_in_place_still_changes_it() {
-    use effectcraft_engine::Session;
+    use artheffect_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let a = ItemId(s.execute("comp.new", json!({"name": "A", "width": 8, "height": 8, "duration": 1})).unwrap()["comp"].as_u64().unwrap());
@@ -874,7 +874,7 @@ fn an_identity_keeps_its_comps_so_an_edit_in_place_still_changes_it() {
 /// or a comp it nests, keeps its frames, also when toggled back (#103).
 #[test]
 fn audio_lock_and_shy_switches_keep_the_frames() {
-    use effectcraft_engine::Session;
+    use artheffect_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let id = |v: serde_json::Value, k: &str| v[k].as_u64().unwrap();
@@ -912,7 +912,7 @@ fn audio_lock_and_shy_switches_keep_the_frames() {
 /// kept when the change reaches other layers (here a child of the trimmed layer).
 #[test]
 fn an_edit_keeps_the_frames_outside_the_layers_it_changed() {
-    use effectcraft_engine::Session;
+    use artheffect_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let id = |v: serde_json::Value, k: &str| v[k].as_u64().unwrap();
@@ -950,8 +950,8 @@ fn an_edit_keeps_the_frames_outside_the_layers_it_changed() {
 /// samples it (#1641 review).
 #[test]
 fn the_frames_an_edit_keeps_match_a_fresh_render() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::render::NoFootage;
+    use artheffect_engine::Session;
+    use artheffect_engine::render::NoFootage;
     use serde_json::json;
     // Cache every frame of `comp`, run `edit`, check the frames kept against fresh renders.
     fn kept(s: &mut Session, comp: ItemId, edit: serde_json::Value) -> Vec<i64> {
@@ -1001,7 +1001,7 @@ fn the_frames_an_edit_keeps_match_a_fresh_render() {
 
 #[test]
 fn short_solid_additions_and_removals_keep_unaffected_frames() {
-    use effectcraft_engine::Session;
+    use artheffect_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let comp = ItemId(s.execute("comp.new", json!({"width": 8, "height": 8, "frameRate": 30, "duration": 20})).unwrap()["comp"].as_u64().unwrap());
@@ -1031,7 +1031,7 @@ fn short_solid_additions_and_removals_keep_unaffected_frames() {
 
 #[test]
 fn adding_a_source_does_not_hide_changes_to_existing_dependencies() {
-    use effectcraft_engine::Session;
+    use artheffect_engine::Session;
     use serde_json::json;
     for (command, params) in [
         ("layer.settings", json!({"comp": "Outer", "layer": "Underlay", "color": "#0000ff"})),
@@ -1062,7 +1062,7 @@ fn adding_a_source_does_not_hide_changes_to_existing_dependencies() {
 /// Only expressions that read markers make them part of the pixels.
 #[test]
 fn markers_keep_the_frames_unless_an_expression_reads_them() {
-    use effectcraft_engine::Session;
+    use artheffect_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let id = |v: serde_json::Value, k: &str| v[k].as_u64().unwrap();
@@ -1093,7 +1093,7 @@ fn markers_keep_the_frames_unless_an_expression_reads_them() {
 /// markers, makes every marker count.
 #[test]
 fn timing_markers_and_expressions_still_change_the_frames() {
-    use effectcraft_engine::Session;
+    use artheffect_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let id = |v: serde_json::Value, k: &str| v[k].as_u64().unwrap();

@@ -1,9 +1,9 @@
 //! Obsolete-category effects: Basic 3D (tilt/swivel the layer in a simple perspective space
 //! with an optional specular highlight) and Gaussian Blur (Legacy).
 
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
-use effectcraft_raster::gaussian_blur;
+use artheffect_keyframe::Value;
+use artheffect_project::ParamUi;
+use artheffect_raster::gaussian_blur;
 use rayon::prelude::*;
 
 use crate::util::layer_rect;
@@ -101,8 +101,8 @@ fn gaussian_legacy(ctx: &EffectCtx, mut b: Buf) -> Buf {
     }
     let (sx, sy) = (s * kx, s * ky);
     // Small sigmas use the sampled kernel, like Gaussian Blur (#1939).
-    b.img = if effectcraft_raster::gaussian_is_exact(sx, sy) {
-        effectcraft_raster::gaussian_blur_exact(&b.img, sx, sy, ctx.adjustment)
+    b.img = if artheffect_raster::gaussian_is_exact(sx, sy) {
+        artheffect_raster::gaussian_blur_exact(&b.img, sx, sy, ctx.adjustment)
     } else {
         gaussian_blur(&b.img, sx, sy, ctx.adjustment)
     };
@@ -139,7 +139,7 @@ pub fn specs() -> Vec<EffectSpec> {
 mod tests {
     use super::*;
     use crate::{EffectEnv, run_fx};
-    use effectcraft_raster::Image;
+    use artheffect_raster::Image;
 
     fn ramp() -> Image {
         let mut img = Image::new(20, 12);

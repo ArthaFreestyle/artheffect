@@ -114,8 +114,8 @@ impl Prefs {
     /// doesn't state how it is stored. `None` = Ask User (keep straight and open Interpret
     /// Footage); `guess` takes premultiplied for movies (codecs with alpha are usually written
     /// premultiplied) and straight for stills.
-    pub fn unlabeled_alpha(&self, movie: bool) -> Option<effectcraft_project::AlphaMode> {
-        use effectcraft_project::AlphaMode::*;
+    pub fn unlabeled_alpha(&self, movie: bool) -> Option<artheffect_project::AlphaMode> {
+        use artheffect_project::AlphaMode::*;
         Some(match self.import.unlabeled_alpha.as_str() {
             "ignore" => Ignore,
             "straight" => Straight,
@@ -199,7 +199,7 @@ pub struct CacheBudgets {
 /// Colour of the `k`-th mask of a layer: Appearance ▸ Cycle Mask Colors cycles through the mask
 /// colours, otherwise every new mask takes the first one.
 pub fn mask_color(cycle: bool, k: usize) -> [u8; 3] {
-    use effectcraft_project::build::MASK_COLORS;
+    use artheffect_project::build::MASK_COLORS;
     if cycle { MASK_COLORS[k % MASK_COLORS.len()] } else { MASK_COLORS[0] }
 }
 

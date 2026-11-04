@@ -9,10 +9,10 @@ pub use craft_ecproj_format::SCHEMA_VERSION;
 /// The first schema in which effect positions are in effect space (see [`SCHEMA_VERSION`]).
 pub const SCHEMA_EFFECT_SPACE: u32 = 2;
 
-/// The EffectCraft version, written into project files as `savedBy`.
+/// The Artheffect version, written into project files as `savedBy`.
 pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// The EffectCraft version that wrote a project file (its `savedBy`), when it says, also for a
+/// The Artheffect version that wrote a project file (its `savedBy`), when it says, also for a
 /// project whose schema is newer than [`SCHEMA_VERSION`].
 pub fn saved_by(text: &str) -> Option<String> {
     match craft_ecproj_format::Head::read(text) {

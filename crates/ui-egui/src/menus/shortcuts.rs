@@ -1,6 +1,6 @@
 use super::frontend::run_engine;
 use super::invoke::invoke;
-use super::{EffectcraftApp, PanelKind, Value, json};
+use super::{ArtheffectApp, PanelKind, Value, json};
 use crate::state::Tool;
 
 /// Shortcut text in this OS's notation (`⇧⌘K` on macOS, `Ctrl+Shift+K` elsewhere).
@@ -101,7 +101,7 @@ fn shifted_alias(k: egui::Key) -> Option<egui::Key> {
 pub type Binding = (egui::Modifiers, egui::Key, String, Value);
 
 /// All bindings of the active keyboard shortcut preset, most modifiers first.
-pub fn bindings(session: &effectcraft_engine::Session) -> Vec<Binding> {
+pub fn bindings(session: &artheffect_engine::Session) -> Vec<Binding> {
     let mut v: Vec<Binding> = Vec::new();
     for (sc, b) in session.shortcuts().bindings() {
         if sc.starts_with("Physical+") {
@@ -133,7 +133,7 @@ fn mods_match(want: egui::Modifiers, got: egui::Modifiers) -> bool {
 /// (so callers that must match a shortcut themselves — like the viewer's text editor, which
 /// holds the keyboard while the shortcut dispatcher is skipped — follow rebinds).
 /// `Physical+`-only bindings never match here, exactly as for the app-wide dispatcher.
-pub fn chord_matches(session: &effectcraft_engine::Session, command: &str, key: egui::Key, mods: egui::Modifiers) -> bool {
+pub fn chord_matches(session: &artheffect_engine::Session, command: &str, key: egui::Key, mods: egui::Modifiers) -> bool {
     bindings(session).into_iter().any(|(m, k, id, _)| id == command && k == key && mods_match(m, mods))
 }
 
@@ -180,9 +180,9 @@ pub(super) fn modifiers_at_start(ctx: &egui::Context) -> Option<egui::Modifiers>
     })
 }
 
-/// The shortcut contexts active now (`effectcraft_engine::shortcuts::CONTEXT_SCOPES`): text
+/// The shortcut contexts active now (`artheffect_engine::shortcuts::CONTEXT_SCOPES`): text
 /// being edited in the viewer, a paint tool or a camera tool active, a mask selected.
-pub fn active_contexts(app: &EffectcraftApp) -> Vec<&'static str> {
+pub fn active_contexts(app: &ArtheffectApp) -> Vec<&'static str> {
     let mut out = vec![];
     if app.session.state.text_edit.is_some() {
         out.push("TextEditing");
@@ -204,20 +204,20 @@ fn only_shift(m: egui::Modifiers) -> bool {
 }
 
 /// Dispatch keyboard shortcuts (skipped while typing in a text field).
-pub fn handle_shortcuts(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub fn handle_shortcuts(app: &mut ArtheffectApp, ctx: &egui::Context) {
     handle_shortcuts_impl(app, ctx, false);
 }
 
 /// Tab can acquire widget focus while the current frame is drawn. Dispatch its application
 /// binding only afterward, and only when no widget owned focus before or after layout.
-pub fn handle_tab_shortcut(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub fn handle_tab_shortcut(app: &mut ArtheffectApp, ctx: &egui::Context) {
     if ctx.input(|i| i.key_pressed(egui::Key::Tab)) {
         handle_shortcuts_impl(app, ctx, true);
     }
 }
 
 /// Escape with a dialog open: close the popup/picker first, else cancel the dialog.
-fn escape_dialog(app: &mut EffectcraftApp, ctx: &egui::Context) {
+fn escape_dialog(app: &mut ArtheffectApp, ctx: &egui::Context) {
     // A popup or colour picker takes Escape first (the picker goes back to its original colour).
     if crate::panels::shortcut_editor::recording(app)
         || crate::panels::shortcut_editor::confirming(app)
@@ -252,7 +252,7 @@ fn escape_dialog(app: &mut EffectcraftApp, ctx: &egui::Context) {
 
 /// Escape with a dialog open: it is Cancel. Escape while recording a shortcut cancels the
 /// recording, not the editor; so does Escape in its Delete Preset prompt.
-fn cancel_dialog(app: &mut EffectcraftApp, ctx: &egui::Context) {
+fn cancel_dialog(app: &mut ArtheffectApp, ctx: &egui::Context) {
     if crate::panels::shortcut_editor::recording(app) || crate::panels::shortcut_editor::confirming(app) {
         return;
     }
@@ -323,7 +323,7 @@ fn collect_key_events(ctx: &egui::Context, start: Option<egui::Modifiers>, clipb
 
 /// Numpad * (or `*` typed with Shift+8): Add Marker (#275). egui has no key for it, so it
 /// comes as text.
-fn numpad_star_marker(app: &mut EffectcraftApp, ctx: &egui::Context) {
+fn numpad_star_marker(app: &mut ArtheffectApp, ctx: &egui::Context) {
     if !ctx.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Text(t) if t == "*"))) {
         return;
     }
@@ -348,7 +348,7 @@ fn panel_owns_enter(kind: PanelKind) -> bool {
     matches!(kind, PanelKind::Project | PanelKind::EffectsPresets | PanelKind::RenderQueue)
 }
 
-fn handle_shortcuts_impl(app: &mut EffectcraftApp, ctx: &egui::Context, tab_only: bool) {
+fn handle_shortcuts_impl(app: &mut ArtheffectApp, ctx: &egui::Context, tab_only: bool) {
     let start = modifiers_at_start(ctx);
     if !tab_only && app.dialog.is_some() && ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
         escape_dialog(app, ctx);
@@ -432,18 +432,18 @@ fn handle_shortcuts_impl(app: &mut EffectcraftApp, ctx: &egui::Context, tab_only
         // minus and right parenthesis); they win over logical ones of the same scope rank.
         let table = app.session.shortcuts();
         let scope_of = |id: &str, params: &Value| {
-            let key = effectcraft_engine::shortcuts::binding_key(id, params);
-            table.find(&key).map_or(effectcraft_engine::shortcuts::APP_SCOPE, |b| b.scope.as_str())
+            let key = artheffect_engine::shortcuts::binding_key(id, params);
+            table.find(&key).map_or(artheffect_engine::shortcuts::APP_SCOPE, |b| b.scope.as_str())
         };
         let physical = table.bindings().into_iter().filter_map(|(sc, b)| {
             let (m, k) = parse_shortcut(sc.strip_prefix("Physical+")?)?;
             (Some(k) == physical_key && mods_match(m, mods)).then_some((b.scope.as_str(), true, (&b.command, &b.params)))
         });
         let logical = binds.iter().filter(|(m, k, ..)| *k == key && mods_match(*m, mods)).map(|(_, _, id, params)| (scope_of(id, params), false, (id, params)));
-        let chosen = match effectcraft_engine::shortcuts::pick(physical.chain(logical), &focused, &contexts) {
+        let chosen = match artheffect_engine::shortcuts::pick(physical.chain(logical), &focused, &contexts) {
             Ok(c) => c.map(|(id, params)| (id.clone(), if params.is_null() { json!({}) } else { params.clone() })),
             Err(scopes) => {
-                let panels: Vec<String> = scopes.iter().map(|s| effectcraft_engine::shortcuts::scope_label(s)).collect();
+                let panels: Vec<String> = scopes.iter().map(|s| artheffect_engine::shortcuts::scope_label(s)).collect();
                 app.ui.status = format!("This shortcut belongs to {}: focus one of them", panels.join(" and "));
                 None
             }

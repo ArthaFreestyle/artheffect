@@ -3,11 +3,11 @@
 //! - [`MaskModel`]: what Roto Brush asks of a model, the foreground probability of each pixel of a
 //!   frame given prompts (foreground / background points from the strokes, a box, a prior mask).
 //!   Anything implementing it can be plugged in; the classical graph-cut segmenter in
-//!   `effectcraft-track` stays the built-in fallback when no model is chosen.
+//!   `artheffect-track` stays the built-in fallback when no model is chosen.
 //! - [`face::FaceModel`]: what face tracking asks of a model: find a face in a region, follow it
 //!   from frame to frame. The classical face tracker stays the built-in fallback.
 //! - [`MODELS`]: the registry. Every entry is open source under a licence compatible with
-//!   EffectCraft's (MIT OR Apache-2.0), with its authors, source, size and SHA-256. Weights are
+//!   Artheffect's (MIT OR Apache-2.0), with its authors, source, size and SHA-256. Weights are
 //!   never bundled: they are fetched on demand (or installed from a file), verified ([`sha256`])
 //!   and loaded by [`load`].
 //! - [`pt`]: a PyTorch checkpoint reader; [`tflite`]: a TensorFlow Lite reader and interpreter;
@@ -172,7 +172,7 @@ pub const MOBILE_SAM: ModelInfo = ModelInfo {
 
 /// SAM 2.1 Tiny (Meta AI, Apache-2.0): a video object tracker with streaming memory. The weights are
 /// the Hugging Face `transformers` checkpoint, identified by SHA-256. Until a storytold mirror
-/// is available, install it from a file. `effectcraft-sam2` (native only) loads it, not [`load`].
+/// is available, install it from a file. `artheffect-sam2` (native only) loads it, not [`load`].
 pub const SAM2_TINY: ModelInfo = ModelInfo {
     id: "sam2.1-hiera-tiny",
     task: Task::Mask,
@@ -295,7 +295,7 @@ pub fn load(id: &str, bytes: &[u8]) -> Result<Loaded> {
             Ok(Loaded::Mask(Arc::new(Sam { net: mobilesam::MobileSam::from_weights(&w)? })))
         }
         Some(Loader::MediaPipe) => Ok(Loaded::Face(Arc::new(mediapipe::FaceLandmarker::from_task(bytes)?))),
-        Some(Loader::Desktop) => Err(format!("{} is loaded by the desktop application (effectcraft-sam2)", info.name)),
+        Some(Loader::Desktop) => Err(format!("{} is loaded by the desktop application (artheffect-sam2)", info.name)),
         None => Err(format!("no loader for `{id}`")),
     }
 }
@@ -323,7 +323,7 @@ fn loader(id: &str) -> Option<Loader> {
 /// The notice kept next to installed weights: what they are, who made them, their licence.
 pub fn notice(m: &ModelInfo) -> String {
     format!(
-        "{}\n\nAuthors: {}\nLicence: {} (full text: https://spdx.org/licenses/{}.html; as stated by the authors: {})\nSource: {}\nSHA-256: {}\nProject: {}\n\nInstalled unmodified. EffectCraft runs it with its own implementation\nand is not affiliated with or endorsed by its authors.\n",
+        "{}\n\nAuthors: {}\nLicence: {} (full text: https://spdx.org/licenses/{}.html; as stated by the authors: {})\nSource: {}\nSHA-256: {}\nProject: {}\n\nInstalled unmodified. Artheffect runs it with its own implementation\nand is not affiliated with or endorsed by its authors.\n",
         m.name, m.authors, m.licence, m.licence, m.licence_url, m.source, m.sha256, m.homepage
     )
 }

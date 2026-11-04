@@ -1,6 +1,6 @@
 use super::*;
 use crate::{EffectEnv, run_fx};
-use effectcraft_raster::Image;
+use artheffect_raster::Image;
 
 fn px(id: &str, vals: &[(&str, Value)], c: [f32; 4]) -> [f32; 4] {
     run_fx(id, vals, Image::filled(2, 2, c), 0.0, EffectEnv::default()).img.get(0, 0)
@@ -12,7 +12,7 @@ fn close(a: [f32; 4], b: [f32; 4], eps: f32) -> bool {
 /// Projects saved before Use Legacy / the Photo Filter menu existed keep rendering as before.
 #[test]
 fn old_saves_get_legacy_values_for_added_params() {
-    use effectcraft_project::build::Ids;
+    use artheffect_project::build::Ids;
     let mut next = 1;
     for (id, param, want) in
         [("ec.color.brightnesscontrast", "useLegacy", Value::Bool(true)), ("ec.color.photofilter", "filter", Value::Enum(PHOTO_FILTER_CUSTOM))]
@@ -250,7 +250,7 @@ fn exposure_individual_channels_and_bypass() {
 /// of 0.05, valid before, as in Photoshop) survives loading and still renders.
 #[test]
 fn exposure_has_after_effects_ranges_and_keeps_old_values() {
-    use effectcraft_project::build::Ids;
+    use artheffect_project::build::Ids;
     let spec = crate::find("ec.color.exposure").unwrap();
     let want = [(-100.0, 100.0, -4.0, 4.0, 2), (-2.0, 2.0, -0.5, 0.5, 4), (0.1, 10.0, 0.1, 10.0, 2)];
     let sliders: Vec<_> = spec

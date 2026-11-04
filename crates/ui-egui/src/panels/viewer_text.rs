@@ -14,18 +14,18 @@
 //! Every change runs an engine command (`text.*`, `layer.setText`, `edit.*`), so it's undoable and
 //! agents can do the same over the control channel.
 
-use effectcraft_engine::commands::text_edit::{ImeSurrounding, MAX_IME_TEXT_BYTES, ime_stamp_revision, ime_surrounding, layer_doc};
-use effectcraft_engine::geom::{Mat3, vec2 as gv2};
-use effectcraft_engine::keyframe::{Kerning, TextDoc};
-use effectcraft_engine::project::{Layer, LayerId, LayerSource};
-use effectcraft_engine::render::EvalCtx;
-use effectcraft_engine::text::kurbo::Point;
-use effectcraft_engine::text::{TextLayout, layout_doc};
+use artheffect_engine::commands::text_edit::{ImeSurrounding, MAX_IME_TEXT_BYTES, ime_stamp_revision, ime_surrounding, layer_doc};
+use artheffect_engine::geom::{Mat3, vec2 as gv2};
+use artheffect_engine::keyframe::{Kerning, TextDoc};
+use artheffect_engine::project::{Layer, LayerId, LayerSource};
+use artheffect_engine::render::EvalCtx;
+use artheffect_engine::text::kurbo::Point;
+use artheffect_engine::text::{TextLayout, layout_doc};
 use egui::{Color32, Pos2, Rect, Stroke, StrokeKind, vec2};
 use serde_json::{Value, json};
 
 use super::viewer::ViewerMap;
-use crate::EffectcraftApp;
+use crate::ArtheffectApp;
 use crate::dock::PanelKind;
 use crate::state::Tool;
 
@@ -118,23 +118,23 @@ struct ResetGuard {
 
 /// The `egui::Id` under which this viewport's `ResetGuard` is stored.
 fn reset_id(viewport: egui::ViewportId) -> egui::Id {
-    egui::Id::unique(("effectcraft.ime.reset", viewport))
+    egui::Id::unique(("artheffect.ime.reset", viewport))
 }
 /// The `egui::Id` holding whether this viewport is currently inside a full UI pass (set by the pass hooks).
 fn mode_id(viewport: egui::ViewportId) -> egui::Id {
-    egui::Id::unique(("effectcraft.ime.ui-pass", viewport))
+    egui::Id::unique(("artheffect.ime.ui-pass", viewport))
 }
 /// The `egui::Id` holding the last committed IME mutation stamp accepted for this viewport.
 fn committed_id(viewport: egui::ViewportId) -> egui::Id {
-    egui::Id::unique(("effectcraft.ime.committed", viewport))
+    egui::Id::unique(("artheffect.ime.committed", viewport))
 }
 /// The `egui::Id` holding the frame number whose text-editor keyboard events were already consumed.
 fn input_id(viewport: egui::ViewportId) -> egui::Id {
-    egui::Id::unique(("effectcraft.ime.input-frame", viewport))
+    egui::Id::unique(("artheffect.ime.input-frame", viewport))
 }
 /// The `egui::Id` holding whether this viewport may request an IME reset in the current pass.
 fn admission_id(viewport: egui::ViewportId) -> egui::Id {
-    egui::Id::unique(("effectcraft.ime.can-request", viewport))
+    egui::Id::unique(("artheffect.ime.can-request", viewport))
 }
 
 /// Allow or forbid IME reset requests for the current viewport's pass by storing `allowed` in context data.
@@ -154,7 +154,7 @@ fn window_available(ctx: &egui::Context) -> bool {
 /// Install the per-pass IME hooks on `ctx` once: the begin hook marks a full UI pass and the end hook clears it.
 /// Later calls do nothing.
 pub(crate) fn install_hooks(ctx: &egui::Context) {
-    let id = egui::Id::unique("effectcraft.ime.hooks-installed");
+    let id = egui::Id::unique("artheffect.ime.hooks-installed");
     let first = ctx.data_mut(|data| {
         if data.get_temp::<bool>(id).unwrap_or(false) {
             false
@@ -167,14 +167,14 @@ pub(crate) fn install_hooks(ctx: &egui::Context) {
         return;
     }
     ctx.on_begin_pass(
-        "EffectCraft IME pass begin",
+        "Artheffect IME pass begin",
         std::sync::Arc::new(|ui| {
             let id = mode_id(ui.ctx().viewport_id());
             ui.ctx().data_mut(|data| data.insert_temp(id, true));
         }),
     );
     ctx.on_end_pass(
-        "EffectCraft IME pass end",
+        "Artheffect IME pass end",
         std::sync::Arc::new(|ui| {
             let id = mode_id(ui.ctx().viewport_id());
             ui.ctx().data_mut(|data| data.insert_temp(id, false));
@@ -191,7 +191,7 @@ fn read_reset(ctx: &egui::Context) -> Option<ResetGuard> {
 /// Record a reset for the current viewport: request a fresh IME fence when this pass is admitted, then store the
 /// destination selection, committed stamp and output identity and mark the composition stale. An unadmitted pass
 /// stores a suspended guard instead.
-fn request_reset_with_output(app: &EffectcraftApp, ctx: &egui::Context, output: Option<OutputContext>) {
+fn request_reset_with_output(app: &ArtheffectApp, ctx: &egui::Context, output: Option<OutputContext>) {
     let viewport = ctx.viewport_id();
     let allowed = ctx.data(|data| data.get_temp::<bool>(admission_id(viewport)).unwrap_or(false));
     let request = if allowed { ctx.request_ime_reset(viewport) } else { None };
@@ -203,14 +203,14 @@ fn request_reset_with_output(app: &EffectcraftApp, ctx: &egui::Context, output: 
 }
 
 /// Re-request a reset for the current viewport, keeping the output identity published earlier in the pass.
-fn request_reset(app: &EffectcraftApp, ctx: &egui::Context) {
+fn request_reset(app: &ArtheffectApp, ctx: &egui::Context) {
     let output = read_reset(ctx).and_then(|guard| guard.output);
     request_reset_with_output(app, ctx, output);
 }
 
 /// Re-request the reset when an unsuspended guard's destination selection or committed stamp no longer matches the
 /// app.
-fn sync_reset(app: &EffectcraftApp, ctx: &egui::Context) {
+fn sync_reset(app: &ArtheffectApp, ctx: &egui::Context) {
     if let Some(guard) = read_reset(ctx)
         && !guard.suspended
         && (guard.destination != ime_selection(app) || guard.committed != ime_stamp(app, ctx))
@@ -231,7 +231,7 @@ fn suspend_reset(ctx: &egui::Context) {
 
 /// Accept `request` only when it is this viewport's current, unsuspended request and the destination and stamp still
 /// match; then sync target and selection, clear the composition and preview and remember the selection.
-fn complete_reset(app: &EffectcraftApp, ui: &egui::Ui, request: egui::ImeResetId) {
+fn complete_reset(app: &ArtheffectApp, ui: &egui::Ui, request: egui::ImeResetId) {
     if !read_reset(ui.ctx()).is_some_and(|guard| !guard.suspended && guard.request == Some(request)) {
         return;
     }
@@ -278,7 +278,7 @@ pub(crate) fn ime_recorded(ctx: &egui::Context) -> bool {
 
 /// Close a logic-only tick: when no full UI pass ran, revoke admission and resync and suspend the reset guard so a
 /// hidden tick never publishes IME state.
-pub(crate) fn finish_logic(app: &EffectcraftApp, ctx: &egui::Context) {
+pub(crate) fn finish_logic(app: &ArtheffectApp, ctx: &egui::Context) {
     let id = mode_id(ctx.viewport_id());
     if !ctx.data(|data| data.get_temp::<bool>(id).unwrap_or(false)) {
         set_admission(ctx, false);
@@ -340,15 +340,15 @@ fn typing_key_id(viewport: egui::ViewportId) -> egui::Id {
 /// token distinguishes a target that reuses the same numeric ids (a restarted edit, a reopened
 /// project, undo that recreates the layer); a different comp or layer is a different owner. No
 /// caret, selection, text, document position or view geometry takes part.
-fn ime_target(app: &EffectcraftApp) -> Option<egui::ImeTarget> {
+fn ime_target(app: &ArtheffectApp) -> Option<egui::ImeTarget> {
     let comp = app.session.active_comp_id()?;
     let edit = app.session.state.text_edit.as_ref()?;
-    Some(egui::ImeTarget::new(egui::Id::unique(("effectcraft-ime-text", comp.0, edit.layer.0)), edit.session))
+    Some(egui::ImeTarget::new(egui::Id::unique(("artheffect-ime-text", comp.0, edit.layer.0)), edit.session))
 }
 
 /// The layer and edit-session token of the active text edit, or `None` when no editor is open. Caret, selection and
 /// text are deliberately excluded.
-fn ime_owner(app: &EffectcraftApp) -> Option<ImeOwner> {
+fn ime_owner(app: &ArtheffectApp) -> Option<ImeOwner> {
     let edit = app.session.state.text_edit.as_ref()?;
     Some(ImeOwner { layer: edit.layer, session: edit.session })
 }
@@ -358,7 +358,7 @@ fn ime_owner(app: &EffectcraftApp) -> Option<ImeOwner> {
 /// The cached value is keyed by the exact state that can change it. Repeated observations in
 /// one pass/frame (receipts and the final descriptor) therefore reuse one bounded snapshot
 /// instead of evaluating an animated Source Text or scanning the document each time.
-fn ime_surrounding_cached(app: &EffectcraftApp, ctx: &egui::Context) -> Option<ImeSurrounding> {
+fn ime_surrounding_cached(app: &ArtheffectApp, ctx: &egui::Context) -> Option<ImeSurrounding> {
     let viewport = ctx.viewport_id();
     let edit = app.session.state.text_edit.as_ref();
     let key = (
@@ -383,7 +383,7 @@ fn ime_surrounding_cached(app: &EffectcraftApp, ctx: &egui::Context) -> Option<I
 /// The committed-text stamp an IME receipt compares against: the bounded snapshot when it is available, else the
 /// editor revision marked unavailable. It deliberately does not use the global project revision, so an unrelated edit
 /// leaves a wide selection's stamp unchanged.
-fn ime_stamp(app: &EffectcraftApp, ctx: &egui::Context) -> egui::ImeMutationStamp {
+fn ime_stamp(app: &ArtheffectApp, ctx: &egui::Context) -> egui::ImeMutationStamp {
     match ime_surrounding_cached(app, ctx) {
         Some(w) => egui::ImeMutationStamp::from_committed(&w.text, w.cursor, w.anchor, None),
         // A global project revision would make an unrelated edit (an opacity undo) look like a
@@ -398,7 +398,7 @@ fn ime_stamp(app: &EffectcraftApp, ctx: &egui::Context) -> egui::ImeMutationStam
 /// Call it only after the command succeeded and actually changed the committed text (`before`
 /// and `after` are captured immediately around that mutation). Rejected events, no-ops and
 /// failed commands earn no receipt.
-fn note_ime_receipt(app: &mut EffectcraftApp, ctx: &egui::Context, before: egui::ImeMutationStamp, after: egui::ImeMutationStamp) {
+fn note_ime_receipt(app: &mut ArtheffectApp, ctx: &egui::Context, before: egui::ImeMutationStamp, after: egui::ImeMutationStamp) {
     let Some(target) = ime_target(app) else { return };
     let viewport = ctx.viewport_id();
     let frame = ctx.cumulative_frame_nr_for(viewport);
@@ -409,7 +409,7 @@ fn note_ime_receipt(app: &mut EffectcraftApp, ctx: &egui::Context, before: egui:
 ///
 /// A no-op (Backspace at the start of the document, a failed command) must not poison a later
 /// accepted IME commit in the same frame.
-fn note_ime_application_edit(app: &mut EffectcraftApp, ctx: &egui::Context, before: egui::ImeMutationStamp) {
+fn note_ime_application_edit(app: &mut ArtheffectApp, ctx: &egui::Context, before: egui::ImeMutationStamp) {
     if ime_stamp(app, ctx) != before {
         note_ime_application_change(app, ctx);
     }
@@ -417,7 +417,7 @@ fn note_ime_application_edit(app: &mut EffectcraftApp, ctx: &egui::Context, befo
 
 /// Record application-origin work (typing, paste, undo, automatic correction, ...) so `Other`
 /// dominates every remaining pass of the frame.
-fn note_ime_application_change(app: &mut EffectcraftApp, ctx: &egui::Context) {
+fn note_ime_application_change(app: &mut ArtheffectApp, ctx: &egui::Context) {
     let Some(target) = ime_target(app) else { return };
     let viewport = ctx.viewport_id();
     let frame = ctx.cumulative_frame_nr_for(viewport);
@@ -453,7 +453,7 @@ fn set_ime_composition(ui: &egui::Ui, composition: Option<ImeComposition>) {
 /// still pending (`TerminalPending`) needs a tombstone; there is no lingering event to reject when
 /// no pre-edit was seen. Repeated hidden passes retire an already guarded activation without
 /// allocating again; reactivation requests a new fence. Missing acknowledgement stays closed.
-fn invalidate_ime_composition(ui: &egui::Ui, app: &EffectcraftApp) {
+fn invalidate_ime_composition(ui: &egui::Ui, app: &ArtheffectApp) {
     if matches!(read_ime_composition(ui), Some(ImeComposition::Active(_) | ImeComposition::TerminalPending(_))) {
         set_ime_composition(ui, Some(ImeComposition::Stale));
         request_reset(app, ui.ctx());
@@ -465,7 +465,7 @@ fn invalidate_ime_composition(ui: &egui::Ui, app: &EffectcraftApp) {
 /// A target change or the end of the edit invalidates a visible composition or an observed empty
 /// pre-edit with a still-pending terminal event, and clears the visible preview. The tombstone is
 /// kept across arbitrary idle frames until the exact request-bound completion is observed.
-fn sync_ime_target(ui: &egui::Ui, app: &EffectcraftApp) {
+fn sync_ime_target(ui: &egui::Ui, app: &ArtheffectApp) {
     let viewport = ui.ctx().viewport_id();
     let current = ime_owner(app);
     let previous = ui.data(|d| d.get_temp::<Option<ImeOwner>>(ime_target_seen_id(viewport))).flatten();
@@ -483,13 +483,13 @@ fn sync_ime_target(ui: &egui::Ui, app: &EffectcraftApp) {
 }
 
 /// The active text edit's owner, anchor and caret, or `None` when no editor is open.
-fn ime_selection(app: &EffectcraftApp) -> Option<ImeSelection> {
+fn ime_selection(app: &ArtheffectApp) -> Option<ImeSelection> {
     let edit = app.session.state.text_edit.as_ref()?;
     Some(ImeSelection { owner: ime_owner(app)?, anchor: edit.anchor, caret: edit.caret })
 }
 
 /// Accept the selection resulting from an IME event without cancelling its remaining events.
-fn remember_ime_selection(ui: &egui::Ui, app: &EffectcraftApp) {
+fn remember_ime_selection(ui: &egui::Ui, app: &ArtheffectApp) {
     let viewport = ui.ctx().viewport_id();
     let selection = ime_selection(app);
     ui.data_mut(|d| d.insert_temp(ime_selection_id(viewport), selection));
@@ -501,7 +501,7 @@ fn remember_ime_selection(ui: &egui::Ui, app: &EffectcraftApp) {
 /// Run before IME dispatch, and after application events, while the old selection is still
 /// recorded. Accepted IME events update that record separately: their own delete must not
 /// invalidate the commit that follows it.
-fn sync_ime_selection(ui: &egui::Ui, app: &EffectcraftApp) {
+fn sync_ime_selection(ui: &egui::Ui, app: &ArtheffectApp) {
     let viewport = ui.ctx().viewport_id();
     let previous = ui.data(|d| d.get_temp::<Option<ImeSelection>>(ime_selection_id(viewport))).flatten();
     let committed = ui.data(|data| data.get_temp::<egui::ImeMutationStamp>(committed_id(viewport)));
@@ -554,7 +554,7 @@ fn ime_event_is_stale(ui: &egui::Ui, owner: ImeOwner) -> bool {
 }
 
 /// The pre-edit text to draw, only when it belongs to the current edit owner and is non-empty.
-fn visible_preedit(ui: &egui::Ui, app: &EffectcraftApp) -> Option<String> {
+fn visible_preedit(ui: &egui::Ui, app: &ArtheffectApp) -> Option<String> {
     let owner = ime_owner(app)?;
     let p = read_preedit(ui)?;
     (p.owner == owner && !p.text.is_empty()).then_some(p.text)
@@ -566,7 +566,7 @@ fn visible_preedit(ui: &egui::Ui, app: &EffectcraftApp) -> Option<String> {
 /// windows publish after the IME-owning body records geometry and again after their last body;
 /// publication can therefore precede later bodies in that window. The overlay only records
 /// geometry; this function resolves the current owner and availability when it publishes.
-pub(crate) fn finish_ime(app: &mut EffectcraftApp, ui: &egui::Ui) {
+pub(crate) fn finish_ime(app: &mut ArtheffectApp, ui: &egui::Ui) {
     let ctx = ui.ctx();
     let viewport = ctx.viewport_id();
     let frame = ctx.cumulative_frame_nr_for(viewport);
@@ -660,7 +660,7 @@ pub(crate) fn finish_ime(app: &mut EffectcraftApp, ui: &egui::Ui) {
 }
 
 /// Release one native viewport's IME data and tracker state.
-pub(crate) fn end_viewport(app: &mut EffectcraftApp, ctx: &egui::Context, viewport: egui::ViewportId) {
+pub(crate) fn end_viewport(app: &mut ArtheffectApp, ctx: &egui::Context, viewport: egui::ViewportId) {
     ctx.data_mut(|d| {
         d.remove::<Preedit>(ime_preedit_id(viewport));
         d.remove::<ImeComposition>(ime_composition_id(viewport));
@@ -738,7 +738,7 @@ impl Edited {
     }
 }
 
-fn edited(app: &EffectcraftApp, ectx: &EvalCtx, lid: LayerId) -> Option<Edited> {
+fn edited(app: &ArtheffectApp, ectx: &EvalCtx, lid: LayerId) -> Option<Edited> {
     let layer = ectx.comp.layer(lid)?.clone();
     if !matches!(layer.source, LayerSource::Text) {
         return None;
@@ -747,13 +747,13 @@ fn edited(app: &EffectcraftApp, ectx: &EvalCtx, lid: LayerId) -> Option<Edited> 
     let lay = layout_doc(&doc);
     let m = super::viewer::l2c(ectx, &layer).0;
     let inv = m.inverse()?;
-    let carets = effectcraft_engine::render::text::caret_maps(ectx, &layer, lay.chars);
+    let carets = artheffect_engine::render::text::caret_maps(ectx, &layer, lay.chars);
     Some(Edited { layer, doc, lay, m, inv, carets })
 }
 
 /// Type-tool clicks prefer a selected text layer, as viewer dragging does (#230).
 /// Double-clicks retain topmost picking. Both use the same visibility/lock/time/solo filter.
-fn text_layer_at(app: &EffectcraftApp, ectx: &EvalCtx, map: &ViewerMap, s: Pos2, prefer_selected: bool) -> Option<Edited> {
+fn text_layer_at(app: &ArtheffectApp, ectx: &EvalCtx, map: &ViewerMap, s: Pos2, prefer_selected: bool) -> Option<Edited> {
     let mut topmost = None;
     for e in super::viewer::selectable_layers(ectx.comp, ectx.time)
         .filter(|l| matches!(l.source, LayerSource::Text))
@@ -770,7 +770,7 @@ fn text_layer_at(app: &EffectcraftApp, ectx: &EvalCtx, map: &ViewerMap, s: Pos2,
     topmost
 }
 
-fn exec(app: &mut EffectcraftApp, id: &str, p: Value) -> Option<Value> {
+fn exec(app: &mut ArtheffectApp, id: &str, p: Value) -> Option<Value> {
     match app.session.execute(id, p) {
         Ok(v) => Some(v),
         Err(e) => {
@@ -788,7 +788,7 @@ fn keeps_text_edit(p: PanelKind) -> bool {
 
 /// A click in panel `p`. Any other panel (the Timeline, the Project panel, …) ends the edit, as a
 /// click outside the text does, and gives the keyboard back to the app (#831).
-pub fn panel_clicked(app: &mut EffectcraftApp, ctx: &egui::Context, p: PanelKind) {
+pub fn panel_clicked(app: &mut ArtheffectApp, ctx: &egui::Context, p: PanelKind) {
     if app.session.state.text_edit.is_some() && !keeps_text_edit(p) {
         exec(app, "text.endEdit", json!({}));
         // `viewport_id()` takes the context's lock itself, so resolve it before entering
@@ -812,7 +812,7 @@ fn typing_key(ui: &egui::Ui, bump: bool) -> String {
 
 /// A press inside the edited text layer: grab a box handle, place the caret (shift extends from
 /// `shift_anchor`), or, outside the text, commit the edit. Returns the drag it starts, if any.
-fn press_on_edited(app: &mut EffectcraftApp, ui: &egui::Ui, map: &ViewerMap, e: &Edited, pos: Pos2, shift_anchor: Option<usize>) -> Option<Drag> {
+fn press_on_edited(app: &mut ArtheffectApp, ui: &egui::Ui, map: &ViewerMap, e: &Edited, pos: Pos2, shift_anchor: Option<usize>) -> Option<Drag> {
     if let Some(h) = e.handles().iter().position(|h| e.to_screen(map, *h).distance(pos) < 7.0) {
         let b = e.doc.box_size.unwrap_or([0.0; 2]);
         return Some(Drag::Resize { layer: e.layer.id, handle: h, start_box: [e.doc.box_pos[0], e.doc.box_pos[1], b[0], b[1]] });
@@ -830,7 +830,7 @@ fn press_on_edited(app: &mut EffectcraftApp, ui: &egui::Ui, map: &ViewerMap, e: 
 
 /// A press with the Type tool that missed the edited text: edit the text layer under it, or
 /// start creating a new one.
-fn press_type_tool(app: &mut EffectcraftApp, ectx: &EvalCtx, map: &ViewerMap, pos: Pos2, tool: Tool) -> Drag {
+fn press_type_tool(app: &mut ArtheffectApp, ectx: &EvalCtx, map: &ViewerMap, pos: Pos2, tool: Tool) -> Drag {
     if let Some(e) = text_layer_at(app, ectx, map, pos, true) {
         let ci = e.hit(map, pos);
         exec(app, "text.edit", json!({"layer": e.layer.id.0, "caret": ci}));
@@ -861,7 +861,7 @@ fn resized_box(start_box: [f64; 4], handle: usize, dx: f64, dy: f64) -> [f64; 4]
 
 /// Keyboard routing for the text editor: while a session is live, keep the focus on it and feed
 /// it this frame's keys; otherwise release the IME and the focus.
-fn keyboard_focus(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+fn keyboard_focus(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     if app.session.state.text_edit.is_some() && app.dialog.is_none() && ui.is_enabled() {
         // Register after pointer handling so new edits take focus in this frame. An inactive
         // editor must not take Tab focus and immediately surrender it before viewer controls.
@@ -898,7 +898,7 @@ fn keyboard_focus(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 /// Viewer hook: draws the edit overlay and handles text pointer and keyboard input. Returns
 /// true when it owns this frame's pointer interaction (the viewer then skips its own gestures).
 pub fn hook(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     painter: &egui::Painter,
     map: &ViewerMap,
@@ -1037,7 +1037,7 @@ pub fn hook(
         let cur2 = app.session.state.text_edit.clone().and_then(|s| edited(app, ectx, s.layer));
         match cur2 {
             Some(e) if e.contains(map, p) => {
-                let r = effectcraft_engine::keyframe::text_doc::word_at(&e.doc.text, e.hit(map, p));
+                let r = artheffect_engine::keyframe::text_doc::word_at(&e.doc.text, e.hit(map, p));
                 exec(app, "text.setSelection", json!({"anchor": r.start, "caret": r.end}));
                 owns = true;
             }
@@ -1078,7 +1078,7 @@ pub fn hook(
 /// This frame's keys, in order, into the edited text, up to a press outside the `viewer`: the
 /// panel it lands in decides (after this frame's panels) whether the edit ends, so the keys after
 /// it in this frame are neither typed nor run as shortcuts (#831).
-fn keyboard(app: &mut EffectcraftApp, ui: &mut egui::Ui, viewer: Rect) {
+fn keyboard(app: &mut ArtheffectApp, ui: &mut egui::Ui, viewer: Rect) {
     let viewport = ui.ctx().viewport_id();
     let frame = ui.ctx().cumulative_frame_nr_for(viewport);
     let first = ui.data_mut(|data| {
@@ -1266,16 +1266,16 @@ fn keyboard(app: &mut EffectcraftApp, ui: &mut egui::Ui, viewer: Rect) {
 /// An application key press in the edited text: caret moves, deletes, insertions, formatting and
 /// the editor's own chords.
 fn key_event(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &egui::Ui,
     ctx: &egui::Context,
-    sel: &effectcraft_engine::commands::text_edit::TextEdit,
+    sel: &artheffect_engine::commands::text_edit::TextEdit,
     key: egui::Key,
     m: egui::Modifiers,
 ) {
     use egui::Key;
     let cmd = m.command;
-    let mv = |app: &mut EffectcraftApp, to: &str| {
+    let mv = |app: &mut ArtheffectApp, to: &str| {
         exec(app, "text.moveCaret", json!({"to": to, "extend": m.shift}));
     };
     match key {
@@ -1388,7 +1388,7 @@ fn key_event(
 /// characters (`DeleteSurrounding`). The engine command keeps the selected text — the following
 /// `Commit` replaces it — and leaves a character a byte count only partly covers; the deletion
 /// and the commit share this typing key, so a replacement stays one undo step.
-fn ime_delete(app: &mut EffectcraftApp, ui: &egui::Ui, before: usize, after: usize, bytes: bool) -> bool {
+fn ime_delete(app: &mut ArtheffectApp, ui: &egui::Ui, before: usize, after: usize, bytes: bool) -> bool {
     if (before == 0 && after == 0) || app.session.state.text_edit.is_none() {
         return false;
     }
@@ -1399,7 +1399,7 @@ fn ime_delete(app: &mut EffectcraftApp, ui: &egui::Ui, before: usize, after: usi
 /// Paint the paragraph box and handles, selection, caret or pre-edit for `e`; register the editor's and box handles'
 /// automation regions; request the caret-blink repaint; and record the pass's text and caret rectangles for the IME
 /// finalizer.
-fn draw(app: &mut EffectcraftApp, ui: &mut egui::Ui, painter: &egui::Painter, map: &ViewerMap, e: &Edited, sel: std::ops::Range<usize>, caret: usize) {
+fn draw(app: &mut ArtheffectApp, ui: &mut egui::Ui, painter: &egui::Painter, map: &ViewerMap, e: &Edited, sel: std::ops::Range<usize>, caret: usize) {
     let t = app.tokens;
     let to_s = |p: Point| e.to_screen(map, (p.x, p.y));
     // Paragraph box and its handles.

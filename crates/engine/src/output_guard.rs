@@ -27,8 +27,8 @@ use std::path::Component;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use effectcraft_project::render_queue::{RenderQueueItem, log_path, numbered_template, sequence_frame, sequence_parts, sequence_path};
-use effectcraft_project::{Footage, ItemKind};
+use artheffect_project::render_queue::{RenderQueueItem, log_path, numbered_template, sequence_frame, sequence_parts, sequence_path};
+use artheffect_project::{Footage, ItemKind};
 use serde_json::{Value, json};
 
 use crate::Session;
@@ -742,7 +742,7 @@ mod tests {
         for _ in 0..2 {
             s.execute("renderQueue.add", json!({"format": "h264", "output": "/virtual/shared.mp4"})).unwrap();
         }
-        let (outputs, _) = s.queued_outputs(&effectcraft_project::render_queue::OutputFormat::ALL);
+        let (outputs, _) = s.queued_outputs(&artheffect_project::render_queue::OutputFormat::ALL);
         let duplicates = s.duplicate_outputs(&outputs, &[]).unwrap();
         assert_eq!(duplicates.len(), 1);
         assert!(duplicates[0].path.ends_with("shared.mp4"));
@@ -929,7 +929,7 @@ mod tests {
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
     fn unrelated_same_size_frames_are_indexed_once() {
-        let dir = std::env::temp_dir().join(format!("effectcraft-identity-index-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("artheffect-identity-index-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let mut protected = Protected::default();
         for i in 0..128 {
@@ -981,7 +981,7 @@ mod tests {
 
     #[test]
     fn a_file_is_the_same_file_under_every_spelling_the_volume_allows() {
-        let dir = std::env::temp_dir().join(format!("effectcraft-output-guard-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("artheffect-output-guard-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(dir.join("sub")).unwrap();
         std::fs::write(dir.join("clip.mov"), b"x").unwrap();
@@ -996,7 +996,7 @@ mod tests {
 
     #[test]
     fn a_sequences_folder_is_read_once_for_its_frames() {
-        let dir = std::env::temp_dir().join(format!("effectcraft-output-frames-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("artheffect-output-frames-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(dir.join("a_00003.png")).unwrap(); // a folder is not a frame
         for name in ["a_00001.png", "a_00002.png", "a_0004.png", "a_00004.jpg", "b_00002.png", "a_00009.png"] {

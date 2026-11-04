@@ -3,7 +3,7 @@
 //! cyclic/over-budget graphs or expressions sampled at unknown times.
 use super::{KeyHasher, hash_debug, hash_values};
 use crate::EvalCtx;
-use effectcraft_project::{ItemId, ItemKind, Layer, LayerId, LayerSource, LightKind, Node, PropGroup};
+use artheffect_project::{ItemId, ItemKind, Layer, LayerId, LayerSource, LightKind, Node, PropGroup};
 use std::hash::Hash;
 
 pub(super) fn hash(h: &mut KeyHasher, ctx: &EvalCtx, layer: &Layer, effects: super::EffectScope) -> Option<()> {
@@ -102,7 +102,7 @@ impl Dependencies<'_> {
         // An Environment light's image lights Advanced 3D models (its source can be any
         // layer's render, or any environment layer) — too open-ended to hash: while one is
         // on (and lighting: Draft 3D lights nothing), don't cache the read.
-        if ctx.comp.renderer == effectcraft_project::Renderer::Advanced3D
+        if ctx.comp.renderer == artheffect_project::Renderer::Advanced3D
             && !ctx.comp.draft_3d
             && ctx.comp.layers.iter().any(|l| {
                 l.is_light() && l.switches.video && l.is_active_at(ctx.time) && matches!(l.source, LayerSource::Light { kind: LightKind::Environment })

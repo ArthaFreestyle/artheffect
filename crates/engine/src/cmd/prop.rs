@@ -1,8 +1,8 @@
 //! Properties, keyframes and expressions (Animation menu + timeline/Effect Controls gestures).
 
-use effectcraft_keyframe::{Ease, Interp, Keyframe, easy_ease, key_at, set_key};
-use effectcraft_project::{GroupKind, ItemId, Layer, LayerId, Property, Uid};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_keyframe::{Ease, Interp, Keyframe, easy_ease, key_at, set_key};
+use artheffect_project::{GroupKind, ItemId, Layer, LayerId, Property, Uid};
+use artheffect_time::{FrameRate, Tick};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, b_p, bad, comp_id, f_p, has_comp, has_keys, has_layers, layer_mut, layer_p, layers_p, merge_p, selected_leaf_props, str_p};
@@ -71,7 +71,7 @@ fn with_prop<T>(
 
 /// Keep Polystar controls and their selection references in the property's edit transaction.
 pub(super) fn sync_polystar_property(
-    proj: &mut effectcraft_project::Project,
+    proj: &mut artheffect_project::Project,
     state: &mut crate::EditorState,
     cid: ItemId,
     lid: LayerId,
@@ -98,7 +98,7 @@ pub(super) fn sync_polystar_property(
 /// with AE's switch defaults (#1685). Animated/expression-driven types need the controls at
 /// every time, including when the current value is Polygon.
 fn sync_polystar_type(layer: &mut Layer, uid: Uid, time: Tick, next: &mut Uid) -> Result<Vec<Uid>> {
-    if !matches!(layer.source, effectcraft_project::LayerSource::Shape) {
+    if !matches!(layer.source, artheffect_project::LayerSource::Shape) {
         return Ok(vec![]);
     }
     let Some(group) =
@@ -107,11 +107,11 @@ fn sync_polystar_type(layer: &mut Layer, uid: Uid, time: Tick, next: &mut Uid) -
         return Ok(vec![]);
     };
     let Some(kind) = group.get("type") else { return Ok(vec![]) };
-    let needs_inner = kind.is_animated() || kind.has_expression() || kind.value_at(time) == effectcraft_keyframe::Value::Enum(0);
+    let needs_inner = kind.is_animated() || kind.has_expression() || kind.value_at(time) == artheffect_keyframe::Value::Enum(0);
     if !needs_inner {
         let mut removed = vec![];
         group.children.retain(|node| {
-            if let effectcraft_project::Node::Prop(p) = node
+            if let artheffect_project::Node::Prop(p) = node
                 && matches!(p.match_id.as_str(), "innerRadius" | "innerRoundness")
             {
                 removed.push(p.uid);
@@ -122,16 +122,16 @@ fn sync_polystar_type(layer: &mut Layer, uid: Uid, time: Tick, next: &mut Uid) -
         return Ok(removed);
     }
     for (inner, name, outer, value, ui) in [
-        ("innerRadius", "Inner Radius", "outerRadius", 50.0, effectcraft_project::ParamUi::Pixels),
-        ("innerRoundness", "Inner Roundness", "outerRoundness", 0.0, effectcraft_project::ParamUi::Percent),
+        ("innerRadius", "Inner Radius", "outerRadius", 50.0, artheffect_project::ParamUi::Pixels),
+        ("innerRoundness", "Inner Roundness", "outerRoundness", 0.0, artheffect_project::ParamUi::Percent),
     ] {
         if group.get(inner).is_none() {
             let uid = *next;
             *next = next.checked_add(1).ok_or_else(|| bad("prop", "property ids exhausted"))?;
-            let prop = Property::new(uid, inner, name, effectcraft_keyframe::Value::Scalar(value)).with_ui(ui);
+            let prop = Property::new(uid, inner, name, artheffect_keyframe::Value::Scalar(value)).with_ui(ui);
             let index =
-                group.children.iter().position(|n| matches!(n, effectcraft_project::Node::Prop(p) if p.match_id == outer)).unwrap_or(group.children.len());
-            group.children.insert(index, effectcraft_project::Node::Prop(prop));
+                group.children.iter().position(|n| matches!(n, artheffect_project::Node::Prop(p) if p.match_id == outer)).unwrap_or(group.children.len());
+            group.children.insert(index, artheffect_project::Node::Prop(prop));
         }
     }
     Ok(vec![])
@@ -505,10 +505,10 @@ fn set(s: &mut Session, p: &Value) -> Result<Value> {
         let cur = pr.value_at(lt);
         let mut nv = cur.coerce_json(&v).ok_or_else(|| bad("prop.set", format!("can't use {v} for a {} property", cur.kind_name())))?;
         // Clamp to slider ranges.
-        if let effectcraft_project::ParamUi::Slider { min, max, .. } = pr.ui
-            && let effectcraft_keyframe::Value::Scalar(x) = nv
+        if let artheffect_project::ParamUi::Slider { min, max, .. } = pr.ui
+            && let artheffect_keyframe::Value::Scalar(x) = nv
         {
-            nv = effectcraft_keyframe::Value::Scalar(x.clamp(min, max));
+            nv = artheffect_keyframe::Value::Scalar(x.clamp(min, max));
         }
         pr.set_value_at(at.unwrap_or(lt), nv.clone());
         Ok(nv.to_json())
@@ -672,16 +672,16 @@ fn toggle_transform_key(s: &mut Session, p: &Value) -> Result<Value> {
 fn apply_expr(pr: &mut Property, text: &Option<String>, enabled: Option<bool>, def: &str) {
     match (text, enabled) {
         (Some(t), _) if t.trim().is_empty() => pr.expr = None,
-        (Some(t), e) => pr.expr = Some(effectcraft_project::Expression { text: t.clone(), enabled: e.unwrap_or(true) }),
+        (Some(t), e) => pr.expr = Some(artheffect_project::Expression { text: t.clone(), enabled: e.unwrap_or(true) }),
         (None, Some(e)) => {
             if let Some(x) = &mut pr.expr {
                 x.enabled = e;
             } else if e {
-                pr.expr = Some(effectcraft_project::Expression { text: def.to_string(), enabled: true });
+                pr.expr = Some(artheffect_project::Expression { text: def.to_string(), enabled: true });
             }
         }
         (None, None) => {
-            pr.expr = if pr.expr.is_some() { None } else { Some(effectcraft_project::Expression { text: def.to_string(), enabled: true }) };
+            pr.expr = if pr.expr.is_some() { None } else { Some(artheffect_project::Expression { text: def.to_string(), enabled: true }) };
         }
     }
 }
@@ -745,27 +745,27 @@ fn set_expr(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// A property's default value, when it has a known one: an effect parameter's, or a Transform
 /// property's (not a camera's or light's).
-fn default_value(s: &Session, cid: ItemId, lid: LayerId, uid: Uid) -> Option<effectcraft_keyframe::Value> {
+fn default_value(s: &Session, cid: ItemId, lid: LayerId, uid: Uid) -> Option<artheffect_keyframe::Value> {
     let comp = s.project.comp(cid)?;
     let layer = comp.layer(lid)?;
     let pr = layer.props.find(uid)?;
     let effect = layer.props.node_chain(uid)?.into_iter().find_map(|n| match n {
-        effectcraft_project::Node::Group(g) => match &g.kind {
+        artheffect_project::Node::Group(g) => match &g.kind {
             GroupKind::Effect { effect } => Some(effect.clone()),
             _ => None,
         },
         _ => None,
     });
     if let Some(effect) = effect {
-        let ps = effectcraft_effects::find(&effect)?.params.iter().find(|ps| ps.id == pr.match_id)?;
-        return Some(effectcraft_effects::default_value(ps, effectcraft_render::effect_bounds(&s.project, comp, layer).0));
+        let ps = artheffect_effects::find(&effect)?.params.iter().find(|ps| ps.id == pr.match_id)?;
+        return Some(artheffect_effects::default_value(ps, artheffect_render::effect_bounds(&s.project, comp, layer).0));
     }
-    if matches!(layer.source, effectcraft_project::LayerSource::Camera | effectcraft_project::LayerSource::Light { .. })
+    if matches!(layer.source, artheffect_project::LayerSource::Camera | artheffect_project::LayerSource::Light { .. })
         || !layer.transform()?.props().any(|t| t.uid == uid)
     {
         return None;
     }
-    let (w, h) = effectcraft_render::source_size(&s.project, layer);
+    let (w, h) = artheffect_render::source_size(&s.project, layer);
     super::layer::transform_default(&pr.match_id, (w as f64, h as f64), (comp.width as f64, comp.height as f64))
 }
 
@@ -848,7 +848,7 @@ fn path_points(l: &Layer, uid: Uid, lt: Tick) -> Option<(Uid, usize)> {
         return None;
     }
     match owner.get("path")?.value_at(lt) {
-        effectcraft_keyframe::Value::Path(p) => Some((owner.uid, p.vertices.len())),
+        artheffect_keyframe::Value::Path(p) => Some((owner.uid, p.vertices.len())),
         _ => None,
     }
 }
@@ -948,11 +948,11 @@ fn select_keys(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 /// References that can be edited, including explicit key lists supplied by commands.
-pub(crate) fn editable_keys(comp: &effectcraft_project::Comp, selected: &[KeyRef]) -> Vec<KeyRef> {
+pub(crate) fn editable_keys(comp: &artheffect_project::Comp, selected: &[KeyRef]) -> Vec<KeyRef> {
     selected.iter().filter(|key| key_layer_editable(comp, key.layer)).copied().collect()
 }
 
-pub(crate) fn key_layer_editable(comp: &effectcraft_project::Comp, layer: LayerId) -> bool {
+pub(crate) fn key_layer_editable(comp: &artheffect_project::Comp, layer: LayerId) -> bool {
     comp.layer(layer).is_some_and(|layer| !layer.switches.locked)
 }
 
@@ -1009,7 +1009,7 @@ pub(crate) fn edit_keys(s: &mut Session, label: &str, merge: Option<&str>, f: im
             // Resolve exact stored indices before roving changes their times. Deleted or
             // stale references cannot select a neighbouring key.
             let tracked: Vec<(Tick, usize)> = targets.into_iter().filter_map(|(at, old)| key_at(&pr.keys, at).map(|i| (old, i))).collect();
-            effectcraft_keyframe::retime_roving(&mut pr.keys, pr.spatial);
+            artheffect_keyframe::retime_roving(&mut pr.keys, pr.spatial);
             for (old, i) in tracked {
                 if let Some(key) = pr.keys.get(i) {
                     remapped.insert(KeyRef { layer: lid, prop: uid, time: old }, KeyRef { layer: lid, prop: uid, time: key.time });
@@ -1030,7 +1030,7 @@ pub(crate) fn key_gesture(
     merge: Option<&str>,
     d: Tick,
     absolute: bool,
-) -> (Vec<KeyRef>, Tick, Option<std::sync::Arc<effectcraft_project::Project>>) {
+) -> (Vec<KeyRef>, Tick, Option<std::sync::Arc<artheffect_project::Project>>) {
     let gesture = merge.is_some_and(|m| s.history.merge_key.as_deref() == Some(m)) && s.key_move.as_ref().map(|g| g.merge.as_str()) == merge;
     match (&s.key_move, s.history.undo.last()) {
         (Some(g), Some((_, base))) if gesture => (g.from.clone(), if absolute { d } else { g.total + d }, Some(base.clone())),
@@ -1042,7 +1042,7 @@ pub(crate) fn key_gesture(
 /// landing on another key of its property replaces it, roving keys follow their neighbours and
 /// keys of locked layers stay. Returns the keys' new references in `from`'s order: the selection
 /// keeps the order it was made in.
-pub(crate) fn move_key_refs(comp: &mut effectcraft_project::Comp, from: &[KeyRef], to: impl Fn(&Layer, Tick) -> Result<Tick>) -> Result<Vec<KeyRef>> {
+pub(crate) fn move_key_refs(comp: &mut artheffect_project::Comp, from: &[KeyRef], to: impl Fn(&Layer, Tick) -> Result<Tick>) -> Result<Vec<KeyRef>> {
     let mut remapped: std::collections::HashMap<KeyRef, KeyRef> = Default::default();
     let mut groups: std::collections::BTreeMap<(LayerId, Uid), Vec<Tick>> = Default::default();
     for k in from {
@@ -1077,7 +1077,7 @@ pub(crate) fn move_key_refs(comp: &mut effectcraft_project::Comp, from: &[KeyRef
         }
         // Resolve stored indices before roving keys change their times.
         let tracked: Vec<(Tick, usize)> = targets.into_iter().filter_map(|(t, old)| key_at(&pr.keys, t).map(|i| (old, i))).collect();
-        effectcraft_keyframe::retime_roving(&mut pr.keys, pr.spatial);
+        artheffect_keyframe::retime_roving(&mut pr.keys, pr.spatial);
         for (old, i) in tracked {
             if let Some(key) = pr.keys.get(i) {
                 remapped.insert(at(old), at(key.time));
@@ -1198,7 +1198,7 @@ fn interpolation(s: &mut Session, p: &Value) -> Result<Value> {
     edit_keys(s, "Keyframe Interpolation", None, move |keys, i, _| {
         if let Some(sp) = spatial.as_deref() {
             // (Bezier keeps the current handles, with handles where the path left straight.)
-            let (tin, tout) = effectcraft_keyframe::spatial_handles(keys, i);
+            let (tin, tout) = artheffect_keyframe::spatial_handles(keys, i);
             let k = &mut keys[i];
             match sp {
                 "linear" => {
@@ -1325,7 +1325,7 @@ fn velocity(s: &mut Session, p: &Value) -> Result<Value> {
         let n = keys[i].value.dims().max(1);
         // Current presentation of each side, so unspecified parts keep their values.
         let cur = |keys: &[Keyframe], out: bool| -> Vec<Ease> {
-            (0..n).map(|d| effectcraft_keyframe::side_ease(keys, i, d, false, out).unwrap_or(Ease::EASY)).collect()
+            (0..n).map(|d| artheffect_keyframe::side_ease(keys, i, d, false, out).unwrap_or(Ease::EASY)).collect()
         };
         let cur_in = cur(keys, false);
         let cur_out = cur(keys, true);
@@ -1388,7 +1388,7 @@ fn convert_one_expr(s: &mut Session, cid: ItemId, lid: LayerId, uid: Uid) -> Res
     let fd = comp.frame_duration();
     let mut t = layer.in_point;
     while t < layer.out_point {
-        let ctx = effectcraft_render::EvalCtx {
+        let ctx = artheffect_render::EvalCtx {
             project: &s.project,
             comp_id: cid,
             comp: &comp,

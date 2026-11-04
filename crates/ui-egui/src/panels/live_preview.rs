@@ -18,7 +18,7 @@ use serde_json::Value;
 use crate::panels::dialogs::Placement;
 use crate::panels::layer_styles_dialog::{Checkpoint, checkpoint};
 use crate::panels::preview_merge::{self, Applied};
-use crate::{Dialog, EffectcraftApp};
+use crate::{ArtheffectApp, Dialog};
 
 /// Where a previewing dialog opens: the lower right, undimmed.
 pub const PLACE: Placement = Placement { start: vec2(0.75, 0.8), dim: false };
@@ -46,23 +46,23 @@ impl LivePreview {
 }
 
 /// Start previewing for `dialog`, which has just opened on an existing item (Preview on).
-pub fn begin(app: &mut EffectcraftApp, dialog: Dialog) {
+pub fn begin(app: &mut ArtheffectApp, dialog: Dialog) {
     app.dialog_state.live = LivePreview { dialog: Some(dialog), on: true, checkpoint: Some(checkpoint(app)), ..Default::default() };
 }
 
 /// The dialog that is open is previewing.
-pub fn active(app: &EffectcraftApp) -> bool {
+pub fn active(app: &ArtheffectApp) -> bool {
     app.dialog_state.live.active_for(app.dialog)
 }
 
 /// Where the open dialog goes: the lower right, undimmed, while it previews; else the middle.
-pub fn place(app: &EffectcraftApp) -> Placement {
+pub fn place(app: &ArtheffectApp) -> Placement {
     if active(app) { PLACE } else { Placement::default() }
 }
 
 /// Keep the project in step with the draft: `command` with `params` is what OK would run. The
 /// first call (the draft as it opened) only notes it.
-pub fn sync(app: &mut EffectcraftApp, command: &'static str, params: Value) {
+pub fn sync(app: &mut ArtheffectApp, command: &'static str, params: Value) {
     if !active(app) {
         return;
     }
@@ -93,7 +93,7 @@ pub fn sync(app: &mut EffectcraftApp, command: &'static str, params: Value) {
 }
 
 /// The project as the dialog found it.
-fn put_back(app: &mut EffectcraftApp) {
+fn put_back(app: &mut ArtheffectApp) {
     if let Some(cp) = app.dialog_state.live.checkpoint.clone() {
         let at = app.dialog_state.live.applied_at.take();
         // Only what the preview did is taken back: an edit made while the dialog was open stays.
@@ -107,7 +107,7 @@ fn put_back(app: &mut EffectcraftApp) {
 /// `params`, the draft as OK found it (an edit made in the same frame as OK is not in the last
 /// preview). Returns whether the project then already has the edit (the caller must not run the
 /// command again); otherwise the caller runs it, as without a preview.
-pub fn keep(app: &mut EffectcraftApp, command: &'static str, params: Value) -> bool {
+pub fn keep(app: &mut ArtheffectApp, command: &'static str, params: Value) -> bool {
     sync(app, command, params);
     let kept = active(app) && app.dialog_state.live.applied.is_some();
     app.dialog_state.live = LivePreview::default();
@@ -115,7 +115,7 @@ pub fn keep(app: &mut EffectcraftApp, command: &'static str, params: Value) -> b
 }
 
 /// Cancel and Escape: take back whatever the preview applied.
-pub fn cancel(app: &mut EffectcraftApp) {
+pub fn cancel(app: &mut ArtheffectApp) {
     if active(app) {
         put_back(app);
     }

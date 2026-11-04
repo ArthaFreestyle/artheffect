@@ -35,7 +35,7 @@ mod copy_frame_tests {
         let mut session = Session::default();
         session.execute("comp.new", json!({"name": "Copy", "width": 8, "height": 6, "duration": 1})).unwrap();
         session.execute("layer.newSolid", json!({"color": "#ff0000"})).unwrap();
-        let mut app = EffectcraftApp::new(session);
+        let mut app = ArtheffectApp::new(session);
         let ctx = egui::Context::default();
         let mut output = ctx.run_ui(egui::RawInput::default(), |ui| {
             crate::menus::invoke(&mut app, ui.ctx(), "comp.copyFrame", json!({})).unwrap();

@@ -2,20 +2,20 @@
 //! channel moves the other by the same dB, so the stereo balance stays, typed or scrubbed, on a
 //! static or animated property, and one Undo takes it back.
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::LayerId;
-use effectcraft_ui_egui::EffectcraftApp;
+use artheffect_engine::Session;
+use artheffect_engine::project::LayerId;
+use artheffect_ui_egui::ArtheffectApp;
 use egui::{Event, Key, Modifiers, PointerButton, Pos2, pos2, vec2};
 use egui_kittest::Harness;
 use serde_json::json;
 
-fn center(h: &Harness<'_, EffectcraftApp>, id: &str) -> Pos2 {
+fn center(h: &Harness<'_, ArtheffectApp>, id: &str) -> Pos2 {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0)
 }
 
 /// Press on `from`, move to `to` in `steps`, release there.
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, steps: u32) {
+fn drag(h: &mut Harness<'_, ArtheffectApp>, from: Pos2, to: Pos2, steps: u32) {
     h.input_mut().events.push(Event::PointerMoved(from));
     h.step();
     h.input_mut().events.push(Event::PointerButton { pos: from, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -28,12 +28,12 @@ fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, steps: u32) {
     h.run_steps(3);
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, id: &str) {
     let p = center(h, id);
     drag(h, p, p, 1);
 }
 
-fn type_value(h: &mut Harness<'_, EffectcraftApp>, id: &str, v: &str) {
+fn type_value(h: &mut Harness<'_, ArtheffectApp>, id: &str, v: &str) {
     click(h, id);
     h.input_mut().events.push(Event::Text(v.into()));
     h.step();
@@ -56,14 +56,14 @@ fn comps(s: &mut Session) {
 }
 
 /// Twirl layer `l` open to its property `uid`.
-fn reveal(h: &mut Harness<'_, EffectcraftApp>, l: u64, uid: u64) {
+fn reveal(h: &mut Harness<'_, ArtheffectApp>, l: u64, uid: u64) {
     h.state_mut().ui.timeline.open_layers.insert(l);
     h.state_mut().ui.timeline.layer_reveal.insert(l, vec!["props".into()]);
     h.state_mut().ui.timeline.reveal_props.insert(uid);
     h.run_steps(3);
 }
 
-fn levels_of(h: &Harness<'_, EffectcraftApp>, l: u64) -> Vec<f64> {
+fn levels_of(h: &Harness<'_, ArtheffectApp>, l: u64) -> Vec<f64> {
     h.state().session.active_comp().unwrap().layer(LayerId(l)).unwrap().props.prop("audio/levels").unwrap().value.components()
 }
 
@@ -72,15 +72,15 @@ fn linked_audio_levels_move_both_channels_by_the_same_db() {
     let mut s = Session::default();
     comps(&mut s);
     let (l, uid) = add_sound_layer(&mut s, [-6.0, -12.0]);
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     reveal(&mut h, l, uid);
     let levels =
-        |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().layer(LayerId(l)).unwrap().props.prop("audio/levels").unwrap().clone();
-    let set = |h: &mut Harness<'_, EffectcraftApp>, v: [f64; 2]| {
+        |h: &Harness<'_, ArtheffectApp>| h.state().session.active_comp().unwrap().layer(LayerId(l)).unwrap().props.prop("audio/levels").unwrap().clone();
+    let set = |h: &mut Harness<'_, ArtheffectApp>, v: [f64; 2]| {
         h.state_mut().session.execute("prop.set", json!({"layer": l, "path": "audio/levels", "value": v})).unwrap();
         h.run_steps(2);
     };
-    let undo = |h: &mut Harness<'_, EffectcraftApp>| {
+    let undo = |h: &mut Harness<'_, ArtheffectApp>| {
         h.state_mut().session.execute("edit.undo", json!({})).unwrap();
         h.run_steps(2);
     };
@@ -135,7 +135,7 @@ fn linked_typing_keeps_each_selected_layers_own_balance() {
     let (a, uid) = add_sound_layer(&mut s, [-6.0, -12.0]);
     let (b, other) = add_sound_layer(&mut s, [-20.0, -30.0]);
     s.execute("layer.select", json!({"layers": [a, b]})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     reveal(&mut h, a, uid);
     reveal(&mut h, b, other);
     click(&mut h, &format!("timeline.prop.{uid}.link"));
@@ -150,7 +150,7 @@ fn a_new_project_starts_with_its_audio_levels_unlinked() {
     let mut s = Session::default();
     comps(&mut s);
     let (l, uid) = add_sound_layer(&mut s, [0.0, 0.0]);
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     reveal(&mut h, l, uid);
     click(&mut h, &format!("timeline.prop.{uid}.link"));
     assert!(h.state().ui.timeline.is_linked(uid, false));

@@ -1,12 +1,12 @@
 //! Real keyboard/pointer coverage for the font menus in both text panels.
 use crate::gpu_test::RenderSerial;
-use effectcraft_engine::{Session, commands::text_edit::layer_doc, project::LayerId};
-use effectcraft_ui_egui::{EffectcraftApp, dock::PanelKind};
+use artheffect_engine::{Session, commands::text_edit::layer_doc, project::LayerId};
+use artheffect_ui_egui::{ArtheffectApp, dock::PanelKind};
 use egui::{Event, Key, Modifiers, PointerButton};
 use egui_kittest::Harness;
 use serde_json::json;
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, id: &str) {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("missing {id}")).clone();
     let pos = egui::pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0);
     h.input_mut().events.push(Event::PointerMoved(pos));
@@ -16,14 +16,14 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
     }
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key) {
+fn key(h: &mut Harness<'_, ArtheffectApp>, key: Key) {
     for pressed in [true, false] {
         h.input_mut().events.push(Event::Key { key, physical_key: None, pressed, repeat: false, modifiers: Modifiers::NONE });
     }
     h.run_steps(3);
 }
 
-fn type_text(h: &mut Harness<'_, EffectcraftApp>, text: &str) {
+fn type_text(h: &mut Harness<'_, ArtheffectApp>, text: &str) {
     h.input_mut().events.push(Event::Text(text.into()));
     h.run_steps(3);
 }
@@ -37,15 +37,15 @@ fn font_search_filters_selects_and_undoes_in_both_panels() {
         let lid = s.execute("layer.newText", json!({"text": "Keep this text", "font": "Inter"})).unwrap()["layer"].as_u64().unwrap();
         let builder = Harness::builder().with_size(egui::vec2(1600.0, 1000.0));
         let mut h = if std::env::var_os("EC_SNAPSHOT_DIR").is_some() {
-            builder.wgpu().build_eframe(move |_| EffectcraftApp::new(s))
+            builder.wgpu().build_eframe(move |_| ArtheffectApp::new(s))
         } else {
-            builder.build_eframe(move |_| EffectcraftApp::new(s))
+            builder.build_eframe(move |_| ArtheffectApp::new(s))
         };
         h.state_mut().show_panel(panel);
         h.run_steps(3);
         click(&mut h, prefix);
         assert!(h.state().auto.find(&format!("{prefix}.search")).is_some());
-        assert!(effectcraft_ui_egui::widgets::any_menu_open(&h.ctx), "font search must hold app shortcuts like other popup lists");
+        assert!(artheffect_ui_egui::widgets::any_menu_open(&h.ctx), "font search must hold app shortcuts like other popup lists");
         let field = h.state().auto.find(prefix).unwrap();
         let search = h.state().auto.find(&format!("{prefix}.search")).unwrap();
         assert!(
@@ -94,7 +94,7 @@ fn font_search_preserves_edited_text_and_applies_only_to_selected_characters() {
     let lid = s.execute("layer.newText", json!({"text": "First second", "font": "Inter"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("text.edit", json!({"layer": lid})).unwrap();
     s.execute("text.setSelection", json!({"start": 0, "end": 5})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| ArtheffectApp::new(s));
     h.state_mut().show_panel(PanelKind::Character);
     h.run_steps(3);
     click(&mut h, "character.font");
@@ -138,12 +138,12 @@ fn font_menu_lists_a_name_the_interface_fonts_lack_in_english() {
     const FAMILY: &str = "Native Name Menu Test";
     // U+F1234 is in a private use plane that no interface font maps.
     const NATIVE: &str = "中文\u{F1234}字体";
-    assert_eq!(effectcraft_engine::text::fonts::add_font_data(font_with_native_name(FAMILY, NATIVE)).len(), 1);
-    assert_eq!(effectcraft_engine::text::fonts::native_families().get(FAMILY).map(String::as_str), Some(NATIVE));
+    assert_eq!(artheffect_engine::text::fonts::add_font_data(font_with_native_name(FAMILY, NATIVE)).len(), 1);
+    assert_eq!(artheffect_engine::text::fonts::native_families().get(FAMILY).map(String::as_str), Some(NATIVE));
     let mut s = Session::default();
     s.execute("comp.new", json!({"width": 320, "height": 180})).unwrap();
     let lid = s.execute("layer.newText", json!({"text": "Native", "font": "Inter"})).unwrap()["layer"].as_u64().unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| ArtheffectApp::new(s));
     h.state_mut().show_panel(PanelKind::Character);
     h.run_steps(3);
     click(&mut h, "character.font");
@@ -187,15 +187,15 @@ fn pinned_variable_font(family: &str) -> Vec<u8> {
 #[test]
 fn font_menu_filters_variable_fonts() {
     const FAMILY: &str = "Inter Variable Menu Test";
-    assert_eq!(effectcraft_engine::text::fonts::add_font_data(pinned_variable_font(FAMILY)).len(), 1);
-    let variable = effectcraft_engine::text::fonts::variable_families();
+    assert_eq!(artheffect_engine::text::fonts::add_font_data(pinned_variable_font(FAMILY)).len(), 1);
+    let variable = artheffect_engine::text::fonts::variable_families();
     let mut s = Session::default();
     s.execute("comp.new", json!({"width": 320, "height": 180})).unwrap();
     let lid = s.execute("layer.newText", json!({"text": "Var", "font": "Inter"})).unwrap()["layer"].as_u64().unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| ArtheffectApp::new(s));
     h.state_mut().show_panel(PanelKind::Character);
     h.run_steps(3);
-    let families = |h: &Harness<'_, EffectcraftApp>| -> Vec<String> {
+    let families = |h: &Harness<'_, ArtheffectApp>| -> Vec<String> {
         h.state().auto.query("character.font.option.").iter().map(|e| e.id.trim_start_matches("character.font.option.").to_string()).collect()
     };
     click(&mut h, "character.font");
@@ -232,11 +232,11 @@ fn font_menu_grows_back_after_an_empty_search() {
     let mut s = Session::default();
     s.execute("comp.new", json!({"width": 320, "height": 180})).unwrap();
     let lid = s.execute("layer.newText", json!({"text": "Grow", "font": "Inter"})).unwrap()["layer"].as_u64().unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| ArtheffectApp::new(s));
     h.state_mut().show_panel(PanelKind::Character);
     h.run_steps(3);
-    let rows = |h: &Harness<'_, EffectcraftApp>| h.state().auto.query("character.font.option.").len();
-    let search = |h: &Harness<'_, EffectcraftApp>| h.state().auto.find("character.font.search").map(|e| e.rect);
+    let rows = |h: &Harness<'_, ArtheffectApp>| h.state().auto.query("character.font.option.").len();
+    let search = |h: &Harness<'_, ArtheffectApp>| h.state().auto.find("character.font.search").map(|e| e.rect);
     click(&mut h, "character.font");
     h.run_steps(2);
     let (full, field) = (rows(&h), search(&h));
@@ -266,7 +266,7 @@ fn font_menu_rescan_button_adds_fonts_installed_later() {
     let mut s = Session::default();
     s.execute("comp.new", json!({"width": 320, "height": 180})).unwrap();
     s.execute("layer.newText", json!({"text": "Keep this text", "font": "Inter"})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| ArtheffectApp::new(s));
     h.state_mut().show_panel(PanelKind::Character);
     h.run_steps(3);
     click(&mut h, "character.font");

@@ -1,10 +1,10 @@
 //! Shape layer contents ↔ Lottie shape items (`gr`, `rc`, `el`, `sr`, `sh`, `fl`, `st`, `gf`,
 //! `gs`, `tm`, `rp`, `rd`, `op`, `pb`, `tw`, `zz`, `mm`, `tr`).
 
-use effectcraft_color::BlendMode;
-use effectcraft_keyframe::{Gradient, ShapePath, Value};
-use effectcraft_project::build::{self, EXTRA_DASHES, Ids};
-use effectcraft_project::{Node, ParamUi, PropGroup};
+use artheffect_color::BlendMode;
+use artheffect_keyframe::{Gradient, ShapePath, Value};
+use artheffect_project::build::{self, EXTRA_DASHES, Ids};
+use artheffect_project::{Node, ParamUi, PropGroup};
 use serde_json::{Map, Value as Json, json};
 
 use crate::anim::{self, Ex, Im, export_prop, import_prop};
@@ -315,7 +315,7 @@ pub(crate) fn export_items(ex: &mut Ex, contents: &PropGroup, label: &str) -> Ve
             "rp" => {
                 o.put("c", "copies", &anim::num);
                 o.put("o", "offset", &anim::num);
-                // Lottie: 1 = Above, 2 = Below; EffectCraft: 0 = Below, 1 = Above.
+                // Lottie: 1 = Above, 2 = Below; Artheffect: 0 = Below, 1 = Above.
                 o.raw("m", json!(if o.e("composite") == 1 { 1 } else { 2 }));
                 if let Some(t) = g.sub("transform") {
                     let tr = shape_transform(o.ex, t, &lbl);

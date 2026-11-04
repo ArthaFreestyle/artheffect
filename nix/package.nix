@@ -1,15 +1,15 @@
-# EffectCraft — the desktop app (`effectcraft`) and the CLI/MCP server (`effectcraft-cli`), built from this
+# Artheffect — the desktop app (`artheffect`) and the CLI/MCP server (`artheffect-cli`), built from this
 # repository:
 #
-#   nix build          # → ./result/bin/effectcraft, ./result/bin/effectcraft-cli
+#   nix build          # → ./result/bin/artheffect, ./result/bin/artheffect-cli
 #
 # Kept in step with the release workflow (.github/workflows/release.yml) and packaging/:
 #   * `Cargo.lock` drives the dependencies (`cargoLock`), so there is no vendorHash to bump. The
 #     git sources (storytold/craft-libs, storytold/filmcraft) are fetched at the revision the lock file pins;
 #   * the desktop file, hicolor icons, MIME types and AppStream metadata are the same files the
-#     .deb/.rpm ship (packaging/linux/), so `apt` and NixOS users see one identical EffectCraft;
+#     .deb/.rpm ship (packaging/linux/), so `apt` and NixOS users see one identical Artheffect;
 #   * `doCheck` is off: the test suite needs corpora and a GPU the Nix sandbox cannot provide
-#     (`cargo xtask ci` is the gate). `pkgs.effectcraft.overrideAttrs { doCheck = true; }` runs it.
+#     (`cargo xtask ci` is the gate). `pkgs.artheffect.overrideAttrs { doCheck = true; }` runs it.
 #
 # Everything in the product is pure Rust, so this needs no build system beyond cargo plus the
 # libraries winit/wgpu `dlopen` at run time (see `runtimeLibs`).
@@ -61,7 +61,7 @@ let
   isLinux = stdenv.hostPlatform.isLinux;
 
   # AppStream id: also the desktop file name, and the icon name in share/icons/hicolor.
-  appId = "ai.storyteller.effectcraft";
+  appId = "ai.storyteller.artheffect";
 
   # Libraries the binaries open at run time with dlopen(): nothing links them, so no RPATH points at
   # them. winit loads libwayland-client, libxkbcommon(-x11) and the X11 libraries; wgpu loads the
@@ -80,15 +80,15 @@ let
     dbus
   ];
 
-  # The two native binaries. The wasm app (apps/effectcraft-web) is built by `cargo xtask`, not here.
+  # The two native binaries. The wasm app (apps/artheffect-web) is built by `cargo xtask`, not here.
   binaries = [
-    "effectcraft"
-    "effectcraft-cli"
+    "artheffect"
+    "artheffect-cli"
   ];
 
 in
 rustPlatform.buildRustPackage {
-  pname = "effectcraft";
+  pname = "artheffect";
   inherit version;
 
   src = lib.cleanSourceWith {
@@ -113,9 +113,9 @@ rustPlatform.buildRustPackage {
   cargoBuildFlags = [
     "--locked"
     "-p"
-    "effectcraft"
+    "artheffect"
     "-p"
-    "effectcraft-cli"
+    "artheffect-cli"
   ];
 
   doCheck = false;
@@ -156,7 +156,7 @@ rustPlatform.buildRustPackage {
       --subst-var-by DATE ${buildDate}
 
     # Licences for everything embedded in the binaries.
-    doc=$out/share/doc/effectcraft
+    doc=$out/share/doc/artheffect
     for f in README.md LICENSE-MIT LICENSE-APACHE NOTICE ATTRIBUTION.md assets/ATTRIBUTION.md; do
       if [ -f "$f" ]; then install -Dm644 "$f" "$doc/$(basename "$f")"; fi
     done
@@ -183,11 +183,11 @@ rustPlatform.buildRustPackage {
   meta = {
     description = "Motion graphics and visual effects application";
     longDescription = ''
-      EffectCraft is a motion graphics and visual effects application: compositions, keyframes,
-      effects and rendering. It ships with effectcraft-cli, a headless renderer, command runner and
+      Artheffect is a motion graphics and visual effects application: compositions, keyframes,
+      effects and rendering. It ships with artheffect-cli, a headless renderer, command runner and
       MCP server for AI agents.
     '';
-    homepage = "https://getartcraft.com/apps/effectcraft";
+    homepage = "https://github.com/ArthaFreestyle/artheffect";
     license = with lib.licenses; [
       mit
       asl20
@@ -195,6 +195,6 @@ rustPlatform.buildRustPackage {
     sourceProvenance = with lib.sourceTypes; [ fromSource ];
     platforms = lib.platforms.linux ++ lib.platforms.darwin;
     # `nix run` and the desktop entry both start the GUI.
-    mainProgram = "effectcraft";
+    mainProgram = "artheffect";
   };
 }

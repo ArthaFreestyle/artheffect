@@ -4,19 +4,21 @@
 //!
 //! ```xml
 //! <?xml version="1.0" encoding="UTF-8"?>
-//! <EffectCraftProject encoding="json" version="1">
+//! <ArtheffectProject encoding="json" version="1">
 //!   <obj>
 //!     <m n="version"><num>3</num></m>
 //!     <m n="items"><arr>…</arr></m>
 //!   </obj>
-//! </EffectCraftProject>
+//! </ArtheffectProject>
 //! ```
 //!
 //! `obj`/`m n="key"` (object members), `arr`, `str`, `num`, `bool`, `null`.
 
 use serde_json::{Map, Value};
 
-const ROOT: &str = "EffectCraftProject";
+const ROOT: &str = "ArtheffectProject";
+/// The root element before the fork was renamed from EffectCraft; still read.
+const LEGACY_ROOT: &str = "EffectCraftProject";
 
 /// How deep `arr`/`obj` elements may nest: the JSON reader's own limit (`serde_json` stops at
 /// 128), so every project the JSON form can hold reads from XML too. Without a limit a deeply
@@ -26,7 +28,7 @@ const MAX_DEPTH: usize = 128;
 /// Whether `text` looks like an XML project.
 pub fn is_xml(text: &str) -> bool {
     let t = text.trim_start_matches('\u{feff}').trim_start();
-    t.starts_with("<?xml") || t.starts_with(&format!("<{ROOT}"))
+    t.starts_with("<?xml") || t.starts_with(&format!("<{ROOT}")) || t.starts_with(&format!("<{LEGACY_ROOT}"))
 }
 
 /// Whether a path names an XML project copy.
@@ -248,11 +250,11 @@ fn unesc(s: &str) -> String {
 pub fn from_xml(text: &str) -> Result<String, String> {
     let mut p = P { s: text.trim_start_matches('\u{feff}'), i: 0 };
     let (root, _, _) = p.open()?;
-    if root != ROOT {
-        return Err(format!("not an EffectCraft XML project (root <{root}>)"));
+    if root != ROOT && root != LEGACY_ROOT {
+        return Err(format!("not an Artheffect XML project (root <{root}>)"));
     }
     let v = p.value(0)?;
-    p.close(ROOT)?;
+    p.close(&root)?;
     serde_json::to_string(&v).map_err(|e| e.to_string())
 }
 
@@ -269,6 +271,16 @@ mod tests {
         let back: Value = serde_json::from_str(&from_xml(&xml).unwrap()).unwrap();
         assert_eq!(back, j);
         assert!(from_xml("<Other/>").is_err());
+    }
+
+    /// Projects saved as XML before the rename from EffectCraft still open.
+    #[test]
+    fn legacy_effectcraft_root_still_reads() {
+        let xml = to_xml("{\"a\":1}").unwrap().replace(ROOT, LEGACY_ROOT);
+        assert!(is_xml(&xml));
+        let back: Value = serde_json::from_str(&from_xml(&xml).unwrap()).unwrap();
+        assert_eq!(back, serde_json::json!({"a": 1}));
+        assert!(from_xml(&format!("<{LEGACY_ROOT}><null/></{ROOT}>")).is_err(), "mismatched close tag");
     }
 
     /// #779 (found by the project-file fuzzer): a file of deeply nested elements overflowed the

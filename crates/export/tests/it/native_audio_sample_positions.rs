@@ -1,11 +1,11 @@
 //! Native MediaPool decoding and native WAV export preserve selected sample positions.
-use effectcraft_export::render_queue::{AudioFormat, OutputFormat, OutputModule, RenderSettings};
-use effectcraft_export::{Job, JobOptions, Sink, export};
-use effectcraft_media::{MediaPool, probe_bytes};
-use effectcraft_project::{Comp, Footage, ItemId, ItemKind, LayerSource, Project, build};
-use effectcraft_raster::Image;
-use effectcraft_render::FootageSource;
-use effectcraft_time::{FrameRate, TICKS_PER_SECOND, Tick};
+use artheffect_export::render_queue::{AudioFormat, OutputFormat, OutputModule, RenderSettings};
+use artheffect_export::{Job, JobOptions, Sink, export};
+use artheffect_media::{MediaPool, probe_bytes};
+use artheffect_project::{Comp, Footage, ItemId, ItemKind, LayerSource, Project, build};
+use artheffect_raster::Image;
+use artheffect_render::FootageSource;
+use artheffect_time::{FrameRate, TICKS_PER_SECOND, Tick};
 use std::sync::{Arc, Mutex};
 
 struct RecordingNative {

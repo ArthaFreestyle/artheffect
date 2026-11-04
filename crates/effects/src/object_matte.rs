@@ -4,7 +4,7 @@
 //!
 //! The prompt is the **Object Point** (layer pixels) and, with **Use Box**, a box around the
 //! object. On the **Reference Frame** it is segmented by the same engine as Roto Brush: the
-//! trained model chosen in Settings ▸ Roto Brush (MobileSAM, `effectcraft_segment`) when one is
+//! trained model chosen in Settings ▸ Roto Brush (MobileSAM, `artheffect_segment`) when one is
 //! installed, the classical graph cut otherwise. The model gets the point as a foreground point
 //! and the box as its box prompt; the graph cut gets the point as a foreground stroke and the
 //! box's edges (without a box, the layer's border) as background strokes. With **Track Object** the
@@ -25,12 +25,12 @@
 
 use std::sync::Arc;
 
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
-use effectcraft_raster::Image;
-use effectcraft_segment::MaskModel;
-use effectcraft_track::roto::refine::MatteParams;
-use effectcraft_track::roto::{FrameSeg, RotoData, SegOpts, Stroke, StrokeKind, rle};
+use artheffect_keyframe::Value;
+use artheffect_project::ParamUi;
+use artheffect_raster::Image;
+use artheffect_segment::MaskModel;
+use artheffect_track::roto::refine::MatteParams;
+use artheffect_track::roto::{FrameSeg, RotoData, SegOpts, Stroke, StrokeKind, rle};
 use rayon::prelude::*;
 
 use crate::roto::{self, Chain, FROZEN, FrozenCache, INPUT_KEY};
@@ -191,10 +191,10 @@ pub fn roto_data(params: &Params, layer_size: [f64; 2], f: i64, with_model: bool
 /// Seed of the chain keys: what the frames are (the Input Key), the layer size, the frame rate,
 /// the mode and the model. The prompt is in each frame's key.
 pub fn seed(params: &Params, layer_size: [f64; 2], fps: f64, model: Option<&dyn MaskModel>) -> u64 {
-    seed_of(params, layer_size, fps, model.map_or(effectcraft_segment::CLASSICAL, |m| m.info().id))
+    seed_of(params, layer_size, fps, model.map_or(artheffect_segment::CLASSICAL, |m| m.info().id))
 }
 
-/// [`seed`] for the model with id `model` ([`effectcraft_segment::CLASSICAL`]: no model).
+/// [`seed`] for the model with id `model` ([`artheffect_segment::CLASSICAL`]: no model).
 fn seed_of(params: &Params, layer_size: [f64; 2], fps: f64, model: &str) -> u64 {
     let mut h = 0xcbf2_9ce4_8422_2325;
     fnv(&mut h, ID.as_bytes());
@@ -260,14 +260,14 @@ pub fn frame_keys(params: &Params, layer_size: [f64; 2], fps: f64, frames: &[i64
 /// What frozen mattes depend on: what the frames are (the seed: Input Key, size, rate, mode,
 /// model), the prompt, the tracked span and the matte settings.
 pub fn frozen_key(params: &Params, layer_size: [f64; 2], fps: f64, model: Option<&dyn MaskModel>) -> String {
-    frozen_key_of(params, layer_size, fps, model.map_or(effectcraft_segment::CLASSICAL, |m| m.info().id))
+    frozen_key_of(params, layer_size, fps, model.map_or(artheffect_segment::CLASSICAL, |m| m.info().id))
 }
 
-/// [`frozen_key`] for the model with id `model` ([`effectcraft_segment::CLASSICAL`]: no model).
+/// [`frozen_key`] for the model with id `model` ([`artheffect_segment::CLASSICAL`]: no model).
 fn frozen_key_of(params: &Params, layer_size: [f64; 2], fps: f64, model: &str) -> String {
     let mut h = seed_of(params, layer_size, fps, model);
     let base = reference_frame(params);
-    if let Some(st) = prompt_strokes(params, layer_size, base, model != effectcraft_segment::CLASSICAL) {
+    if let Some(st) = prompt_strokes(params, layer_size, base, model != artheffect_segment::CLASSICAL) {
         fnv(&mut h, serde_json::to_string(&st).unwrap_or_default().as_bytes());
     }
     for v in [base, reach(params)[0], reach(params)[1]] {
@@ -293,7 +293,7 @@ pub fn frozen_alpha(params: &Params, layer_size: [f64; 2], fps: f64, f: i64, w: 
     }
     let fc = frozen_cache(j)?;
     if fc.key != frozen_key(params, layer_size, fps, model) {
-        let ids = std::iter::once(effectcraft_segment::CLASSICAL).chain(effectcraft_segment::MODELS.iter().map(|m| m.id));
+        let ids = std::iter::once(artheffect_segment::CLASSICAL).chain(artheffect_segment::MODELS.iter().map(|m| m.id));
         if !ids.into_iter().any(|id| fc.key == frozen_key_of(params, layer_size, fps, id)) {
             return None;
         }
@@ -316,7 +316,7 @@ pub fn frozen_alpha(params: &Params, layer_size: [f64; 2], fps: f64, f: i64, w: 
     for y in 0..h {
         for x in 0..w {
             let (sx, sy) = ((x as f64 + 0.5) * fw as f64 / w as f64, (y as f64 + 0.5) * fh as f64 / h as f64);
-            out[y * w + x] = effectcraft_track::roto::matting::sample(&af, fw, fh, sx, sy);
+            out[y * w + x] = artheffect_track::roto::matting::sample(&af, fw, fh, sx, sy);
         }
     }
     Some(out)
@@ -605,10 +605,10 @@ mod tests {
         bbox: std::sync::Mutex<Option<[f32; 4]>>,
     }
     impl MaskModel for Stub {
-        fn info(&self) -> &'static effectcraft_segment::ModelInfo {
-            &effectcraft_segment::MOBILE_SAM
+        fn info(&self) -> &'static artheffect_segment::ModelInfo {
+            &artheffect_segment::MOBILE_SAM
         }
-        fn segment(&self, _: &[[f32; 3]], w: usize, h: usize, prompt: &effectcraft_segment::Prompt) -> effectcraft_segment::Result<Vec<f32>> {
+        fn segment(&self, _: &[[f32; 3]], w: usize, h: usize, prompt: &artheffect_segment::Prompt) -> artheffect_segment::Result<Vec<f32>> {
             self.calls.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             *self.bbox.lock().unwrap() = prompt.bbox;
             let Some(([cx, cy], _)) = prompt.points.iter().find(|(_, fg)| *fg) else { return Err("no point".into()) };
@@ -668,8 +668,8 @@ mod tests {
         // full-resolution result above is not reused).
         let mut p = p;
         p.values.insert(INPUT_KEY.into(), Value::Str("half".into()));
-        let half = effectcraft_raster::resample(&img, 50, 40);
-        let mut frame = |g: i64| Some(Arc::new(effectcraft_raster::resample(&frame_at(g), 50, 40)));
+        let half = artheffect_raster::resample(&img, 50, 40);
+        let mut frame = |g: i64| Some(Arc::new(artheffect_raster::resample(&frame_at(g), 50, 40)));
         let _ =
             frame_matte(&p, &MatteFrame { layer_size: [100.0, 80.0], fps: 25.0, frame: 0, scale: 0.5, img: &half }, Some(stub.clone()), &mut frame, &|| false);
         assert_eq!(*stub.bbox.lock().unwrap(), Some([37.0, 27.0, 50.0, 40.0]));

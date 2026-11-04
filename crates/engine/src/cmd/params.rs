@@ -8,14 +8,14 @@ pub(crate) fn frontend(s: &mut Session, id: &str, p: &Value) -> Result<Value> {
 
 /// Match path of a node (`transform/position`, `effects/#2/blurriness` style with `match#n`
 /// occurrences) so it can be found again on another layer.
-pub fn match_path_of(g: &effectcraft_project::PropGroup, uid: effectcraft_project::Uid) -> Option<String> {
+pub fn match_path_of(g: &artheffect_project::PropGroup, uid: artheffect_project::Uid) -> Option<String> {
     for c in &g.children {
         let nth = g.children.iter().take_while(|x| !std::ptr::eq(*x, c)).filter(|x| x.match_id() == c.match_id()).count() + 1;
         let seg = if nth == 1 { c.match_id().to_string() } else { format!("{}#{nth}", c.match_id()) };
         if c.uid() == uid {
             return Some(seg);
         }
-        if let effectcraft_project::Node::Group(sub) = c
+        if let artheffect_project::Node::Group(sub) = c
             && let Some(rest) = match_path_of(sub, uid)
         {
             return Some(format!("{seg}/{rest}"));
@@ -44,7 +44,7 @@ pub(crate) fn resolve_effect_path(l: &Layer, path: &str) -> String {
 
 /// Selected properties (leaves) of the active comp as (layer, uid); selected groups expand to
 /// their properties.
-pub(crate) fn selected_leaf_props(s: &Session) -> Vec<(LayerId, effectcraft_project::Uid)> {
+pub(crate) fn selected_leaf_props(s: &Session) -> Vec<(LayerId, artheffect_project::Uid)> {
     let Some(comp) = s.active_comp() else { return vec![] };
     let mut out = vec![];
     for (lid, uid) in &s.state.selected_props {
@@ -189,7 +189,7 @@ pub(crate) fn unlocked(s: &Session, cid: ItemId, ids: Vec<LayerId>, cmd: &str) -
 
 /// `visible: [{layer, prop}]`: the properties the Timeline shows (J / K and Select All
 /// Keyframes use only those, as in After Effects). `None` when not given.
-pub(crate) fn visible_p(p: &Value) -> Option<Vec<(LayerId, effectcraft_project::Uid)>> {
+pub(crate) fn visible_p(p: &Value) -> Option<Vec<(LayerId, artheffect_project::Uid)>> {
     let a = p.get("visible")?.as_array()?;
     Some(a.iter().filter_map(|v| Some((LayerId(v.get("layer")?.as_u64()?), v.get("prop")?.as_u64()?))).collect())
 }
@@ -205,6 +205,6 @@ pub(crate) fn time_p(s: &Session, p: &Value, comp: Option<&Comp>) -> Tick {
     s.time()
 }
 
-pub(crate) fn layer_mut(p: &mut effectcraft_project::Project, cid: ItemId, lid: LayerId) -> Result<&mut Layer> {
-    p.comp_mut(cid).ok_or(EngineError::NoComp)?.layer_mut(lid).ok_or(EngineError::Project(effectcraft_project::ProjectError::NoLayer(lid)))
+pub(crate) fn layer_mut(p: &mut artheffect_project::Project, cid: ItemId, lid: LayerId) -> Result<&mut Layer> {
+    p.comp_mut(cid).ok_or(EngineError::NoComp)?.layer_mut(lid).ok_or(EngineError::Project(artheffect_project::ProjectError::NoLayer(lid)))
 }

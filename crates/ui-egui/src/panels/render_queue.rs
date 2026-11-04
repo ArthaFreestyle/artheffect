@@ -12,18 +12,18 @@
 //! key frame interval, Make Template) open a form that runs the same command.
 
 use crate::i18n::{tr, tr_args};
-use effectcraft_engine::project::render_queue::{
+use artheffect_engine::project::render_queue::{
     AlphaMode, AudioFormat, AudioOutput, Channels, ColorDepth, CurrentOrOff, EffectsMode, FieldRender, OpusApplication, OutputFormat, PostRenderAction,
     ProResProfile, Pulldown, RESIZE_PRESETS, RenderLog, RenderQuality, RenderQueueItem, RenderStatus, ResizeQuality, SwitchOverride, TimeSpan, WebmVideoCodec,
 };
-use effectcraft_engine::project::render_templates::RenderTemplates;
+use artheffect_engine::project::render_templates::RenderTemplates;
 use egui::{Align2, Color32, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
 use serde_json::{Value, json};
 
 use crate::a11y;
 use crate::theme::Tokens;
 use crate::widgets::check_label as mark;
-use crate::{EffectcraftApp, widgets};
+use crate::{ArtheffectApp, widgets};
 
 const TOP_H: f32 = 74.0;
 const HEAD_H: f32 = 22.0;
@@ -96,7 +96,7 @@ fn settings_menu(it: &RenderQueueItem, templates: &RenderTemplates) -> Vec<(Stri
         v.push((mark(s.resolution_label() == l, &format!("Resolution: {l}")), json!({"resolution": k})));
     }
     v.push(("-".into(), Value::Null));
-    for (u, k) in effectcraft_engine::project::render_queue::ProxyUse::ALL.iter().zip(["current", "all", "comp", "none"]) {
+    for (u, k) in artheffect_engine::project::render_queue::ProxyUse::ALL.iter().zip(["current", "all", "comp", "none"]) {
         v.push((mark(s.proxy_use == *u, &tr_args("Proxy Use: {}", &[&(u.label())])), json!({"proxyUse": k})));
     }
     for (e, k) in EffectsMode::ALL.iter().zip(["current", "allOn", "allOff"]) {
@@ -273,8 +273,8 @@ fn output_menu(it: &RenderQueueItem, available: &[OutputFormat], templates: &Ren
 }
 
 /// HEVC / AV1 options: profile, level, rate control (bitrate or constant quality), key frames.
-fn codec_menu(o: &effectcraft_engine::project::render_queue::OutputModule, v: &mut Vec<(String, Value)>) {
-    use effectcraft_engine::project::render_queue::{CodecProfile, RateControlMode, VideoCodecOptions};
+fn codec_menu(o: &artheffect_engine::project::render_queue::OutputModule, v: &mut Vec<(String, Value)>) {
+    use artheffect_engine::project::render_queue::{CodecProfile, RateControlMode, VideoCodecOptions};
     let c = &o.codec;
     v.push(("-".into(), Value::Null));
     for p in CodecProfile::ALL {
@@ -316,7 +316,7 @@ fn codec_menu(o: &effectcraft_engine::project::render_queue::OutputModule, v: &m
 }
 
 /// Open the form behind a `{"form": …}` menu entry.
-fn open_menu_form(app: &mut EffectcraftApp, it: &RenderQueueItem, form: &str) {
+fn open_menu_form(app: &mut ArtheffectApp, it: &RenderQueueItem, form: &str) {
     use crate::panels::forms::{Field, form as open};
     let id = it.id;
     let o = &it.output;
@@ -417,7 +417,7 @@ fn output_to_menu(it: &RenderQueueItem) -> Vec<(String, Value)> {
 /// Output To's save dialog, as After Effects' Output Movie To: it opens at the current output
 /// (folder and name, which ends in the format's extension) and offers that extension. `None`
 /// when the host has no save dialog; `Some(None)` when the dialog was cancelled.
-fn pick_output(app: &EffectcraftApp, it: &RenderQueueItem) -> Option<Option<String>> {
+fn pick_output(app: &ArtheffectApp, it: &RenderQueueItem) -> Option<Option<String>> {
     app.hooks.save_dialog(&app.session.resolve_output(it).unwrap_or_default())
 }
 
@@ -428,20 +428,20 @@ type Action = (&'static str, Value);
 #[derive(Clone, Copy)]
 struct RqView<'a> {
     queue: &'a [RenderQueueItem],
-    progress: Option<&'a effectcraft_engine::render_queue::JobState>,
+    progress: Option<&'a artheffect_engine::render_queue::JobState>,
     rendering: bool,
     available: &'a [OutputFormat],
 }
 
 /// Comps dragged from the Project over the panel: an outline while hovering, queued on release.
-fn queue_drop(app: &EffectcraftApp, ui: &egui::Ui, rect: Rect, p: &egui::Painter, rendering: bool, actions: &mut Vec<Action>) {
+fn queue_drop(app: &ArtheffectApp, ui: &egui::Ui, rect: Rect, p: &egui::Painter, rendering: bool, actions: &mut Vec<Action>) {
     let t = app.tokens;
     if !rendering
         && let Some(crate::panels::DragPayload::Item(id)) = egui::DragAndDrop::payload::<crate::panels::DragPayload>(ui.ctx()).as_deref()
-        && app.session.project.comp(effectcraft_engine::project::ItemId(*id)).is_some()
+        && app.session.project.comp(artheffect_engine::project::ItemId(*id)).is_some()
         && ui.input(|i| i.pointer.hover_pos()).is_some_and(|pos| rect.contains(pos))
     {
-        let ids: Vec<u64> = if app.session.state.project_selection.contains(&effectcraft_engine::project::ItemId(*id)) {
+        let ids: Vec<u64> = if app.session.state.project_selection.contains(&artheffect_engine::project::ItemId(*id)) {
             app.session.state.project_selection.iter().filter(|i| app.session.project.comp(**i).is_some()).map(|i| i.0).collect()
         } else {
             vec![*id]
@@ -460,7 +460,7 @@ fn queue_drop(app: &EffectcraftApp, ui: &egui::Ui, rect: Rect, p: &egui::Painter
 /// Elapsed and estimated remaining seconds at UI time `now`. The job reports them as frames
 /// finish; between reports they count on from the last one, as a clock does, so a slow frame
 /// doesn't read as a stalled render (#2593).
-fn live_times(ctx: &egui::Context, pr: &effectcraft_engine::render_queue::JobState, now: f64) -> (f64, Option<f64>) {
+fn live_times(ctx: &egui::Context, pr: &artheffect_engine::render_queue::JobState, now: f64) -> (f64, Option<f64>) {
     let report = (pr.current, pr.done, pr.item_elapsed.to_bits());
     let since = ctx.data_mut(|d| {
         let seen = d.get_temp_mut_or_insert_with(egui::Id::unique("rq-progress-seen"), || (report, now));
@@ -475,7 +475,7 @@ fn live_times(ctx: &egui::Context, pr: &effectcraft_engine::render_queue::JobSta
 
 /// The Current Render strip inside `top`: title, elapsed / remaining time, Render, Stop, Notify
 /// and the progress bar.
-fn current_render_strip(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, top: Rect, rq: &RqView, actions: &mut Vec<Action>) {
+fn current_render_strip(app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, top: Rect, rq: &RqView, actions: &mut Vec<Action>) {
     let t = app.tokens;
     let RqView { queue, progress, rendering, available } = *rq;
     let x0 = top.min.x + 12.0;
@@ -596,7 +596,7 @@ fn row_menu(ui: &mut egui::Ui, actions: &mut Vec<Action>, item_id: u64, k: usize
 }
 
 /// Log: Errors Only / Plus Settings / Plus Per Frame Info.
-fn log_dropdown(app: &mut EffectcraftApp, ui: &mut egui::Ui, row: &ItemRow, it: &RenderQueueItem, actions: &mut Vec<Action>) {
+fn log_dropdown(app: &mut ArtheffectApp, ui: &mut egui::Ui, row: &ItemRow, it: &RenderQueueItem, actions: &mut Vec<Action>) {
     let ItemRow { lp, r, n, rendering, .. } = *row;
     let t = app.tokens;
     let aid = |s: &str| format!("renderQueue.item.{n}.{s}");
@@ -632,7 +632,7 @@ struct ItemRow<'a> {
 /// The expanded "Output To" line: the template menu, and the file name (click to choose it or
 /// edit the template in place).
 fn output_to(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     row: &ItemRow,
     it: &RenderQueueItem,
@@ -716,7 +716,7 @@ fn output_to(
 
 /// Delete removes the selected item when the panel has focus (`allowed`: not editing a path and
 /// not rendering).
-fn delete_selected(app: &EffectcraftApp, ui: &egui::Ui, allowed: bool, on_row: bool, selected: &mut Option<u64>, actions: &mut Vec<Action>) {
+fn delete_selected(app: &ArtheffectApp, ui: &egui::Ui, allowed: bool, on_row: bool, selected: &mut Option<u64>, actions: &mut Vec<Action>) {
     if app.ui.focused == crate::dock::PanelKind::RenderQueue
         && allowed
         && let Some(id) = *selected
@@ -737,7 +737,7 @@ fn delete_selected(app: &EffectcraftApp, ui: &egui::Ui, allowed: bool, on_row: b
 ///
 /// Returns whether a queue row has keyboard focus.
 fn list_keys(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ctx: &egui::Context,
     queue: &[RenderQueueItem],
     (open, selected): (&mut Vec<u64>, &mut Option<u64>),
@@ -808,7 +808,7 @@ fn list_keys(
 }
 
 /// An item's Status cell: its state, or the percentage while it is the one rendering.
-fn status_text(it: &RenderQueueItem, progress: Option<&effectcraft_engine::render_queue::JobState>, rendering: bool) -> String {
+fn status_text(it: &RenderQueueItem, progress: Option<&artheffect_engine::render_queue::JobState>, rendering: bool) -> String {
     match progress.filter(|p| rendering && p.current == Some(it.id)) {
         Some(pr) => format!("Rendering {:.0}%", if pr.total > 0 { pr.done as f64 * 100.0 / pr.total as f64 } else { 0.0 }),
         None => it.status.label().to_string(),
@@ -816,7 +816,7 @@ fn status_text(it: &RenderQueueItem, progress: Option<&effectcraft_engine::rende
 }
 
 /// An item's Render Time cell: the running time while it renders, else its last render time.
-fn render_time_text(it: &RenderQueueItem, progress: Option<&effectcraft_engine::render_queue::JobState>, rendering: bool) -> String {
+fn render_time_text(it: &RenderQueueItem, progress: Option<&artheffect_engine::render_queue::JobState>, rendering: bool) -> String {
     match progress.filter(|p| rendering && p.current == Some(it.id)) {
         Some(p) => hms(p.item_elapsed),
         None => it.render_time.map(|s| if s < 60.0 { format!("{s:.1} s") } else { hms(s) }).unwrap_or_else(|| "-".into()),
@@ -828,7 +828,7 @@ fn render_time_text(it: &RenderQueueItem, progress: Option<&effectcraft_engine::
 /// status and timings, and the footer totals. Comps dragged from the Project are queued on
 /// release. The open items and the selected item are kept in egui temp data; output-template forms
 /// open through a small form, and every change runs a `renderQueue.*` command.
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     let queue: Vec<RenderQueueItem> = app.session.project.render_queue.clone();
@@ -1060,14 +1060,8 @@ mod tests {
     #[test]
     fn render_times_tick_between_reports() {
         let ctx = egui::Context::default();
-        let mut pr = effectcraft_engine::render_queue::JobState {
-            current: Some(1),
-            done: 2,
-            total: 10,
-            item_elapsed: 20.0,
-            remaining: Some(80.0),
-            ..Default::default()
-        };
+        let mut pr =
+            artheffect_engine::render_queue::JobState { current: Some(1), done: 2, total: 10, item_elapsed: 20.0, remaining: Some(80.0), ..Default::default() };
         assert_eq!(super::live_times(&ctx, &pr, 100.0), (20.0, Some(80.0)));
         assert_eq!(super::live_times(&ctx, &pr, 103.0), (23.0, Some(77.0)));
         assert_eq!(super::live_times(&ctx, &pr, 300.0).1, Some(0.0), "never below zero");

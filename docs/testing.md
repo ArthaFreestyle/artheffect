@@ -7,7 +7,7 @@ cargo xtask ci             # fmt, clippy -D warnings, tests, layers, assets, was
 
 The `dev` profile keeps debug info to line tables (fast builds, readable backtraces). To debug
 interactively — local variables, parameters, column breakpoints — build with the `dev-full`
-profile: `cargo run --profile dev-full -p effectcraft -- --demo` (see `CONTRIBUTING.md`).
+profile: `cargo run --profile dev-full -p artheffect -- --demo` (see `CONTRIBUTING.md`).
 
 `cargo xtask ci` builds in the dev profile and runs the tests with `cargo nextest run` (plus
 `cargo test --doc`) when `cargo-nextest` is installed, and with `cargo test` otherwise. It then
@@ -37,14 +37,14 @@ or `cargo nextest run -p <crate> -E 'binary(it) and test(/^<module>::/)'`.
 - **Export** (`crates/export/tests`): every format is encoded and decoded back, checking frame
   count, size and pixels. When `ffmpeg`/`ffprobe` are installed they are used as an outside
   check; they are never linked or shipped.
-- **Automation** (`crates/automation`, `apps/effectcraft-cli/tests`): MCP protocol round trips and
+- **Automation** (`crates/automation`, `apps/artheffect-cli/tests`): MCP protocol round trips and
   the command-line tool's JSON output.
 - **Interface** (`crates/ui-egui`): headless egui_kittest tests for panels and dialogs.
 
 ## Looking at the interface without a window
 
 ```sh
-cargo run -p effectcraft-ui-egui --example snapshot -- --out ui.png \
+cargo run -p artheffect-ui-egui --example snapshot -- --out ui.png \
   --step '{"method":"engine.execute","params":{"command":"layer.select","params":{"layers":["#2"]}}}'
 ```
 
@@ -54,7 +54,7 @@ intermediate image.
 ## Benchmarks
 
 ```sh
-cargo run --release -p effectcraft-cli -- bench --n 10 --play 30
+cargo run --release -p artheffect-cli -- bench --n 10 --play 30
 ```
 
 prints per-layer and per-effect timings for one frame, and playback timings with and without the
@@ -63,12 +63,12 @@ layer cache.
 ### Render benchmark (`cargo xtask bench`)
 
 ```sh
-nice -n 10 cargo xtask bench --bin target/release/effectcraft-cli   # or no --bin: one `--release` build into target/bench
+nice -n 10 cargo xtask bench --bin target/release/artheffect-cli   # or no --bin: one `--release` build into target/bench
 nice -n 10 cargo xtask bench --quick --compare before.jsonl        # 8 frames instead of 60, % change against an earlier run
 cargo xtask bench --project F.ecproj --comp "Main"                 # any project's comp
 ```
 
-measures memory, CPU and wall time of whole `effectcraft-cli` runs, so every optimisation has a
+measures memory, CPU and wall time of whole `artheffect-cli` runs, so every optimisation has a
 before and after number. It generates four deterministic scenarios into `target/bench/projects`
 with engine commands (no committed media): `demo` (the built-in demo comp), `layers` (1080p,
 100 solid, text and shape layers with Gaussian Blur, Glow, Levels, Curves, Drop Shadow and

@@ -1,4 +1,4 @@
-// Modified work: adapts the ported SAM 2 video tracker to EffectCraft's `ObjectTracker`
+// Modified work: adapts the ported SAM 2 video tracker to Artheffect's `ObjectTracker`
 // interface (Apache-2.0, see NOTICE).
 //! SAM 2 as the Roto Brush's object tracker: prompts on some frames, the whole clip tracked
 //! forwards and backwards, each frame reported as it is finished.
@@ -8,8 +8,8 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
 
+use artheffect_segment::{ClipFrame, ObjectTracker, TrackRequest, TrackedFrame};
 use candle_core::Tensor;
-use effectcraft_segment::{ClipFrame, ObjectTracker, TrackRequest, TrackedFrame};
 
 use crate::mask::{Sam2Mask, preprocess, validate_frame_size};
 use crate::prompt::{INPUT_SIZE, Prompt};
@@ -159,7 +159,7 @@ impl ObjectTracker for Sam2Mask {
         frames: &mut dyn FnMut(i64) -> Option<Arc<ClipFrame>>,
         cancel: &dyn Fn() -> bool,
         out: &mut dyn FnMut(usize, i64, TrackedFrame),
-    ) -> effectcraft_segment::Result<()> {
+    ) -> artheffect_segment::Result<()> {
         self.touch();
         let r = self.run_track(req, frames, cancel, out).map_err(|e| e.to_string());
         self.touch();

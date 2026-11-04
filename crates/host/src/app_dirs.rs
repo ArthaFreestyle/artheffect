@@ -1,31 +1,35 @@
-//! Where EffectCraft keeps its per-user data (settings, shortcuts, crash recovery, logs, models,
+//! Where Artheffect keeps its per-user data (settings, shortcuts, crash recovery, logs, models,
 //! plug-ins): the one directory [`config_dir`](crate::config_dir) returns.
 //!
 //! In order:
-//! 1. `EFFECTCRAFT_CONFIG_DIR`, when set (tests, agents, custom setups).
+//! 1. `ARTHEFFECT_CONFIG_DIR`, when set (tests, agents, custom setups).
 //! 2. **Portable mode** (#993): a marker file ([`PORTABLE_MARKERS`]) beside the executable puts
-//!    everything in `<exe dir>/EffectCraftData`, so a portable copy on a USB stick leaves nothing in
+//!    everything in `<exe dir>/ArtheffectData`, so a portable copy on a USB stick leaves nothing in
 //!    `%APPDATA%`. The Windows portable zip ships with `portable.txt`; the MSI doesn't. If that
 //!    folder can't be written (read-only medium, Program Files), a warning is logged and the
 //!    platform folder is used.
-//! 3. The platform convention: macOS `~/Library/Application Support/EffectCraft`, Windows
-//!    `%APPDATA%\EffectCraft`, Linux `$XDG_CONFIG_HOME/effectcraft` or `~/.config/effectcraft`.
+//! 3. The platform convention: macOS `~/Library/Application Support/Artheffect`, Windows
+//!    `%APPDATA%\Artheffect`, Linux `$XDG_CONFIG_HOME/artheffect` or `~/.config/artheffect`.
+//!
+//! Artheffect is a fork of EffectCraft: the first launch that finds no platform folder yet but an
+//! EffectCraft one copies it over once ([`migrate_legacy`]), so settings, shortcuts and the
+//! launch guard's Window Graphics choice carry across.
 
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 /// Files beside the executable that switch on portable mode (either one; contents are ignored).
-pub const PORTABLE_MARKERS: [&str; 2] = ["portable.txt", "EffectCraft.portable"];
+pub const PORTABLE_MARKERS: [&str; 2] = ["portable.txt", "Artheffect.portable"];
 /// The data folder created beside the executable in portable mode.
-pub const PORTABLE_DATA_DIR: &str = "EffectCraftData";
+pub const PORTABLE_DATA_DIR: &str = "ArtheffectData";
 
 /// How [`DataDir::dir`] was chosen.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Mode {
-    /// `EFFECTCRAFT_CONFIG_DIR`.
+    /// `ARTHEFFECT_CONFIG_DIR`.
     Override,
-    /// `<exe dir>/EffectCraftData`.
+    /// `<exe dir>/ArtheffectData`.
     Portable,
     /// The platform's per-user config directory.
     Platform,
@@ -46,9 +50,19 @@ pub fn current() -> &'static DataDir {
     static DIR: OnceLock<DataDir> = OnceLock::new();
     DIR.get_or_init(|| {
         let exe = std::env::current_exe().ok();
-        let d = resolve(|k| std::env::var_os(k), exe.as_deref().and_then(Path::parent));
+        let env = |k: &str| std::env::var_os(k);
+        let d = resolve(env, exe.as_deref().and_then(Path::parent));
         if let Some(w) = &d.warning {
             log::warn!("{w}");
+        }
+        if d.mode == Mode::Platform
+            && let (Some(new), Some(old)) = (&d.dir, legacy_platform_dir(&env))
+        {
+            match migrate_legacy(&old, new) {
+                Ok(true) => log::info!("copied the EffectCraft settings in {} to {}", old.display(), new.display()),
+                Ok(false) => {}
+                Err(e) => log::warn!("couldn't copy the EffectCraft settings in {} to {}: {e}", old.display(), new.display()),
+            }
         }
         d
     })
@@ -56,7 +70,7 @@ pub fn current() -> &'static DataDir {
 
 /// Resolve the data directory from the environment (`env`) and the executable's folder.
 pub fn resolve(env: impl Fn(&str) -> Option<OsString>, exe_dir: Option<&Path>) -> DataDir {
-    if let Some(d) = env("EFFECTCRAFT_CONFIG_DIR") {
+    if let Some(d) = env("ARTHEFFECT_CONFIG_DIR") {
         return DataDir { dir: Some(PathBuf::from(d)), mode: Mode::Override, warning: None };
     }
     let platform = platform_dir(&env);
@@ -77,14 +91,59 @@ pub fn resolve(env: impl Fn(&str) -> Option<OsString>, exe_dir: Option<&Path>) -
 
 /// The platform convention, from `env` (so tests can fake `HOME`/`APPDATA`/`XDG_CONFIG_HOME`).
 pub fn platform_dir(env: &impl Fn(&str) -> Option<OsString>) -> Option<PathBuf> {
+    platform_dir_named(env, "Artheffect", "artheffect")
+}
+
+/// Where EffectCraft, which Artheffect was forked from, kept the same data.
+pub fn legacy_platform_dir(env: &impl Fn(&str) -> Option<OsString>) -> Option<PathBuf> {
+    platform_dir_named(env, "EffectCraft", "effectcraft")
+}
+
+fn platform_dir_named(env: &impl Fn(&str) -> Option<OsString>, name: &str, unix_name: &str) -> Option<PathBuf> {
     let home = || env("HOME").map(PathBuf::from);
     if cfg!(target_os = "macos") {
-        return home().map(|h| h.join("Library/Application Support/EffectCraft"));
+        return home().map(|h| h.join("Library/Application Support").join(name));
     }
     if cfg!(target_os = "windows") {
-        return env("APPDATA").map(|a| PathBuf::from(a).join("EffectCraft"));
+        return env("APPDATA").map(|a| PathBuf::from(a).join(name));
     }
-    env("XDG_CONFIG_HOME").map(PathBuf::from).or_else(|| home().map(|h| h.join(".config"))).map(|c| c.join("effectcraft"))
+    env("XDG_CONFIG_HOME").map(PathBuf::from).or_else(|| home().map(|h| h.join(".config"))).map(|c| c.join(unix_name))
+}
+
+/// How deep [`migrate_legacy`] follows folders (the data folder is a few levels deep at most).
+const MIGRATE_MAX_DEPTH: usize = 16;
+
+/// Copy the EffectCraft data folder `old` to `new` once: only when `new` doesn't exist yet and
+/// `old` is a folder. `Ok(true)` when it copied. A file that can't be copied stops the copy, and
+/// the partial folder is removed so the next launch tries again.
+pub fn migrate_legacy(old: &Path, new: &Path) -> std::io::Result<bool> {
+    if new.exists() || !old.is_dir() {
+        return Ok(false);
+    }
+    if let Err(e) = copy_dir(old, new, 0) {
+        // Best effort: a leftover partial copy would stop the next attempt.
+        let _ = std::fs::remove_dir_all(new);
+        return Err(e);
+    }
+    Ok(true)
+}
+
+fn copy_dir(from: &Path, to: &Path, depth: usize) -> std::io::Result<()> {
+    if depth > MIGRATE_MAX_DEPTH {
+        return Ok(());
+    }
+    std::fs::create_dir_all(to)?;
+    for entry in std::fs::read_dir(from)? {
+        let entry = entry?;
+        let kind = entry.file_type()?;
+        let dst = to.join(entry.file_name());
+        if kind.is_dir() {
+            copy_dir(&entry.path(), &dst, depth + 1)?;
+        } else if kind.is_file() {
+            std::fs::copy(entry.path(), &dst)?;
+        }
+    }
+    Ok(())
 }
 
 /// The first portable marker file in `exe_dir`, if any.
@@ -105,12 +164,32 @@ fn ensure_writable(dir: &Path) -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The first Artheffect launch copies an EffectCraft data folder once, and never overwrites.
+    #[test]
+    fn legacy_effectcraft_data_is_copied_once() {
+        let root = std::env::temp_dir().join(format!("artheffect-migrate-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let (old, new) = (root.join("EffectCraft"), root.join("Artheffect"));
+        std::fs::create_dir_all(old.join("Logs")).unwrap();
+        std::fs::write(old.join("prefs.json"), b"{\"gl\":true}").unwrap();
+        std::fs::write(old.join("Logs").join("a.log"), b"x").unwrap();
+        assert!(migrate_legacy(&old, &new).unwrap());
+        assert_eq!(std::fs::read(new.join("prefs.json")).unwrap(), b"{\"gl\":true}");
+        assert_eq!(std::fs::read(new.join("Logs").join("a.log")).unwrap(), b"x");
+        std::fs::write(new.join("prefs.json"), b"{}").unwrap();
+        assert!(!migrate_legacy(&old, &new).unwrap(), "an existing folder is left alone");
+        assert_eq!(std::fs::read(new.join("prefs.json")).unwrap(), b"{}");
+        assert!(!migrate_legacy(&root.join("missing"), &root.join("other")).unwrap());
+        assert!(!root.join("other").exists());
+        let _ = std::fs::remove_dir_all(&root);
+    }
     use std::collections::HashMap;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     fn temp(tag: &str) -> PathBuf {
         static N: AtomicUsize = AtomicUsize::new(0);
-        let d = std::env::temp_dir().join(format!("effectcraft-app-dirs-{tag}-{}-{}", std::process::id(), N.fetch_add(1, Ordering::Relaxed)));
+        let d = std::env::temp_dir().join(format!("artheffect-app-dirs-{tag}-{}-{}", std::process::id(), N.fetch_add(1, Ordering::Relaxed)));
         let _ = std::fs::remove_dir_all(&d);
         std::fs::create_dir_all(&d).unwrap();
         d
@@ -138,11 +217,11 @@ mod tests {
         assert!(d.warning.is_none());
         let dir = d.dir.unwrap();
         if cfg!(target_os = "macos") {
-            assert_eq!(dir, root.join("home/Library/Application Support/EffectCraft"));
+            assert_eq!(dir, root.join("home/Library/Application Support/Artheffect"));
         } else if cfg!(target_os = "windows") {
-            assert_eq!(dir, root.join("appdata").join("EffectCraft"));
+            assert_eq!(dir, root.join("appdata").join("Artheffect"));
         } else {
-            assert_eq!(dir, root.join("home/.config/effectcraft"));
+            assert_eq!(dir, root.join("home/.config/artheffect"));
         }
         assert!(!exe.join(PORTABLE_DATA_DIR).exists(), "no portable folder without a marker");
         let _ = std::fs::remove_dir_all(&root);
@@ -152,14 +231,14 @@ mod tests {
     fn either_marker_keeps_everything_beside_the_exe() {
         for marker in PORTABLE_MARKERS {
             let root = temp("portable");
-            let exe = root.join("EffectCraft");
+            let exe = root.join("Artheffect");
             std::fs::create_dir_all(&exe).unwrap();
             std::fs::write(exe.join(marker), b"").unwrap();
             let d = resolve(fake_home(&root), Some(&exe));
             assert_eq!(d.mode, Mode::Portable, "{marker}");
             assert!(d.warning.is_none());
             let dir = d.dir.unwrap();
-            assert_eq!(dir, exe.join("EffectCraftData"));
+            assert_eq!(dir, exe.join("ArtheffectData"));
             assert!(dir.is_dir(), "the data folder is created");
             assert_eq!(std::fs::read_dir(&dir).unwrap().count(), 0, "the write probe is removed");
             assert!(!root.join("home").exists() && !root.join("appdata").exists(), "nothing written to the user folder");
@@ -205,7 +284,7 @@ mod tests {
         std::fs::create_dir_all(&exe).unwrap();
         std::fs::write(exe.join("portable.txt"), b"").unwrap();
         let custom = root.join("custom");
-        let d = resolve(env_of(&[("EFFECTCRAFT_CONFIG_DIR", &custom)]), Some(&exe));
+        let d = resolve(env_of(&[("ARTHEFFECT_CONFIG_DIR", &custom)]), Some(&exe));
         assert_eq!((d.mode, d.dir), (Mode::Override, Some(custom)));
         assert!(!exe.join(PORTABLE_DATA_DIR).exists());
         let _ = std::fs::remove_dir_all(&root);

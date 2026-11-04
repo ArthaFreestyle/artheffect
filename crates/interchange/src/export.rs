@@ -3,9 +3,9 @@
 
 use std::collections::HashMap;
 
-use effectcraft_keyframe::{Interp, Value};
-use effectcraft_project::{Comp, Footage, FootageKind, ItemId, ItemKind, Layer, LayerId, LayerSource, Project, Property};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_keyframe::{Interp, Value};
+use artheffect_project::{Comp, Footage, FootageKind, ItemId, ItemKind, Layer, LayerId, LayerSource, Project, Property};
+use artheffect_time::{FrameRate, Tick};
 use filmcraft_geom::Vec2;
 use filmcraft_media::{AudioStreamInfo, Generator, MediaInfo, MediaKind, VideoStreamInfo};
 use filmcraft_project as fp;
@@ -17,7 +17,7 @@ use crate::{Error, Result, TimelineFormat, par_fraction, rate_out, tick_out};
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum PrerenderMode {
-    /// Nothing is rendered: layers only EffectCraft can draw are left out (with a warning), and
+    /// Nothing is rendered: layers only Artheffect can draw are left out (with a warning), and
     /// effects, masks, parenting… of footage layers are dropped.
     None,
     /// Layers a timeline cannot represent (text, shapes, effects, masks, 3D, parenting, track
@@ -151,7 +151,7 @@ fn unsupported(project: &Project, comp: &Comp, l: &Layer, format: TimelineFormat
     if expr {
         return Some("expressions".into());
     }
-    if l.blend_mode != effectcraft_color::BlendMode::Normal && !fp::effect::BLEND_MODES.iter().any(|m| m.eq_ignore_ascii_case(l.blend_mode.label())) {
+    if l.blend_mode != artheffect_color::BlendMode::Normal && !fp::effect::BLEND_MODES.iter().any(|m| m.eq_ignore_ascii_case(l.blend_mode.label())) {
         return Some(format!("blend mode {}", l.blend_mode.label()));
     }
     // Premiere's Basic Motion in the interchange formats has one (uniform) scale.
@@ -334,7 +334,7 @@ impl Exporter<'_> {
             &name,
             kind,
             duration,
-            f.has_video.then(|| (f.width, f.height, f.frame_rate, f.pixel_aspect, f.codec.clone(), f.alpha != effectcraft_project::AlphaMode::Ignore)),
+            f.has_video.then(|| (f.width, f.height, f.frame_rate, f.pixel_aspect, f.codec.clone(), f.alpha != artheffect_project::AlphaMode::Ignore)),
             f.has_audio,
         );
         let mut clip = media_clip(fp::MediaRef::File { path: path.clone() }, info);
@@ -591,7 +591,7 @@ impl Exporter<'_> {
             && let Some(mut o) = effect_or_new(ti, "opacity")
         {
             o.params.insert("opacity".into(), param_out(p, &to_clip, |v| fp::ParamValue::Float(v.as_f64())));
-            if l.blend_mode != effectcraft_color::BlendMode::Normal
+            if l.blend_mode != artheffect_color::BlendMode::Normal
                 && let Some(i) = fp::effect::BLEND_MODES.iter().position(|m| m.eq_ignore_ascii_case(l.blend_mode.label()))
             {
                 o.params.insert("blend".into(), fp::Param::new(fp::ParamValue::Choice(i as u32)));

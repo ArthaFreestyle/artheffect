@@ -11,18 +11,18 @@
 //! read through another layer's expression and rendered in a small frame. Inputs run on a worker
 //! thread with the app's default 2 MiB stack under `catch_unwind` and a deadline: a panic or a
 //! hang is reported with the iteration that reproduces it instead of taking the run down, and a
-//! stack overflow aborts the run, which fails it all the same (`EFFECTCRAFT_FUZZ_VERBOSE=1`
+//! stack overflow aborts the run, which fails it all the same (`ARTHEFFECT_FUZZ_VERBOSE=1`
 //! prints every input before it runs).
 //!
 //! The default run is bounded (iterations and seconds) to stay fast in `cargo test`; a longer run:
-//! `EFFECTCRAFT_FUZZ_ITERS=200000 EFFECTCRAFT_FUZZ_SECS=600 cargo test -p effectcraft-expr fuzz_`
-//! (`EFFECTCRAFT_FUZZ_SEED` picks another sequence, `EFFECTCRAFT_FUZZ_START` the first iteration).
+//! `ARTHEFFECT_FUZZ_ITERS=200000 ARTHEFFECT_FUZZ_SECS=600 cargo test -p artheffect-expr fuzz_`
+//! (`ARTHEFFECT_FUZZ_SEED` picks another sequence, `ARTHEFFECT_FUZZ_START` the first iteration).
 //! The `mutate` + `eval_input` pair is what a cargo-fuzz target would call.
 
 use std::sync::mpsc::{Receiver, Sender, channel};
 use std::time::{Duration, Instant};
 
-use effectcraft_render::{NoFootage, RenderOpts, Renderer};
+use artheffect_render::{NoFootage, RenderOpts, Renderer};
 
 use super::{Fx, OPA, POS, ROT, fx, secs};
 use crate::{Expressions, check_syntax, eval_property, eval_standalone};
@@ -324,11 +324,11 @@ fn env_u64(name: &str, default: u64) -> u64 {
 
 #[test]
 fn fuzz_expressions_never_crash() {
-    let seed = env_u64("EFFECTCRAFT_FUZZ_SEED", 0x00EC_E8E2);
-    let start = env_u64("EFFECTCRAFT_FUZZ_START", 0);
-    let iters = env_u64("EFFECTCRAFT_FUZZ_ITERS", 1_500);
-    let budget = Duration::from_secs(env_u64("EFFECTCRAFT_FUZZ_SECS", 5));
-    let verbose = env_u64("EFFECTCRAFT_FUZZ_VERBOSE", 0) != 0;
+    let seed = env_u64("ARTHEFFECT_FUZZ_SEED", 0x00EC_E8E2);
+    let start = env_u64("ARTHEFFECT_FUZZ_START", 0);
+    let iters = env_u64("ARTHEFFECT_FUZZ_ITERS", 1_500);
+    let budget = Duration::from_secs(env_u64("ARTHEFFECT_FUZZ_SECS", 5));
+    let verbose = env_u64("ARTHEFFECT_FUZZ_VERBOSE", 0) != 0;
     // Every evaluation gives up after `MAX_TIME`, and an input is evaluated a handful of times.
     let deadline = crate::MAX_TIME * 24;
     let mut worker = Worker::start().unwrap();

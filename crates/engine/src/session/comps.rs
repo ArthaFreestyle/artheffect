@@ -136,7 +136,7 @@ impl Session {
             let Some(c) = self.project.comp(cid) else { continue };
             // Down: the comps this one nests.
             for l in &c.layers {
-                if let effectcraft_project::LayerSource::Comp { item } = &l.source
+                if let artheffect_project::LayerSource::Comp { item } = &l.source
                     && seen.insert(*item)
                 {
                     todo.push((*item, l.layer_time(ct)));
@@ -145,7 +145,7 @@ impl Session {
             // Up: the comps nesting this one.
             for iid in self.project.items.keys() {
                 if let Some(pc) = self.project.comp(*iid)
-                    && let Some(l) = pc.layers.iter().find(|l| matches!(&l.source, effectcraft_project::LayerSource::Comp { item } if *item == cid))
+                    && let Some(l) = pc.layers.iter().find(|l| matches!(&l.source, artheffect_project::LayerSource::Comp { item } if *item == cid))
                     && seen.insert(*iid)
                 {
                     todo.push((*iid, l.comp_time(ct)));
@@ -238,17 +238,17 @@ impl Session {
     }
 
     /// The open compositions and their current times, as a project file records them
-    /// ([`effectcraft_project::SavedView`]).
-    pub fn saved_view(&self) -> effectcraft_project::SavedView {
+    /// ([`artheffect_project::SavedView`]).
+    pub fn saved_view(&self) -> artheffect_project::SavedView {
         let comp_times = self.state.times.iter().filter(|(id, _)| self.project.comp(**id).is_some()).map(|(id, t)| (*id, *t)).collect();
-        effectcraft_project::SavedView { active_comp: self.state.active_comp, open_comps: self.state.open_comps.clone(), comp_times }
+        artheffect_project::SavedView { active_comp: self.state.active_comp, open_comps: self.state.open_comps.clone(), comp_times }
     }
 
     /// Reopen the compositions a project file was saved with (#748), each at its saved current
     /// time (#1714). Ids that no longer name a comp are skipped; with none left the project stays
     /// on the comp [`Session::replace_project`] opened (its first), as files from before the view
     /// was saved do.
-    pub fn restore_view(&mut self, view: &effectcraft_project::SavedView) {
+    pub fn restore_view(&mut self, view: &artheffect_project::SavedView) {
         for (id, t) in &view.comp_times {
             if let Some(comp) = self.project.comp(*id) {
                 let t = comp_frame_at(comp, *t);
@@ -267,7 +267,7 @@ impl Session {
     }
 
     /// The 3D view camera of a comp's viewer (None = the active camera).
-    pub fn view_camera(&self, comp: ItemId) -> Option<effectcraft_render::three_d::CameraState> {
+    pub fn view_camera(&self, comp: ItemId) -> Option<artheffect_render::three_d::CameraState> {
         let c = self.project.comp(comp)?;
         if !c.has_3d() {
             return None;

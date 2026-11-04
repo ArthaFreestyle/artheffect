@@ -19,7 +19,7 @@
 //! without strokes the effect passes its input through.
 //!
 //! *Version*: 1.0 is the classic graph-cut engine; 2.0 and 3.0 also use the trained model chosen
-//! in Settings ▸ Roto Brush ([`set_model`], an `effectcraft_segment::MaskModel` such as
+//! in Settings ▸ Roto Brush ([`set_model`], an `artheffect_segment::MaskModel` such as
 //! MobileSAM), falling back to the classic engine when none is installed. The model's id is part
 //! of the chain seed, so choosing another recomputes the mattes. *Quality ▸ Best* segments at a
 //! higher working resolution with more iterations.
@@ -27,19 +27,19 @@
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::{Arc, Mutex, OnceLock, RwLock, Weak};
 
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
-use effectcraft_raster::Image;
-use effectcraft_segment::{ClipFrame, MaskModel, TrackRequest};
-use effectcraft_track::roto::refine::{self, MatteParams};
-use effectcraft_track::roto::{self as rb, Gmm, RotoData, SegOpts, rle};
+use artheffect_keyframe::Value;
+use artheffect_project::ParamUi;
+use artheffect_raster::Image;
+use artheffect_segment::{ClipFrame, MaskModel, TrackRequest};
+use artheffect_track::roto::refine::{self, MatteParams};
+use artheffect_track::roto::{self as rb, Gmm, RotoData, SegOpts, rle};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::warp_stab::param;
 use crate::{Buf, EffectCtx, EffectSpec, Params, num, p, popup, slider};
 
-pub use effectcraft_track::roto::{FrameSeg, Stroke, StrokeKind};
+pub use artheffect_track::roto::{FrameSeg, Stroke, StrokeKind};
 
 mod pending;
 
@@ -221,7 +221,7 @@ pub fn installed_model() -> Option<Arc<dyn MaskModel>> {
 /// Seed of the chain keys: what the frames are (the engine-maintained Input Key), the layer
 /// size, the frame rate, the segmentation settings and the model.
 pub fn seed(params: &Params, layer_size: [f64; 2], fps: f64) -> u64 {
-    seed_with(params, layer_size, fps, model_for(params).map_or(effectcraft_segment::CLASSICAL, |m| m.info().id))
+    seed_with(params, layer_size, fps, model_for(params).map_or(artheffect_segment::CLASSICAL, |m| m.info().id))
 }
 
 /// [`seed`] with the segmenting model named by its id (saved tracking names the one that made it).
@@ -744,7 +744,7 @@ impl Chain {
         // part of an object still boxes all of it. Those per-object mattes are not cached: their keys mean tracked results.
         let objects = self.data.objects();
         let several = objects.len() > 1;
-        let mut by_object: Vec<Vec<(i64, effectcraft_segment::Prompt)>> = vec![];
+        let mut by_object: Vec<Vec<(i64, artheffect_segment::Prompt)>> = vec![];
         for &obj in &objects {
             let mut prompts = vec![];
             let mut carried: Option<(i64, Arc<FrameSeg>)> = None;
@@ -782,7 +782,7 @@ impl Chain {
             by_object.push(prompts);
         }
         // objects without a foreground prompt cannot be followed
-        let followed: Vec<(u32, Vec<(i64, effectcraft_segment::Prompt)>)> = objects.into_iter().zip(by_object).filter(|(_, p)| !p.is_empty()).collect();
+        let followed: Vec<(u32, Vec<(i64, artheffect_segment::Prompt)>)> = objects.into_iter().zip(by_object).filter(|(_, p)| !p.is_empty()).collect();
         if followed.is_empty() {
             return Err("no foreground strokes to follow".into());
         }
@@ -794,19 +794,19 @@ impl Chain {
         let first_prompt = followed.iter().filter_map(|(_, p)| p.first().map(|q| q.0)).max().unwrap_or(need_hi);
         let hi = need_hi.max(first_prompt);
         let objects: Vec<u32> = followed.iter().map(|(o, _)| *o).collect();
-        let prompts: Vec<Vec<(i64, effectcraft_segment::Prompt)>> =
+        let prompts: Vec<Vec<(i64, artheffect_segment::Prompt)>> =
             followed.into_iter().map(|(_, p)| p.into_iter().filter(|q| q.0 >= lo && q.0 <= hi).collect()).collect();
         let req = TrackRequest { first: lo, count: (hi - lo + 1) as usize, objects: prompts };
         let frame = std::cell::RefCell::new(frame);
         let mut summary = TrackSummary::default();
         // A frame is finished when every object has reported it (the objects' mattes are united).
         let mut pending = pending::PendingMasks::new(objects.len(), max_pending_bytes);
-        let finish = |g: i64, parts: Vec<Option<effectcraft_segment::TrackedFrame>>, summary: &mut TrackSummary, progress: &mut dyn FnMut(usize)| {
+        let finish = |g: i64, parts: Vec<Option<artheffect_segment::TrackedFrame>>, summary: &mut TrackSummary, progress: &mut dyn FnMut(usize)| {
             if !wanted.is_none_or(|w| w.contains(&g)) {
                 return;
             }
             let (Some(key), Some(img)) = (self.keys.get(&g).copied(), (frame.borrow_mut())(g)) else { return };
-            let mut segs: Vec<(u32, effectcraft_track::roto::FrameSeg)> = vec![];
+            let mut segs: Vec<(u32, artheffect_track::roto::FrameSeg)> = vec![];
             let (mut confidence, mut present) = (f32::INFINITY, false);
             let mut worst = f32::INFINITY;
             for (obj, t) in objects.iter().zip(parts) {
@@ -832,7 +832,7 @@ impl Chain {
                 }
                 parts.push(seg);
             }
-            store(tracked_key(key), self.opts.scale, Arc::new(effectcraft_track::roto::FrameSeg::union(parts)));
+            store(tracked_key(key), self.opts.scale, Arc::new(artheffect_track::roto::FrameSeg::union(parts)));
             trust_cache().lock().unwrap_or_else(|e| e.into_inner()).insert(tracked_key(key), FrameTrust { confidence, occluded });
             summary.frames += 1;
             summary.occluded += usize::from(occluded);
@@ -968,10 +968,10 @@ impl FrozenCache {
 
 /// What frozen mattes depend on: every chain key (the session's model is in their seed) and the matte settings.
 pub fn frozen_key(params: &Params, layer_size: [f64; 2], fps: f64) -> String {
-    frozen_key_with(params, layer_size, fps, model_for(params).map_or(effectcraft_segment::CLASSICAL, |m| m.info().id))
+    frozen_key_with(params, layer_size, fps, model_for(params).map_or(artheffect_segment::CLASSICAL, |m| m.info().id))
 }
 
-/// [`frozen_key`] for the model with id `model` ([`effectcraft_segment::CLASSICAL`]: none).
+/// [`frozen_key`] for the model with id `model` ([`artheffect_segment::CLASSICAL`]: none).
 fn frozen_key_with(params: &Params, layer_size: [f64; 2], fps: f64, model: &str) -> String {
     let mut h = 0xcbf2_9ce4_8422_2325;
     for (f, k) in &data(params).chain_keys(seed_with(params, layer_size, fps, model)) {
@@ -990,8 +990,8 @@ fn frozen_key_with(params: &Params, layer_size: [f64; 2], fps: f64, model: &str)
 /// them, which this session may not have loaded (a fresh headless render). Frozen mattes need no segmentation.
 fn frozen_applies(fc: &FrozenCache, params: &Params, layer_size: [f64; 2], fps: f64) -> bool {
     fc.key == frozen_key(params, layer_size, fps)
-        || std::iter::once(effectcraft_segment::CLASSICAL)
-            .chain(effectcraft_segment::MODELS.iter().filter(|m| m.task == effectcraft_segment::Task::Mask).map(|m| m.id))
+        || std::iter::once(artheffect_segment::CLASSICAL)
+            .chain(artheffect_segment::MODELS.iter().filter(|m| m.task == artheffect_segment::Task::Mask).map(|m| m.id))
             .any(|id| fc.key == frozen_key_with(params, layer_size, fps, id))
 }
 
@@ -1469,7 +1469,7 @@ mod tests {
         assert!(model_for(&params).is_none(), "this session has no model");
         // the frozen matte is the left half of the layer: no segmentation of the disk gives it
         let alpha: Vec<f32> = (0..100 * 80).map(|i| f32::from(u8::from(i % 100 < 50))).collect();
-        let mut fc = FrozenCache { key: frozen_key_with(&params, size, 25.0, effectcraft_segment::SAM2_TINY.id), size: [100, 80], ..Default::default() };
+        let mut fc = FrozenCache { key: frozen_key_with(&params, size, 25.0, artheffect_segment::SAM2_TINY.id), size: [100, 80], ..Default::default() };
         fc.frames.insert(0, freeze_frame(&alpha, &[0; 100 * 80]));
         assert_ne!(fc.key, frozen_key(&params, size, 25.0));
         params.values.insert(FROZEN.into(), Value::Str(fc.to_json()));
@@ -1504,25 +1504,25 @@ mod tests {
     /// A stand-in tracker for two objects: object 0 is the moving disk, object 1 a fixed square. It records how many
     /// objects (and prompts per object) it was asked for.
     struct TwoObjects(std::sync::Mutex<Vec<Vec<usize>>>);
-    impl effectcraft_segment::MaskModel for TwoObjects {
-        fn info(&self) -> &'static effectcraft_segment::ModelInfo {
-            &effectcraft_segment::SAM2_TINY
+    impl artheffect_segment::MaskModel for TwoObjects {
+        fn info(&self) -> &'static artheffect_segment::ModelInfo {
+            &artheffect_segment::SAM2_TINY
         }
-        fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &effectcraft_segment::Prompt) -> effectcraft_segment::Result<Vec<f32>> {
+        fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &artheffect_segment::Prompt) -> artheffect_segment::Result<Vec<f32>> {
             Err("no weights".into())
         }
-        fn tracker(&self) -> Option<&dyn effectcraft_segment::ObjectTracker> {
+        fn tracker(&self) -> Option<&dyn artheffect_segment::ObjectTracker> {
             Some(self)
         }
     }
-    impl effectcraft_segment::ObjectTracker for TwoObjects {
+    impl artheffect_segment::ObjectTracker for TwoObjects {
         fn track(
             &self,
-            req: &effectcraft_segment::TrackRequest,
+            req: &artheffect_segment::TrackRequest,
             frame: &mut dyn FnMut(i64) -> Option<Arc<ClipFrame>>,
             _: &dyn Fn() -> bool,
-            out: &mut dyn FnMut(usize, i64, effectcraft_segment::TrackedFrame),
-        ) -> effectcraft_segment::Result<()> {
+            out: &mut dyn FnMut(usize, i64, artheffect_segment::TrackedFrame),
+        ) -> artheffect_segment::Result<()> {
             self.0.lock().unwrap().push(req.objects.iter().map(Vec::len).collect());
             for g in req.first..req.first + req.count as i64 {
                 let img = frame(g).ok_or("no frame")?;
@@ -1537,7 +1537,7 @@ mod tests {
                             f32::from(inside)
                         })
                         .collect();
-                    out(o, g, effectcraft_segment::TrackedFrame { prob, w: img.w, h: img.h, confidence: if o == 0 { 0.9 } else { 0.4 }, occluded: false });
+                    out(o, g, artheffect_segment::TrackedFrame { prob, w: img.w, h: img.h, confidence: if o == 0 { 0.9 } else { 0.4 }, occluded: false });
                 }
             }
             Ok(())
@@ -1552,26 +1552,26 @@ mod tests {
         cancelled: std::sync::atomic::AtomicBool,
     }
 
-    impl effectcraft_segment::MaskModel for SeparatePasses {
-        fn info(&self) -> &'static effectcraft_segment::ModelInfo {
-            &effectcraft_segment::SAM2_TINY
+    impl artheffect_segment::MaskModel for SeparatePasses {
+        fn info(&self) -> &'static artheffect_segment::ModelInfo {
+            &artheffect_segment::SAM2_TINY
         }
-        fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &effectcraft_segment::Prompt) -> effectcraft_segment::Result<Vec<f32>> {
+        fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &artheffect_segment::Prompt) -> artheffect_segment::Result<Vec<f32>> {
             Err("no weights".into())
         }
-        fn tracker(&self) -> Option<&dyn effectcraft_segment::ObjectTracker> {
+        fn tracker(&self) -> Option<&dyn artheffect_segment::ObjectTracker> {
             Some(self)
         }
     }
 
-    impl effectcraft_segment::ObjectTracker for SeparatePasses {
+    impl artheffect_segment::ObjectTracker for SeparatePasses {
         fn track(
             &self,
-            req: &effectcraft_segment::TrackRequest,
+            req: &artheffect_segment::TrackRequest,
             frames: &mut dyn FnMut(i64) -> Option<Arc<ClipFrame>>,
             cancel: &dyn Fn() -> bool,
-            out: &mut dyn FnMut(usize, i64, effectcraft_segment::TrackedFrame),
-        ) -> effectcraft_segment::Result<()> {
+            out: &mut dyn FnMut(usize, i64, artheffect_segment::TrackedFrame),
+        ) -> artheffect_segment::Result<()> {
             use std::sync::atomic::Ordering::Relaxed;
             assert_ne!(req.objects[0][0].0, req.objects[1][0].0);
             for o in 0..req.objects.len() {
@@ -1582,7 +1582,7 @@ mod tests {
                     }
                     let img = frames(g).ok_or("no frame")?;
                     self.emitted.fetch_add(1, Relaxed);
-                    out(o, g, effectcraft_segment::TrackedFrame { prob: vec![0.5; img.w * img.h], w: img.w, h: img.h, confidence: 0.9, occluded: false });
+                    out(o, g, artheffect_segment::TrackedFrame { prob: vec![0.5; img.w * img.h], w: img.w, h: img.h, confidence: 0.9, occluded: false });
                 }
             }
             Ok(())
@@ -1604,7 +1604,7 @@ mod tests {
             params.values.insert(INPUT_KEY.into(), Value::Str(format!("one-followed-object-{outside_span}")));
             let mut chain = Chain::new(&params, [100.0, 80.0], 25.0, 1.0);
             chain.model = Some(Arc::new(TwoObjects(Default::default())));
-            chain.keys = data.chain_keys(seed_with(&params, [100.0, 80.0], 25.0, effectcraft_segment::SAM2_TINY.id));
+            chain.keys = data.chain_keys(seed_with(&params, [100.0, 80.0], 25.0, artheffect_segment::SAM2_TINY.id));
             let mut get = |f: i64| Some(Arc::new(frame(f as f64 / 25.0)));
             assert_eq!(chain.track(&mut get, &|| false, &mut |_| {}).unwrap().unwrap().frames, 3);
             let matte = chain.object_seg(1, 0).expect("the followed object keeps its own matte");
@@ -1630,25 +1630,25 @@ mod tests {
     /// A model that sees only the left part of the disk, and records the tracker's box prompts.
     #[derive(Default)]
     struct LeftPart(std::sync::Mutex<Vec<(i64, Option<[f32; 4]>)>>);
-    impl effectcraft_segment::MaskModel for LeftPart {
-        fn info(&self) -> &'static effectcraft_segment::ModelInfo {
-            &effectcraft_segment::SAM2_TINY
+    impl artheffect_segment::MaskModel for LeftPart {
+        fn info(&self) -> &'static artheffect_segment::ModelInfo {
+            &artheffect_segment::SAM2_TINY
         }
-        fn segment(&self, _: &[[f32; 3]], w: usize, h: usize, _: &effectcraft_segment::Prompt) -> effectcraft_segment::Result<Vec<f32>> {
+        fn segment(&self, _: &[[f32; 3]], w: usize, h: usize, _: &artheffect_segment::Prompt) -> artheffect_segment::Result<Vec<f32>> {
             Ok((0..w * h).map(|i| f32::from((26..36).contains(&(i % w)) && (30..50).contains(&(i / w)))).collect())
         }
-        fn tracker(&self) -> Option<&dyn effectcraft_segment::ObjectTracker> {
+        fn tracker(&self) -> Option<&dyn artheffect_segment::ObjectTracker> {
             Some(self)
         }
     }
-    impl effectcraft_segment::ObjectTracker for LeftPart {
+    impl artheffect_segment::ObjectTracker for LeftPart {
         fn track(
             &self,
-            req: &effectcraft_segment::TrackRequest,
+            req: &artheffect_segment::TrackRequest,
             _: &mut dyn FnMut(i64) -> Option<Arc<ClipFrame>>,
             _: &dyn Fn() -> bool,
-            _: &mut dyn FnMut(usize, i64, effectcraft_segment::TrackedFrame),
-        ) -> effectcraft_segment::Result<()> {
+            _: &mut dyn FnMut(usize, i64, artheffect_segment::TrackedFrame),
+        ) -> artheffect_segment::Result<()> {
             *self.0.lock().unwrap() = req.objects.iter().flatten().map(|(f, p)| (*f, p.bbox)).collect();
             Ok(())
         }
@@ -1665,7 +1665,7 @@ mod tests {
         let mut chain = Chain::new(&params, [100.0, 80.0], 25.0, 1.0);
         let fake = Arc::new(LeftPart::default());
         chain.model = Some(fake.clone());
-        chain.keys = data.chain_keys(seed_with(&params, [100.0, 80.0], 25.0, effectcraft_segment::SAM2_TINY.id));
+        chain.keys = data.chain_keys(seed_with(&params, [100.0, 80.0], 25.0, artheffect_segment::SAM2_TINY.id));
         let mut get = |f: i64| Some(Arc::new(frame(f as f64 / 25.0)));
         let expected: Vec<(i64, Option<[f32; 4]>)> = [0, 2]
             .into_iter()
@@ -1680,26 +1680,26 @@ mod tests {
     /// A model that cuts only a small square around each foreground click, and records every object's box prompts.
     #[derive(Default)]
     struct ClickSquares(std::sync::Mutex<Vec<Vec<(i64, Option<[f32; 4]>)>>>);
-    impl effectcraft_segment::MaskModel for ClickSquares {
-        fn info(&self) -> &'static effectcraft_segment::ModelInfo {
-            &effectcraft_segment::SAM2_TINY
+    impl artheffect_segment::MaskModel for ClickSquares {
+        fn info(&self) -> &'static artheffect_segment::ModelInfo {
+            &artheffect_segment::SAM2_TINY
         }
-        fn segment(&self, _: &[[f32; 3]], w: usize, h: usize, p: &effectcraft_segment::Prompt) -> effectcraft_segment::Result<Vec<f32>> {
+        fn segment(&self, _: &[[f32; 3]], w: usize, h: usize, p: &artheffect_segment::Prompt) -> artheffect_segment::Result<Vec<f32>> {
             let near = |x: f32, y: f32| p.points.iter().any(|(c, fg)| *fg && (c[0] - x).abs() <= 4.0 && (c[1] - y).abs() <= 4.0);
             Ok((0..w * h).map(|i| f32::from(near((i % w) as f32 + 0.5, (i / w) as f32 + 0.5))).collect())
         }
-        fn tracker(&self) -> Option<&dyn effectcraft_segment::ObjectTracker> {
+        fn tracker(&self) -> Option<&dyn artheffect_segment::ObjectTracker> {
             Some(self)
         }
     }
-    impl effectcraft_segment::ObjectTracker for ClickSquares {
+    impl artheffect_segment::ObjectTracker for ClickSquares {
         fn track(
             &self,
-            req: &effectcraft_segment::TrackRequest,
+            req: &artheffect_segment::TrackRequest,
             _: &mut dyn FnMut(i64) -> Option<Arc<ClipFrame>>,
             _: &dyn Fn() -> bool,
-            _: &mut dyn FnMut(usize, i64, effectcraft_segment::TrackedFrame),
-        ) -> effectcraft_segment::Result<()> {
+            _: &mut dyn FnMut(usize, i64, artheffect_segment::TrackedFrame),
+        ) -> artheffect_segment::Result<()> {
             *self.0.lock().unwrap() = req.objects.iter().map(|o| o.iter().map(|(f, p)| (*f, p.bbox)).collect()).collect();
             Ok(())
         }
@@ -1717,7 +1717,7 @@ mod tests {
         let mut chain = Chain::new(&params, [100.0, 80.0], 25.0, 1.0);
         let fake = Arc::new(ClickSquares::default());
         chain.model = Some(fake.clone());
-        chain.keys = data.chain_keys(seed_with(&params, [100.0, 80.0], 25.0, effectcraft_segment::SAM2_TINY.id));
+        chain.keys = data.chain_keys(seed_with(&params, [100.0, 80.0], 25.0, artheffect_segment::SAM2_TINY.id));
         chain.track(&mut |f| Some(Arc::new(frame(f as f64 / 25.0))), &|| false, &mut |_| {}).unwrap();
         let boxes = fake.0.lock().unwrap().clone();
         let box_of = |o: usize, f: i64| boxes[o].iter().find(|(g, _)| *g == f).and_then(|(_, b)| *b).expect("a box prompt");
@@ -1737,11 +1737,11 @@ mod tests {
         params.values.insert(INPUT_KEY.into(), Value::Str("object-correction-after-propagate".into()));
         let mut chain = Chain::new(&params, [100.0, 80.0], 25.0, 1.0);
         chain.model = Some(Arc::new(TwoObjects(Default::default())));
-        chain.keys = data.chain_keys(seed_with(&params, [100.0, 80.0], 25.0, effectcraft_segment::SAM2_TINY.id));
+        chain.keys = data.chain_keys(seed_with(&params, [100.0, 80.0], 25.0, artheffect_segment::SAM2_TINY.id));
         assert_eq!(chain.track(&mut |f| Some(Arc::new(frame(f as f64 / 25.0))), &|| false, &mut |_| {}).unwrap().unwrap().frames, 4);
         data.add(Stroke { kind: StrokeKind::Fg, frame: 2, radius: 2.0, points: vec![[56.0, 40.0]], object: 0 }, 3, [0, 3]);
         chain.data = Arc::new(data.clone());
-        chain.keys = data.chain_keys(seed_with(&params, [100.0, 80.0], 25.0, effectcraft_segment::SAM2_TINY.id));
+        chain.keys = data.chain_keys(seed_with(&params, [100.0, 80.0], 25.0, artheffect_segment::SAM2_TINY.id));
         let fake = Arc::new(ClickSquares::default());
         chain.model = Some(fake.clone());
         let mut prompt_reads = vec![];
@@ -1772,7 +1772,7 @@ mod tests {
             params.values.insert(INPUT_KEY.into(), Value::Str(format!("earlier-object-correction-{base}")));
             let mut chain = Chain::new(&params, [100.0, 80.0], 25.0, 1.0);
             chain.model = Some(Arc::new(TwoObjects(Default::default())));
-            let seed = seed_with(&params, [100.0, 80.0], 25.0, effectcraft_segment::SAM2_TINY.id);
+            let seed = seed_with(&params, [100.0, 80.0], 25.0, artheffect_segment::SAM2_TINY.id);
             chain.keys = data.chain_keys(seed);
             let image = |f: i64| {
                 let mut img = frame(f as f64 / 25.0);
@@ -1822,7 +1822,7 @@ mod tests {
         let mut chain = Chain::new(&params, [100.0, 80.0], 25.0, 1.0);
         let fake = Arc::new(ClickSquares::default());
         chain.model = Some(fake.clone());
-        chain.keys = data.chain_keys(seed_with(&params, [100.0, 80.0], 25.0, effectcraft_segment::SAM2_TINY.id));
+        chain.keys = data.chain_keys(seed_with(&params, [100.0, 80.0], 25.0, artheffect_segment::SAM2_TINY.id));
         let mut prompt_reads = vec![];
         let mut get = |f: i64| {
             if fake.0.lock().unwrap().is_empty() {
@@ -1891,7 +1891,7 @@ mod tests {
         let mut params = params_with(&d);
         params.values.insert(INPUT_KEY.into(), Value::Str("keep-saved-and-objects".into()));
         let size = [100.0, 80.0];
-        let model = effectcraft_segment::SAM2_TINY.id;
+        let model = artheffect_segment::SAM2_TINY.id;
         let keys = d.chain_keys(seed_with(&params, size, 25.0, model));
         let (matte, empty) = (vec![1u8; 100 * 80], vec![0u8; 100 * 80]);
         let frame = TrackFrame { m: rle::encode(&matte), r: rle::encode(&empty), c: 0.9, ..Default::default() };
@@ -1911,7 +1911,7 @@ mod tests {
         assert_eq!(kept.frames.keys().collect::<Vec<_>>(), saved.frames.keys().collect::<Vec<_>>());
         assert_eq!(kept.frames.get(&1), saved.frames.get(&1));
         // another model is chosen now: its keys differ, and the saved object matte is not stored under them
-        let other = d.chain_keys(seed_with(&params, size, 25.0, effectcraft_segment::SAM2_SMALL.id));
+        let other = d.chain_keys(seed_with(&params, size, 25.0, artheffect_segment::SAM2_SMALL.id));
         chain.keys = other.clone();
         let seg = chain.object_seg(1, 1).expect("the saved object matte");
         assert_eq!(seg.matte.len(), 100 * 80);
@@ -1954,7 +1954,7 @@ mod tests {
                     let refine = rle::encode(&union.refine);
                     let cache = TrackCache {
                         key: tracks_key(&keys),
-                        model: effectcraft_segment::CLASSICAL.into(),
+                        model: artheffect_segment::CLASSICAL.into(),
                         size: [4, 2],
                         frames: [(0, TrackFrame { m: matte.clone(), r: refine.clone(), ..Default::default() })].into_iter().collect(),
                         objects: [(0, [(0, ObjectFrame { m: matte, r: refine })].into_iter().collect())].into_iter().collect(),
@@ -2032,7 +2032,7 @@ mod tests {
         let mut params = params_with(&d);
         params.values.insert(INPUT_KEY.into(), Value::Str("replace-saved-tracking-model".into()));
         let size = [100.0, 80.0];
-        let old_model = effectcraft_segment::SAM2_SMALL.id;
+        let old_model = artheffect_segment::SAM2_SMALL.id;
         let old_keys = d.chain_keys(seed_with(&params, size, 25.0, old_model));
         let empty = vec![0; 100 * 80];
         let old_frame = TrackFrame { m: rle::encode(&empty), r: rle::encode(&empty), c: 0.2, ..Default::default() };
@@ -2057,16 +2057,16 @@ mod tests {
         assert_eq!(fake.0.lock().unwrap().len(), 1, "the newly selected tracker must actually run");
         assert!(chain.ensure(0, &mut get, &|| false).unwrap().area() > 0);
         let replacement = tracks_of(&chain).expect("new tracking is saved");
-        assert_eq!(replacement.model, effectcraft_segment::SAM2_TINY.id);
+        assert_eq!(replacement.model, artheffect_segment::SAM2_TINY.id);
         assert_eq!(replacement.frames.len(), 3);
         params.values.insert(TRACKED.into(), Value::Str(replacement.to_json()));
         let mut reopened = Chain::new(&params, size, 25.0, 1.0);
-        assert_eq!(reopened.saved_model(), Some(effectcraft_segment::SAM2_TINY.id));
+        assert_eq!(reopened.saved_model(), Some(artheffect_segment::SAM2_TINY.id));
         assert!(reopened.ensure(0, &mut get, &|| false).unwrap().area() > 0, "reopening uses the replacement without loading its model");
         reopened.model = Some(fake.clone());
         reopened.keys = chain.keys.clone();
         reopened.prepare_propagation();
-        assert_eq!(reopened.saved_model(), Some(effectcraft_segment::SAM2_TINY.id));
+        assert_eq!(reopened.saved_model(), Some(artheffect_segment::SAM2_TINY.id));
         assert_eq!(reopened.track(&mut get, &|| false, &mut |_| {}).unwrap().unwrap().frames, 0, "matching saved tracking is reused");
         assert_eq!(fake.0.lock().unwrap().len(), 1);
         let mut classic = Chain::new(&params, size, 25.0, 1.0);
@@ -2149,13 +2149,13 @@ mod tests {
     /// blur / decontamination their nested ones) load with their values in the new places.
     #[test]
     fn old_group_layout_is_migrated_on_load() {
-        use effectcraft_project::build::Ids;
+        use artheffect_project::build::Ids;
         let spec = crate::find(ID).unwrap();
         let mut next = 1;
         let mut ids = Ids(&mut next);
         // The old layout: everything under Roto Brush Matte / Refine Edge Matte.
         let mut g = ids.group(ID, "Roto Brush & Refine Edge");
-        g.kind = effectcraft_project::GroupKind::Effect { effect: ID.into() };
+        g.kind = artheffect_project::GroupKind::Effect { effect: ID.into() };
         let mut rb = ids.group("rotoBrushMatte", "Roto Brush Matte");
         rb.children.push(ids.prop("searchRadius", "Search Radius", Value::Scalar(33.0)).into());
         rb.children.push(ids.prop("feather", "Feather", Value::Scalar(2.0)).into());

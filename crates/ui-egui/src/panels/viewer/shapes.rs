@@ -1,7 +1,6 @@
 use super::geometry::{l2c, layer_quad, point_in_quad};
 use super::{
-    Color32, Comp, EffectcraftApp, EvalCtx, Layer, LayerId, LayerSource, Mat3, PaintKind, Pos2, Rect, Stroke, Tick, Tokens, Tool, ViewerMap, gv2, json, ov,
-    pos2,
+    ArtheffectApp, Color32, Comp, EvalCtx, Layer, LayerId, LayerSource, Mat3, PaintKind, Pos2, Rect, Stroke, Tick, Tokens, Tool, ViewerMap, gv2, json, ov, pos2,
 };
 
 /// Visible layers eligible for viewer hit tests, locked or not, in front-to-back order.
@@ -42,7 +41,7 @@ fn quad_area(q: &[[f64; 2]; 4]) -> f64 {
 /// The layer a press at a comp point acts on, selected (Shift toggles the topmost layer). As in
 /// After Effects, a selected layer under the point comes before the layers in front of it, so it
 /// can be dragged where they cover it; otherwise the topmost layer (#230).
-pub(crate) fn pick(app: &mut EffectcraftApp, ectx: &EvalCtx, cpt: [f64; 2], toggle: bool) -> Option<LayerId> {
+pub(crate) fn pick(app: &mut ArtheffectApp, ectx: &EvalCtx, cpt: [f64; 2], toggle: bool) -> Option<LayerId> {
     if toggle {
         let hit = layer_at(ectx, cpt)?.id;
         let _ = app.session.execute("layer.select", json!({"layers": [hit.0], "toggle": true}));
@@ -106,7 +105,7 @@ fn shape_kind(tool: Tool) -> &'static str {
 /// What a shape tool drag from `start` to `end` makes, or `None` while it is too small to make
 /// anything. Alt (Option) draws from the press point and Shift squares the box; the live ghost and
 /// [`create_shape`] both go through this, so the drag always shows what it will commit.
-pub(super) fn shape_drag(app: &EffectcraftApp, tool: Tool, start: [f64; 2], end: [f64; 2], mods: egui::Modifiers) -> Option<ShapeDrag> {
+pub(super) fn shape_drag(app: &ArtheffectApp, tool: Tool, start: [f64; 2], end: [f64; 2], mods: egui::Modifiers) -> Option<ShapeDrag> {
     let comp = app.session.active_comp()?;
     let selected = app.session.state.selected_layers.first().copied();
     let sel = selected.and_then(|id| comp.layer(id));
@@ -115,7 +114,7 @@ pub(super) fn shape_drag(app: &EffectcraftApp, tool: Tool, start: [f64; 2], end:
     // shape layer, else a new one.
     let target = match sel {
         Some(l) if l.source.is_av() && (app.session.state.shape_tool.creates_mask || !matches!(l.source, LayerSource::Shape)) => (ShapeTarget::Mask, Some(l)),
-        _ => match effectcraft_engine::commands::shape_tool::selected_shape_target(&app.session, comp).and_then(|id| comp.layer(id)) {
+        _ => match artheffect_engine::commands::shape_tool::selected_shape_target(&app.session, comp).and_then(|id| comp.layer(id)) {
             Some(l) => (ShapeTarget::IntoLayer, Some(l)),
             None => (ShapeTarget::NewLayer, None),
         },
@@ -154,9 +153,9 @@ fn paint_rgb(c: [f32; 3], opacity: f64, alpha: f32) -> Color32 {
 
 /// Draw a shape drag as it will land: the tool's own path, filled with the Tools bar's Fill and
 /// outlined in its Stroke (or the mask colour, for a mask), captioned with where it goes.
-pub(super) fn draw_shape_ghost(painter: &egui::Painter, map: &ViewerMap, app: &EffectcraftApp, d: &ShapeDrag, t: &Tokens) {
+pub(super) fn draw_shape_ghost(painter: &egui::Painter, map: &ViewerMap, app: &ArtheffectApp, d: &ShapeDrag, t: &Tokens) {
     // The engine's own geometry for the kind, so the ghost is the shape and not a stand-in for it.
-    let Some(sp) = effectcraft_engine::commands::shape_tool::mask_path(d.kind, d.centre, d.size) else { return };
+    let Some(sp) = artheffect_engine::commands::shape_tool::mask_path(d.kind, d.centre, d.size) else { return };
     let mut pts = ov::flatten(&sp, &Mat3::IDENTITY, map);
     if pts.first() == pts.last() {
         pts.pop();
@@ -167,7 +166,7 @@ pub(super) fn draw_shape_ghost(painter: &egui::Painter, map: &ViewerMap, app: &E
     let tool = &app.session.state.shape_tool;
     let (fill, line) = match d.target {
         ShapeTarget::Mask => {
-            let [r, g, b] = effectcraft_engine::prefs::mask_color(app.session.prefs.appearance.cycle_mask_colors, d.mask_index);
+            let [r, g, b] = artheffect_engine::prefs::mask_color(app.session.prefs.appearance.cycle_mask_colors, d.mask_index);
             (Color32::from_rgb(r, g, b).gamma_multiply(0.25), Color32::from_rgb(r, g, b))
         }
         _ => {
@@ -200,7 +199,7 @@ fn bounds_of(pts: &[Pos2]) -> Option<Rect> {
     Some(r)
 }
 
-pub(super) fn create_shape(app: &mut EffectcraftApp, tool: Tool, a: [f64; 2], b: [f64; 2], mods: egui::Modifiers) {
+pub(super) fn create_shape(app: &mut ArtheffectApp, tool: Tool, a: [f64; 2], b: [f64; 2], mods: egui::Modifiers) {
     let Some(d) = shape_drag(app, tool, a, b, mods) else { return };
     let (kind, (w, h), (cx, cy)) = (d.kind, (d.size[0], d.size[1]), (d.centre[0], d.centre[1]));
     // A mask on the selected layer, as the ghost showed.

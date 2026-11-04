@@ -1,8 +1,8 @@
 //! Validate solved geometry and its correspondence to the current layer timing.
 
-use effectcraft_project::{Comp, Layer};
-use effectcraft_time::Tick;
-use effectcraft_track::camtrack::{CameraSolve, linalg};
+use artheffect_project::{Comp, Layer};
+use artheffect_time::Tick;
+use artheffect_track::camtrack::{CameraSolve, linalg};
 
 use super::{CMD, MAX_FRAME, MAX_FRAMES, MAX_POINTS, bad, finite};
 use crate::Result;

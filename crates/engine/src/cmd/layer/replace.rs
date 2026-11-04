@@ -11,7 +11,7 @@ fn replaceable_layer(l: &Layer) -> bool {
 }
 
 /// The source a Project item gives a layer, or why it can't replace one.
-fn replacement_source(item: ItemId, it: &effectcraft_project::Item) -> Result<LayerSource> {
+fn replacement_source(item: ItemId, it: &artheffect_project::Item) -> Result<LayerSource> {
     const CMD: &str = "layer.replaceSource";
     match &it.kind {
         ItemKind::Comp(_) => Ok(LayerSource::Comp { item }),

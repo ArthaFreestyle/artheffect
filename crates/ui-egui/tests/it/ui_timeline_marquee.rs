@@ -1,10 +1,10 @@
 //! The key marquee in the Timeline (#2857): a box selects a key as soon as it touches any part of
 //! the key's glyph, not when it reaches the key's center.
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::LayerId;
-use effectcraft_engine::time::Tick;
-use effectcraft_ui_egui::EffectcraftApp;
+use artheffect_engine::Session;
+use artheffect_engine::project::LayerId;
+use artheffect_engine::time::Tick;
+use artheffect_ui_egui::ArtheffectApp;
 use egui::{Event, Modifiers, Pos2, Vec2, pos2, vec2};
 use egui_kittest::Harness;
 use serde_json::json;
@@ -13,7 +13,7 @@ use serde_json::json;
 const REACH: f32 = 5.5;
 
 /// A comp with one solid, its Opacity keys at 1 s and 2 s (linear) revealed.
-fn harness() -> (Harness<'static, EffectcraftApp>, u64) {
+fn harness() -> (Harness<'static, ArtheffectApp>, u64) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Box", "width": 320, "height": 180, "frameRate": 30, "duration": 4})).unwrap();
     let id = s.execute("layer.newSolid", json!({"name": "L", "color": "#e04020", "width": 80, "height": 80})).unwrap()["layer"].as_u64().unwrap();
@@ -21,16 +21,16 @@ fn harness() -> (Harness<'static, EffectcraftApp>, u64) {
         s.execute("prop.addKey", json!({"layer": id, "path": "transform/opacity", "time": t, "value": v})).unwrap();
     }
     s.execute("layer.select", json!({"layers": [id]})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "timeline.reveal.opacity", json!({})).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, "timeline.reveal.opacity", json!({})).unwrap();
     h.run_steps(4);
     (h, id)
 }
 
 /// The center of the key at `secs`: the middle of its hit rect, which is centered on the glyph.
-fn key_center(h: &Harness<'_, EffectcraftApp>, id: u64, secs: f64) -> Pos2 {
+fn key_center(h: &Harness<'_, ArtheffectApp>, id: u64, secs: f64) -> Pos2 {
     let comp = h.state().session.active_comp().unwrap();
     let uid = comp.layer(LayerId(id)).unwrap().props.prop("transform/opacity").unwrap().uid;
     let key = format!("timeline.keyAt.{uid}.{}", Tick::from_seconds_f64(secs).0);
@@ -39,7 +39,7 @@ fn key_center(h: &Harness<'_, EffectcraftApp>, id: u64, secs: f64) -> Pos2 {
 }
 
 /// Draw a marquee from `from` to `to`, then report the selected keys' times in seconds.
-fn marquee(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) -> Vec<f64> {
+fn marquee(h: &mut Harness<'_, ArtheffectApp>, from: Pos2, to: Pos2) -> Vec<f64> {
     let modifiers = Modifiers::default();
     h.input_mut().events.push(Event::PointerMoved(from));
     h.step();

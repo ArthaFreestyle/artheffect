@@ -1,5 +1,5 @@
 use super::*;
-use effectcraft_engine::geom::{Mat4, vec3};
+use artheffect_engine::geom::{Mat4, vec3};
 
 /// #1544: Shift-clicking with the Pen keeps the new segment horizontal, vertical or diagonal.
 #[test]
@@ -141,8 +141,8 @@ fn gizmo_segments_clip_at_the_near_plane() {
 }
 
 /// A 640×360 comp whose Box (anchor 40,40) is a child of Parent (anchor 50,50) at (100, 60).
-fn parented_session(parent: serde_json::Value) -> (effectcraft_engine::Session, u64) {
-    let mut s = effectcraft_engine::Session::default();
+fn parented_session(parent: serde_json::Value) -> (artheffect_engine::Session, u64) {
+    let mut s = artheffect_engine::Session::default();
     s.execute("comp.new", json!({"name": "C", "width": 640, "height": 360, "duration": 1})).unwrap();
     let id = |v: serde_json::Value| v["layer"].as_u64().unwrap();
     let p = id(s.execute("layer.newSolid", json!({"name": "Parent", "color": "#000000", "width": 100, "height": 100})).unwrap());
@@ -155,7 +155,7 @@ fn parented_session(parent: serde_json::Value) -> (effectcraft_engine::Session, 
     (s, c)
 }
 
-fn with_ctx<T>(s: &effectcraft_engine::Session, f: impl FnOnce(&EvalCtx) -> T) -> T {
+fn with_ctx<T>(s: &artheffect_engine::Session, f: impl FnOnce(&EvalCtx) -> T) -> T {
     let comp = s.active_comp().unwrap();
     f(&EvalCtx::new(&s.project, s.active_comp_id().unwrap(), comp, Tick::ZERO))
 }

@@ -3,29 +3,29 @@
 //! close comps, and a dragged tab lands where its insertion mark shows.
 
 use crate::gpu_test::RenderSerial;
-use effectcraft_engine::Session;
-use effectcraft_engine::project::ItemId;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::WorkspaceExt as _;
-use effectcraft_ui_egui::dock::{Node, PanelKind, SplitSize, Workspace};
+use artheffect_engine::Session;
+use artheffect_engine::project::ItemId;
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::dock::WorkspaceExt as _;
+use artheffect_ui_egui::dock::{Node, PanelKind, SplitSize, Workspace};
 use egui::{Event, Pos2, pos2};
 use egui_kittest::Harness;
 use serde_json::json;
 
 /// "Pre" and "Main" (Main holds Pre); only Main is open.
-fn harness() -> (Harness<'static, EffectcraftApp>, u64, u64) {
+fn harness() -> (Harness<'static, ArtheffectApp>, u64, u64) {
     let mut s = Session::default();
     let pre = s.execute("comp.new", json!({"name": "Pre", "width": 320, "height": 180, "duration": 4})).unwrap()["comp"].as_u64().unwrap();
     let main = s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 4})).unwrap()["comp"].as_u64().unwrap();
     s.execute("layer.addItem", json!({"item": pre})).unwrap();
     s.state.open_comps = vec![ItemId(main)];
     s.state.active_comp = Some(ItemId(main));
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     (h, pre, main)
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> egui::Rect {
+fn rect(h: &Harness<'_, ArtheffectApp>, id: &str) -> egui::Rect {
     let e = h.state().auto.previous.iter().chain(h.state().auto.elements.iter()).find(|e| e.id == id).cloned().unwrap_or_else(|| {
         let have: Vec<&String> = h.state().auto.elements.iter().map(|e| &e.id).filter(|i| i.starts_with("panel.") || i.starts_with("project.")).collect();
         panic!("no element {id}; have {have:?}")
@@ -33,7 +33,7 @@ fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> egui::Rect {
     egui::Rect::from_min_size(pos2(e.rect[0], e.rect[1]), egui::vec2(e.rect[2], e.rect[3]))
 }
 
-fn click_n(h: &mut Harness<'_, EffectcraftApp>, p: Pos2, n: u32) {
+fn click_n(h: &mut Harness<'_, ArtheffectApp>, p: Pos2, n: u32) {
     h.event(Event::PointerMoved(p));
     h.step();
     // All in one frame, straight into the input (the harness' event queue spreads presses over
@@ -46,7 +46,7 @@ fn click_n(h: &mut Harness<'_, EffectcraftApp>, p: Pos2, n: u32) {
     h.run_steps(2);
 }
 
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'_, ArtheffectApp>, from: Pos2, to: Pos2) {
     h.event(Event::PointerMoved(from));
     h.step();
     h.event(Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: Default::default() });
@@ -61,7 +61,7 @@ fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
     h.run_steps(2);
 }
 
-fn open_comps(h: &Harness<'_, EffectcraftApp>) -> Vec<u64> {
+fn open_comps(h: &Harness<'_, ArtheffectApp>) -> Vec<u64> {
     h.state().session.state.open_comps.iter().map(|c| c.0).collect()
 }
 
@@ -98,7 +98,7 @@ fn project_double_click_opens_a_comp_as_its_own_timeline_tab() {
 #[test]
 fn dragged_tabs_land_where_the_insertion_mark_is() {
     let (mut h, _, _) = harness();
-    let dock = |h: &Harness<'_, EffectcraftApp>| h.state().ui.dock.clone();
+    let dock = |h: &Harness<'_, ArtheffectApp>| h.state().ui.dock.clone();
     assert_eq!(group_of(&dock(&h), PanelKind::Timeline), Some(vec![PanelKind::Timeline, PanelKind::RenderQueue]));
     // Reorder within the group: Render Queue dropped on the left half of the Timeline tab goes
     // before it.
@@ -117,7 +117,7 @@ fn dragged_tabs_land_where_the_insertion_mark_is() {
     assert_eq!(group_of(&dock(&h), PanelKind::Timeline), Some(vec![PanelKind::RenderQueue, PanelKind::Timeline, PanelKind::EffectControls]));
 }
 
-/// `cargo test -p effectcraft-ui-egui --test it ui_tabs:: -- --ignored`: the insertion mark mid-drag
+/// `cargo test -p artheffect-ui-egui --test it ui_tabs:: -- --ignored`: the insertion mark mid-drag
 /// (`target/test-out/tab-drag.png`).
 #[test]
 #[ignore]
@@ -178,7 +178,7 @@ fn double_clicking_a_precomp_bar_opens_its_comp() {
 #[test]
 fn panels_dock_beside_others_and_gutters_resize_them() {
     let (mut h, _, _) = harness();
-    let dock = |h: &Harness<'_, EffectcraftApp>| h.state().ui.dock.clone();
+    let dock = |h: &Harness<'_, ArtheffectApp>| h.state().ui.dock.clone();
     let tab = rect(&h, "panel.tab.EffectControls");
     let tl = rect(&h, "panel.Timeline");
     // Inside the Timeline body's left drop zone.
@@ -207,7 +207,7 @@ fn panels_dock_beside_others_and_gutters_resize_them() {
 
 /// The divider below the Preview frame: the horizontal gutter between it and the Properties
 /// frame.
-fn preview_divider(h: &Harness<'_, EffectcraftApp>) -> egui::Rect {
+fn preview_divider(h: &Harness<'_, ArtheffectApp>) -> egui::Rect {
     let (preview, props) = (rect(h, "panel.Preview"), rect(h, "panel.Properties"));
     h.state()
         .auto
@@ -224,7 +224,7 @@ fn preview_divider(h: &Harness<'_, EffectcraftApp>) -> egui::Rect {
 #[test]
 fn the_default_preview_frame_is_short_and_properties_takes_the_rest() {
     let (mut h, _, _) = harness();
-    let body = |h: &Harness<'_, EffectcraftApp>| rect(h, "panel.Preview").height();
+    let body = |h: &Harness<'_, ArtheffectApp>| rect(h, "panel.Preview").height();
     assert!((body(&h) - 46.0).abs() < 1.5, "Preview {}", body(&h));
     let props = rect(&h, "panel.Properties");
     assert!(props.height() > 300.0, "Properties {props:?}");
@@ -262,7 +262,7 @@ fn the_preview_frame_divider_resizes_it() {
     assert!((q2.max.y - props.max.y).abs() < 1.0, "the column stays filled");
     // The frame keeps a fixed height, 150 points more.
     let Some(SplitSize::FixedFirst(size)) = preview_size(&h.state().ui.dock) else { panic!("{:?}", preview_size(&h.state().ui.dock)) };
-    assert!((size - effectcraft_ui_egui::dock::PREVIEW_FRAME - 150.0).abs() < 2.0, "{size}");
+    assert!((size - artheffect_ui_egui::dock::PREVIEW_FRAME - 150.0).abs() < 2.0, "{size}");
     // Dragged up to Preview's top, it stops at its minimum.
     let gap = preview_divider(&h);
     let top = rect(&h, "panel.Preview").min.y;
@@ -321,7 +321,7 @@ impl egui::DroppedFile for Dropped {
 #[test]
 fn project_empty_area_double_click_and_dropped_files_import() {
     let (mut h, _, _) = harness();
-    let png = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets/app-icon/hicolor/16x16/apps/ai.storyteller.effectcraft.png");
+    let png = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets/app-icon/hicolor/16x16/apps/ai.storyteller.artheffect.png");
     let png = std::fs::canonicalize(png).unwrap().to_string_lossy().to_string();
     let asked = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let (a, p) = (asked.clone(), png.clone());
@@ -329,7 +329,7 @@ fn project_empty_area_double_click_and_dropped_files_import() {
         a.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         vec![p.clone()]
     }));
-    let imports = |h: &Harness<'_, EffectcraftApp>| h.state().session.journal.iter().filter(|(c, p)| c == "file.import" && p["paths"] == json!([png])).count();
+    let imports = |h: &Harness<'_, ArtheffectApp>| h.state().session.journal.iter().filter(|(c, p)| c == "file.import" && p["paths"] == json!([png])).count();
     // Below the last row.
     let last = rect(&h, "project.item.2");
     let empty = rect(&h, "project.empty");
@@ -353,7 +353,7 @@ fn dragging_the_viewer_timeline_divider_far_up_does_not_crash() {
     let (mut h, _, _) = harness();
     // The horizontal gutter right above the Timeline.
     let tl = rect(&h, "panel.Timeline");
-    let gutter = |h: &Harness<'_, EffectcraftApp>| {
+    let gutter = |h: &Harness<'_, ArtheffectApp>| {
         h.state()
             .auto
             .previous
@@ -378,11 +378,11 @@ fn dragging_the_viewer_timeline_divider_far_up_does_not_crash() {
 #[test]
 fn a_stacked_panels_whole_header_bar_toggles_it() {
     let (mut h, _, _) = harness();
-    use effectcraft_ui_egui::dock;
+    use artheffect_ui_egui::dock;
     let stack = dock::stack(&[(PanelKind::Preview, true, Some(46.0)), (PanelKind::Properties, true, None)]);
     h.state_mut().ui.dock = dock::docked(dock::hsplit(SplitSize::FixedSecond(300.0), dock::tabs(&[PanelKind::Composition], 0), stack));
     h.run_steps(3);
-    let open = |h: &Harness<'_, EffectcraftApp>| h.state().ui.dock.is_visible(PanelKind::Preview);
+    let open = |h: &Harness<'_, ArtheffectApp>| h.state().ui.dock.is_visible(PanelKind::Preview);
     assert!(open(&h));
     let toggle = rect(&h, "panel.header.Preview");
     let bar = rect(&h, "panel.tab.Preview");
@@ -404,7 +404,7 @@ fn a_stacked_panels_whole_header_bar_toggles_it() {
 #[test]
 fn a_tab_dropped_on_a_frame_joins_it() {
     let (mut h, _, _) = harness();
-    let dock = |h: &Harness<'_, EffectcraftApp>| h.state().ui.dock.clone();
+    let dock = |h: &Harness<'_, ArtheffectApp>| h.state().ui.dock.clone();
     let fx = rect(&h, "panel.tab.EffectControls");
     let props = rect(&h, "panel.Properties");
     drag(&mut h, fx.center(), props.center());
@@ -426,7 +426,7 @@ fn group_of(w: &Workspace, p: PanelKind) -> Option<Vec<PanelKind>> {
     Some(w.group_of(p)).filter(|g| !g.is_empty())
 }
 
-fn has(h: &Harness<'_, EffectcraftApp>, id: &str) -> bool {
+fn has(h: &Harness<'_, ArtheffectApp>, id: &str) -> bool {
     h.state().auto.previous.iter().chain(h.state().auto.elements.iter()).any(|e| e.id == id)
 }
 
@@ -440,7 +440,7 @@ fn open_comps_are_tabs_in_the_timeline_row_and_the_rest_are_in_its_overflow_menu
         .collect();
     s.state.open_comps = vec![ItemId(comps[0])];
     s.state.active_comp = Some(ItemId(comps[0]));
-    let mut h = Harness::builder().with_size(egui::vec2(1000.0, 800.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1000.0, 800.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     let alone = rect(&h, "panel.tab.RenderQueue");
     h.state_mut().session.state.open_comps = comps.iter().map(|c| ItemId(*c)).collect();
@@ -469,7 +469,7 @@ fn open_comps_are_tabs_in_the_timeline_row_and_the_rest_are_in_its_overflow_menu
 }
 
 /// Whether `id` was registered in the last frame (not the one before).
-fn drawn(h: &Harness<'_, EffectcraftApp>, id: &str) -> bool {
+fn drawn(h: &Harness<'_, ArtheffectApp>, id: &str) -> bool {
     h.state().auto.elements.iter().any(|e| e.id == id)
 }
 

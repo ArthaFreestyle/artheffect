@@ -1,11 +1,11 @@
 //! Motion Tile's Output Width / Height on adjustment layers and on full-frame layers, with a
 //! Transform after it that scales the tiled result into view (#1727, #1991).
 
-use effectcraft_color::Label;
-use effectcraft_keyframe::Value;
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{Comp, ItemId, ItemKind, Layer, LayerSource, Project, Solid};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_keyframe::Value;
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{Comp, ItemId, ItemKind, Layer, LayerSource, Project, Solid};
+use artheffect_time::{FrameRate, Tick};
 
 use crate::{Image, render_frame};
 
@@ -31,9 +31,9 @@ fn tile_then_scale(p: &mut Project, l: &mut Layer, out: f64, scale: f64) {
         ("ec.stylize.motiontile", vec![("outputWidth", Value::Scalar(out)), ("outputHeight", Value::Scalar(out))]),
         ("ec.distort.transform", vec![("scaleHeight", Value::Scalar(scale)), ("scaleWidth", Value::Scalar(scale))]),
     ] {
-        let spec = effectcraft_effects::find(id).unwrap();
+        let spec = artheffect_effects::find(id).unwrap();
         let mut next = p.next_id;
-        let mut g = effectcraft_effects::instantiate(spec, &mut Ids(&mut next), spec.name, size);
+        let mut g = artheffect_effects::instantiate(spec, &mut Ids(&mut next), spec.name, size);
         p.next_id = next;
         for (k, v) in vals {
             g.prop_mut(k).unwrap().value = v;
@@ -44,7 +44,7 @@ fn tile_then_scale(p: &mut Project, l: &mut Layer, out: f64, scale: f64) {
 
 fn comp() -> (Project, ItemId, Comp) {
     let mut p = Project::default();
-    p.settings.bit_depth = effectcraft_project::BitDepth::Bpc32;
+    p.settings.bit_depth = artheffect_project::BitDepth::Bpc32;
     let comp = Comp::new(W, H, FrameRate::FPS_30, Tick::from_seconds_f64(1.0));
     let cid = p.add_item("Comp", Label::Sandstone, None, ItemKind::Comp(comp.clone().into()));
     (p, cid, comp)
@@ -129,7 +129,7 @@ fn adjustment_motion_tile_output_under_100_crops_the_frame() {
 fn adjustment_motion_tile_matches_the_after_effects_frames() {
     for (out_w, x0, x1) in [(910.0, 313.0, 1920.0), (90.0, 1257.0, 1465.0)] {
         let mut p = Project::default();
-        p.settings.bit_depth = effectcraft_project::BitDepth::Bpc32;
+        p.settings.bit_depth = artheffect_project::BitDepth::Bpc32;
         let comp = Comp::new(1920, 1080, FrameRate::FPS_30, Tick::from_seconds_f64(1.0));
         let cid = p.add_item("Comp", Label::Sandstone, None, ItemKind::Comp(comp.clone().into()));
         let red = solid(&mut p, &comp, [1.0, 0.0, 0.0], 1920, 1080, [960.0, 540.0]);
@@ -142,9 +142,9 @@ fn adjustment_motion_tile_matches_the_after_effects_frames() {
                 vec![("scaleHeight", Value::Scalar(12.0)), ("scaleWidth", Value::Scalar(12.0)), ("position", Value::Vec2([1361.0, 540.0]))],
             ),
         ] {
-            let spec = effectcraft_effects::find(id).unwrap();
+            let spec = artheffect_effects::find(id).unwrap();
             let mut next = p.next_id;
-            let mut g = effectcraft_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [1920.0, 1080.0]);
+            let mut g = artheffect_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [1920.0, 1080.0]);
             p.next_id = next;
             for (k, v) in vals {
                 g.prop_mut(k).unwrap().value = v;

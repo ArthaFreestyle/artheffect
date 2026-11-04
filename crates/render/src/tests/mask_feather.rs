@@ -2,11 +2,11 @@
 //! of a mask partly or wholly outside the layer reaches into it (After Effects), instead of the
 //! coverage stopping at the layer edge.
 
-use effectcraft_color::Label;
-use effectcraft_keyframe::{ShapePath, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{BitDepth, Comp, FeatherFalloff, GroupKind, ItemId, ItemKind, Layer, LayerSource, MaskMode, Node, Project, Solid};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_keyframe::{ShapePath, Value};
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{BitDepth, Comp, FeatherFalloff, GroupKind, ItemId, ItemKind, Layer, LayerSource, MaskMode, Node, Project, Solid};
+use artheffect_time::{FrameRate, Tick};
 
 use crate::render_frame;
 
@@ -51,7 +51,7 @@ fn span(x: f64, a: f64, b: f64, feather: f64) -> f64 {
 }
 
 /// A white 200×100 solid (32 bpc) with one Add mask.
-fn white_with_mask(rect: ShapePath, feather: [f64; 2], linear: bool, scale: f64) -> effectcraft_raster::Image {
+fn white_with_mask(rect: ShapePath, feather: [f64; 2], linear: bool, scale: f64) -> artheffect_raster::Image {
     let mut p = Project::default();
     p.settings.bit_depth = BitDepth::Bpc32;
     let comp = Comp::new(200, 100, FrameRate::FPS_30, Tick::from_seconds_f64(1.0));
@@ -111,7 +111,7 @@ fn huge_and_broken_feathers_stay_bounded() {
     }
 }
 
-/// Case 398 of the .aep corpus, built in EffectCraft's own model: a 1920×1080 comp at 8 bpc, a
+/// Case 398 of the .aep corpus, built in Artheffect's own model: a 1920×1080 comp at 8 bpc, a
 /// red solid, above it an adjustment layer of comp size with a Gradient Ramp at its defaults and
 /// one Add mask entirely below the layer (1920×200 centred at [960, 1250]) with feather 1000.
 fn case_398(with_mask: bool) -> (Project, ItemId) {
@@ -122,9 +122,9 @@ fn case_398(with_mask: bool) -> (Project, ItemId) {
     let red = solid(&mut p, &comp, [1.0, 0.0, 0.0], 1920, 1080);
     let mut adj = solid(&mut p, &comp, [1.0; 3], 1920, 1080);
     adj.switches.adjustment = true;
-    let spec = effectcraft_effects::find("ec.generate.gradientramp").unwrap();
+    let spec = artheffect_effects::find("ec.generate.gradientramp").unwrap();
     let mut next = p.next_id;
-    let ramp = effectcraft_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [1920.0, 1080.0]);
+    let ramp = artheffect_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [1920.0, 1080.0]);
     p.next_id = next;
     adj.props.sub_mut("effects").unwrap().children.push(ramp.into());
     if with_mask {
@@ -136,7 +136,7 @@ fn case_398(with_mask: bool) -> (Project, ItemId) {
     (p, cid)
 }
 
-fn rgb8(img: &effectcraft_raster::Image, x: i64, y: i64) -> [i32; 3] {
+fn rgb8(img: &artheffect_raster::Image, x: i64, y: i64) -> [i32; 3] {
     let px = img.get(x, y);
     [0, 1, 2].map(|c| (px[c].clamp(0.0, 1.0) * 255.0).round() as i32)
 }
@@ -176,7 +176,7 @@ fn case_398_a_feathered_mask_below_an_adjustment_layer_reaches_into_it() {
         }
         // 2. After Effects: within 2 levels per channel.
         for k in 0..3 {
-            assert!((got[k] - want_ae[k]).abs() <= 2, "({x}, {y}): EffectCraft {got:?}, After Effects {want_ae:?}");
+            assert!((got[k] - want_ae[k]).abs() <= 2, "({x}, {y}): Artheffect {got:?}, After Effects {want_ae:?}");
         }
         report.push(format!("({x},{y}) ec {got:?} ae {want_ae:?}"));
     }

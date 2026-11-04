@@ -117,10 +117,10 @@ mod viewer_geometry;
 mod viewer_passive_display;
 
 /// Register the managed build's canonical craft-fonts checkout (`CRAFT_FONTS_DIR/fonts`) through
-/// the same directory source production scans for `EFFECTCRAFT_FONT_DIRS`. The UI tests then render
+/// the same directory source production scans for `ARTHEFFECT_FONT_DIRS`. The UI tests then render
 /// real Japanese glyphs from the canonical external input instead of relying on host fonts.
 pub(crate) fn add_canonical_test_fonts() {
-    use effectcraft_text::fonts::{self, DirectorySource};
+    use artheffect_text::fonts::{self, DirectorySource};
     static REGISTER: std::sync::Once = std::sync::Once::new();
     REGISTER.call_once(|| {
         let Some(root) = std::env::var_os("CRAFT_FONTS_DIR") else { return };

@@ -4,14 +4,14 @@
 //! "3D Showcase" comp: a two-node camera move with depth of field over lit, shadow-casting 3D
 //! cards, intersecting planes and a gridded floor.
 
-use effectcraft_color::BlendMode;
-use effectcraft_color::Label;
-use effectcraft_keyframe::{Ease, Gradient, Interp, Justify, Keyframe, TextDoc, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{Comp, ItemId, ItemKind, Layer, LayerSource, Project, PropGroup, Solid};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::BlendMode;
+use artheffect_color::Label;
+use artheffect_keyframe::{Ease, Gradient, Interp, Justify, Keyframe, TextDoc, Value};
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{Comp, ItemId, ItemKind, Layer, LayerSource, Project, PropGroup, Solid};
+use artheffect_time::{FrameRate, Tick};
 
-pub const MAIN_COMP: &str = "EffectCraft Intro";
+pub const MAIN_COMP: &str = "Artheffect Intro";
 pub const SHOWCASE_3D: &str = "3D Showcase";
 
 /// Seconds → the nearest frame of the demo's 29.97 fps comps (AE keeps times frame-aligned).
@@ -20,7 +20,7 @@ fn t(s: f64) -> Tick {
 }
 
 fn hex(h: &str) -> [f64; 4] {
-    let c = effectcraft_color::Rgba::from_hex(h).unwrap_or(effectcraft_color::Rgba::WHITE);
+    let c = artheffect_color::Rgba::from_hex(h).unwrap_or(artheffect_color::Rgba::WHITE);
     [c.r as f64, c.g as f64, c.b as f64, 1.0]
 }
 
@@ -59,9 +59,9 @@ fn anim(l: &mut Layer, path: &str, k: Vec<Keyframe>) {
 }
 
 fn effect(p: &mut Project, l: &mut Layer, id: &str, size: [f64; 2], params: &[(&str, Value)]) {
-    let Some(spec) = effectcraft_effects::find(id) else { return };
+    let Some(spec) = artheffect_effects::find(id) else { return };
     let mut next = p.next_id;
-    let mut g = effectcraft_effects::instantiate(spec, &mut Ids(&mut next), spec.name, size);
+    let mut g = artheffect_effects::instantiate(spec, &mut Ids(&mut next), spec.name, size);
     p.next_id = next;
     for (k, v) in params {
         if let Some(pr) = g.get_mut(k) {
@@ -116,8 +116,8 @@ fn lower_third(p: &mut Project) -> Comp {
     let mut title = text_layer(
         p,
         &c,
-        "Built with EffectCraft",
-        TextDoc { text: "Built with EffectCraft".into(), size: 40.0, style: "SemiBold".into(), justify: Justify::Center, ..Default::default() },
+        "Built with Artheffect",
+        TextDoc { text: "Built with Artheffect".into(), size: 40.0, style: "SemiBold".into(), justify: Justify::Center, ..Default::default() },
         [440.0, 914.0],
     );
     anim(&mut title, "transform/opacity", keys(&[(0.4, Value::Scalar(0.0)), (0.9, Value::Scalar(100.0))]));
@@ -238,7 +238,7 @@ fn showcase_3d(p: &mut Project, solids: ItemId) -> Comp {
     anim(&mut cam, "cameraOptions/focusDistance", keys(&[(0.0, Value::Scalar(1700.0)), (5.0, Value::Scalar(1900.0)), (10.0, Value::Scalar(1650.0))]));
 
     // Key light: warm spot casting soft shadows. Fill: cool ambient.
-    let mut key = build::layer(p, &c, "Key Light", LayerSource::Light { kind: effectcraft_project::LightKind::Spot }, (1920, 1080), None);
+    let mut key = build::layer(p, &c, "Key Light", LayerSource::Light { kind: artheffect_project::LightKind::Spot }, (1920, 1080), None);
     set(&mut key, "transform/position", Value::Vec3([500.0, -500.0, -700.0]));
     set(&mut key, "transform/poi", Value::Vec3([960.0, 600.0, 300.0]));
     set(&mut key, "lightOptions/intensity", Value::Scalar(150.0));
@@ -248,7 +248,7 @@ fn showcase_3d(p: &mut Project, solids: ItemId) -> Comp {
     set(&mut key, "lightOptions/castsShadows", Value::Bool(true));
     set(&mut key, "lightOptions/shadowDarkness", Value::Scalar(70.0));
     set(&mut key, "lightOptions/shadowDiffusion", Value::Scalar(12.0));
-    let mut fill = build::layer(p, &c, "Fill Light", LayerSource::Light { kind: effectcraft_project::LightKind::Ambient }, (1920, 1080), None);
+    let mut fill = build::layer(p, &c, "Fill Light", LayerSource::Light { kind: artheffect_project::LightKind::Ambient }, (1920, 1080), None);
     set(&mut fill, "lightOptions/intensity", Value::Scalar(35.0));
     set(&mut fill, "lightOptions/color", Value::Color(hex("#B9C8FF")));
 
@@ -396,8 +396,8 @@ pub fn demo_project() -> Project {
     let mut title = text_layer(
         &mut p,
         &comp,
-        "EFFECTCRAFT",
-        TextDoc { text: "EFFECTCRAFT".into(), size: 148.0, style: "Bold".into(), tracking: 120.0, justify: Justify::Center, ..Default::default() },
+        "ARTHEFFECT",
+        TextDoc { text: "ARTHEFFECT".into(), size: 148.0, style: "Bold".into(), tracking: 120.0, justify: Justify::Center, ..Default::default() },
         [960.0, 560.0],
     );
     let mut next = p.next_id;

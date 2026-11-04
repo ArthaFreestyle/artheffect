@@ -1,12 +1,12 @@
-// Modified work: wraps the ported SAM 2 image path behind EffectCraft's `MaskModel` interface
+// Modified work: wraps the ported SAM 2 image path behind Artheffect's `MaskModel` interface
 // (Apache-2.0, see NOTICE).
 //! SAM 2 as a drop-in [`MaskModel`]: a frame and a prompt in, a foreground probability per pixel
 //! out. The frame's encoding is cached, so further strokes on the same frame cost one decode.
 
 use std::sync::{Arc, Mutex, PoisonError};
 
+use artheffect_segment::{MaskModel, ModelInfo, SAM2_TINY};
 use candle_core::{Device, Tensor};
-use effectcraft_segment::{MaskModel, ModelInfo, SAM2_TINY};
 
 use crate::model::Encoded;
 use crate::prompt::{INPUT_SIZE, Prompt};
@@ -94,7 +94,7 @@ impl Sam2Mask {
         Ok(enc)
     }
 
-    fn probability(&self, rgb: &[[f32; 3]], w: usize, h: usize, prompt: &effectcraft_segment::Prompt) -> Result<Vec<f32>> {
+    fn probability(&self, rgb: &[[f32; 3]], w: usize, h: usize, prompt: &artheffect_segment::Prompt) -> Result<Vec<f32>> {
         let enc = self.encoded(rgb, w, h)?;
         let (sx, sy) = (INPUT_SIZE as f32 / w as f32, INPUT_SIZE as f32 / h as f32);
         let p = Prompt {
@@ -118,12 +118,12 @@ impl MaskModel for Sam2Mask {
         self.info
     }
 
-    fn segment(&self, rgb: &[[f32; 3]], w: usize, h: usize, prompt: &effectcraft_segment::Prompt) -> effectcraft_segment::Result<Vec<f32>> {
+    fn segment(&self, rgb: &[[f32; 3]], w: usize, h: usize, prompt: &artheffect_segment::Prompt) -> artheffect_segment::Result<Vec<f32>> {
         self.touch();
         self.probability(rgb, w, h, prompt).map_err(|e| e.to_string())
     }
 
-    fn tracker(&self) -> Option<&dyn effectcraft_segment::ObjectTracker> {
+    fn tracker(&self) -> Option<&dyn artheffect_segment::ObjectTracker> {
         Some(self)
     }
 
@@ -142,7 +142,7 @@ impl MaskModel for Sam2Mask {
 
 /// Verify the installed file against the registry and build the model.
 pub fn load(bytes: &[u8]) -> std::result::Result<Arc<Sam2Mask>, String> {
-    let got = effectcraft_segment::sha256::hex(bytes);
+    let got = artheffect_segment::sha256::hex(bytes);
     let Some(info) = SIZES.iter().find(|m| m.sha256 == got) else {
         return Err(format!("SAM 2.1: the file does not match any published size (SHA-256 {got})"));
     };
@@ -189,7 +189,7 @@ fn hint_for(id: &str, gpu: Option<bool>) -> Option<String> {
 }
 
 /// The registry entries this crate loads.
-pub const SIZES: [&ModelInfo; 4] = [&SAM2_TINY, &effectcraft_segment::SAM2_SMALL, &effectcraft_segment::SAM2_BASE_PLUS, &effectcraft_segment::SAM2_LARGE];
+pub const SIZES: [&ModelInfo; 4] = [&SAM2_TINY, &artheffect_segment::SAM2_SMALL, &artheffect_segment::SAM2_BASE_PLUS, &artheffect_segment::SAM2_LARGE];
 
 #[cfg(test)]
 mod tests {

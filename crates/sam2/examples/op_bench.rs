@@ -1,5 +1,5 @@
 //! Times the tensor operations a Hiera block is made of, at the sizes of its first (biggest) block.
-//! `cargo run --release -p effectcraft-sam2 --example op_bench`
+//! `cargo run --release -p artheffect-sam2 --example op_bench`
 
 use std::time::Instant;
 

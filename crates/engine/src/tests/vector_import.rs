@@ -1,17 +1,17 @@
 //! Photoshop import as a composition (IO-2) and Layer ▸ Create text conversions (SHP-5).
 
-use effectcraft_color::BlendMode;
-use effectcraft_keyframe::Value as KV;
-use effectcraft_project::{Comp, ItemKind, Layer, LayerSource, MaskMode};
-use effectcraft_psd::write::*;
-use effectcraft_psd::{DValue, Descriptor, Rect};
+use artheffect_color::BlendMode;
+use artheffect_keyframe::Value as KV;
+use artheffect_project::{Comp, ItemKind, Layer, LayerSource, MaskMode};
+use artheffect_psd::write::*;
+use artheffect_psd::{DValue, Descriptor, Rect};
 use serde_json::json;
 
 use crate::Session;
 use crate::render::RenderOpts;
 
 fn tmp(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("effectcraft-psd-tests-{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("artheffect-psd-tests-{}", std::process::id()));
     std::fs::create_dir_all(&d).unwrap();
     d.join(name).to_string_lossy().to_string()
 }
@@ -96,7 +96,7 @@ fn assert_hue_layer(hue: &Layer) {
 /// Vector mask → mask; Stroke style.
 fn assert_vector_mask_layer(vm: &Layer) {
     let m = vm.masks().unwrap().groups().next().unwrap();
-    assert!(matches!(m.kind, effectcraft_project::GroupKind::Mask { mode: MaskMode::Add, .. }));
+    assert!(matches!(m.kind, artheffect_project::GroupKind::Mask { mode: MaskMode::Add, .. }));
     let Some(KV::Path(p)) = m.get("path").map(|p| p.value.clone()) else { panic!("mask path") };
     assert_eq!(p.vertices.len(), 3);
     assert!((p.vertices[1][0] - 110.0).abs() < 1e-3 && (p.vertices[2][1] - 40.0).abs() < 1e-3);
@@ -143,7 +143,7 @@ fn psd_imports_as_composition() {
     let mut s = Session::default();
     let r = s.execute_checked("file.import", json!({"paths": [path], "importAs": "composition"})).unwrap();
     assert_eq!(r["errors"], json!([]), "{r}");
-    let cid = effectcraft_project::ItemId(r["comps"][0].as_u64().unwrap());
+    let cid = artheffect_project::ItemId(r["comps"][0].as_u64().unwrap());
     assert_eq!(s.state.active_comp, Some(cid));
     assert_eq!(s.project.item(cid).unwrap().name, "sample");
     let c = s.project.comp(cid).unwrap().clone();
@@ -169,7 +169,7 @@ fn psd_imported_as_composition_with_new_comp_is_the_new_comp() {
     let mut s = Session::default();
     let r = s.execute_checked("file.import", json!({"paths": [path], "importAs": "composition", "newComp": true})).unwrap();
     assert_eq!(r["errors"], json!([]), "{r}");
-    let cid = effectcraft_project::ItemId(r["comps"][0].as_u64().unwrap());
+    let cid = artheffect_project::ItemId(r["comps"][0].as_u64().unwrap());
     assert_eq!(s.state.active_comp, Some(cid));
     let roots = s.project.items.values().filter(|i| matches!(i.kind, ItemKind::Comp(_)) && i.name.starts_with("newcomp")).count();
     assert_eq!(roots, 1, "no wrapper comp");
@@ -186,7 +186,7 @@ fn psd_imported_as_composition_into_a_comp_adds_one_layer() {
     let r = s.execute_checked("file.import", json!({"paths": [path], "importAs": "composition", "addToComp": true})).unwrap();
     assert_eq!(r["errors"], json!([]), "{r}");
     let psd = r["comps"][0].as_u64().unwrap();
-    let layers = &s.project.comp(effectcraft_project::ItemId(main)).unwrap().layers;
+    let layers = &s.project.comp(artheffect_project::ItemId(main)).unwrap().layers;
     assert_eq!(layers.len(), 1, "{layers:?}");
     assert!(matches!(layers[0].source, LayerSource::Comp { item } if item.0 == psd));
 }
@@ -197,7 +197,7 @@ fn psd_retain_layer_sizes() {
     std::fs::write(&path, sample_psd()).unwrap();
     let mut s = Session::default();
     let r = s.execute_checked("file.import", json!({"paths": [path], "importAs": "compositionLayerSizes"})).unwrap();
-    let cid = effectcraft_project::ItemId(r["comps"][0].as_u64().unwrap());
+    let cid = artheffect_project::ItemId(r["comps"][0].as_u64().unwrap());
     let c = s.project.comp(cid).unwrap();
     let base = c.layer_by_name("Base").unwrap();
     let LayerSource::Footage { item } = base.source else { panic!() };
@@ -225,7 +225,7 @@ fn text_session() -> (Session, u64) {
     (s, r["layer"].as_u64().unwrap())
 }
 
-fn alpha_diff(a: &effectcraft_raster::Image, b: &effectcraft_raster::Image) -> (f32, f32) {
+fn alpha_diff(a: &artheffect_raster::Image, b: &artheffect_raster::Image) -> (f32, f32) {
     let mut sum = 0.0;
     let mut mass = 0.0;
     for (p, q) in a.data.iter().zip(&b.data) {
@@ -248,7 +248,7 @@ fn create_shapes_from_text_matches_text_render() {
     assert_eq!(c.layers[0].id.0, sid);
     assert!(matches!(c.layers[0].source, LayerSource::Shape));
     assert_eq!(c.layers[0].name, "Ab8 Outlines");
-    assert!(!c.layer(effectcraft_project::LayerId(lid)).unwrap().switches.video, "source hidden");
+    assert!(!c.layer(artheffect_project::LayerId(lid)).unwrap().switches.video, "source hidden");
     let groups: Vec<String> = c.layers[0].props.sub("contents").unwrap().groups().map(|g| g.name.clone()).collect();
     assert_eq!(groups, ["A", "b", "8"]);
     let shape_img = s.render(cid, s.time(), opts);
@@ -268,7 +268,7 @@ fn create_masks_from_text() {
     let text_img = s.render(cid, s.time(), RenderOpts::default());
     s.execute("layer.select", json!({"layers": [lid]})).unwrap();
     let r = s.execute_checked("layer.create", json!({"op": "masksFromText"})).unwrap();
-    let mid = effectcraft_project::LayerId(r["layers"][0].as_u64().unwrap());
+    let mid = artheffect_project::LayerId(r["layers"][0].as_u64().unwrap());
     let c = s.active_comp().unwrap();
     let l = c.layer(mid).unwrap();
     assert!(matches!(l.source, LayerSource::Solid { .. }));
@@ -302,7 +302,7 @@ fn paste_svg_markup_as_a_shape_layer() {
     assert_eq!(c.layers[0].id.0, sid, "above the selected layer");
     assert!(matches!(c.layers[0].source, LayerSource::Shape));
     assert_eq!(c.layers[0].name, "Shape Layer 1");
-    assert_eq!(s.state.selected_layers, [effectcraft_project::LayerId(sid)]);
+    assert_eq!(s.state.selected_layers, [artheffect_project::LayerId(sid)]);
     assert_eq!(c.layers[0].props.sub("contents").unwrap().groups().count(), 2);
     // Hide the text so only the pasted shapes draw: the 40×20 canvas is centred in the
     // 320×120 comp (x 140–180, y 50–70), red on the left, blue on the right.
@@ -340,7 +340,7 @@ fn psd_with_thousands_of_nested_groups_imports_on_a_small_stack() {
         d.layers.push(WLayer::group(&format!("G{i}"), true, *b"norm"));
     }
     let path = tmp("nested.psd");
-    std::fs::write(&path, effectcraft_psd::write::write(&d)).unwrap();
+    std::fs::write(&path, artheffect_psd::write::write(&d)).unwrap();
     let h = std::thread::Builder::new()
         .stack_size(2 << 20)
         .spawn(move || {
@@ -375,7 +375,7 @@ fn psd_with_damaged_layer_section_imports_the_flattened_image() {
     let warnings = r["errors"].as_array().unwrap();
     assert_eq!(warnings.len(), 1, "{r}");
     assert!(warnings[0].as_str().unwrap().contains("Layers could not be read"), "{r}");
-    let cid = effectcraft_project::ItemId(r["comps"][0].as_u64().unwrap());
+    let cid = artheffect_project::ItemId(r["comps"][0].as_u64().unwrap());
     let c = s.project.comp(cid).unwrap().clone();
     assert_eq!((c.width, c.height), (30, 20));
     assert_eq!(c.layers.len(), 1);

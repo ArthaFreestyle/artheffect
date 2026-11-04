@@ -2,9 +2,9 @@
 //! Language menu (the ⓕ button next to an expression), written from the public Expression
 //! Language Reference.
 
-use effectcraft_project::{Expression, ItemId, Layer, Property};
-use effectcraft_render::EvalCtx;
-use effectcraft_time::Tick;
+use artheffect_project::{Expression, ItemId, Layer, Property};
+use artheffect_render::EvalCtx;
+use artheffect_time::Tick;
 use serde::Serialize;
 use serde_json::{Value, json};
 

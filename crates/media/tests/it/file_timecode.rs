@@ -2,7 +2,7 @@
 
 use std::io::Cursor;
 
-use effectcraft_project::FootageKind;
+use artheffect_project::FootageKind;
 use filmcraft_isobmff::{Brand, Mp4Writer, SampleEntry, TimecodeConfig, TrackConfig, WriteSample, WriterOptions};
 
 /// A two-frame 24 fps Motion JPEG MOV, with a timecode track from `start_frame` when given.
@@ -23,13 +23,13 @@ fn mov(start_frame: Option<u32>) -> Vec<u8> {
 
 #[test]
 fn a_movies_start_timecode_is_read() {
-    let dir = std::env::temp_dir().join(format!("effectcraft-file-timecode-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("artheffect-file-timecode-{}", std::process::id()));
     std::fs::create_dir_all(&dir).expect("mkdir");
     // 10:00:00:00 at 24 fps, and a movie with no timecode
     for (name, start) in [("tc.mov", Some(10 * 3600 * 24)), ("none.mov", None)] {
         let p = dir.join(name);
         std::fs::write(&p, mov(start)).expect("write");
-        let f = effectcraft_media::probe(&p).expect("probe");
+        let f = artheffect_media::probe(&p).expect("probe");
         assert_eq!(f.kind, FootageKind::Video, "{name}");
         assert_eq!(f.file_timecode, start.map(i64::from), "{name}");
         assert_eq!(f.start_timecode, None, "{name}: Interpret Footage still uses the source file timecode");

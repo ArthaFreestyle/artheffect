@@ -5,35 +5,35 @@
 //! is applied until OK. The window behind a previewing dialog is not dimmed, and the dialog opens
 //! at the lower right; the same dialogs creating something new keep the middle.
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::{ItemKind, LayerId, Resolution};
-use effectcraft_ui_egui::{Dialog, EffectcraftApp, menus};
+use artheffect_engine::Session;
+use artheffect_engine::project::{ItemKind, LayerId, Resolution};
+use artheffect_ui_egui::{ArtheffectApp, Dialog, menus};
 use egui::{Event, Key, Modifiers, PointerButton, Pos2, pos2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
 use serde_json::{Value, json};
 
-fn harness(setup: impl FnOnce(&mut Session)) -> Harness<'static, EffectcraftApp> {
+fn harness(setup: impl FnOnce(&mut Session)) -> Harness<'static, ArtheffectApp> {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 10})).unwrap();
     setup(&mut s);
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     h
 }
 
-fn open(h: &mut Harness<'_, EffectcraftApp>, id: &str, params: Value) {
+fn open(h: &mut Harness<'_, ArtheffectApp>, id: &str, params: Value) {
     let ctx = h.ctx.clone();
     menus::invoke(h.state_mut(), &ctx, id, params).unwrap();
     h.run_steps(3);
 }
 
-fn center(h: &Harness<'_, EffectcraftApp>, id: &str) -> Pos2 {
+fn center(h: &Harness<'_, ArtheffectApp>, id: &str) -> Pos2 {
     let r = h.state().auto.find(id).unwrap_or_else(|| panic!("no automation id {id}")).rect;
     pos2(r[0] + r[2] / 2.0, r[1] + r[3] / 2.0)
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, id: &str) {
     let p = center(h, id);
     h.input_mut().events.push(Event::PointerMoved(p));
     h.step();
@@ -43,33 +43,33 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
     h.run_steps(3);
 }
 
-fn escape(h: &mut Harness<'_, EffectcraftApp>) {
+fn escape(h: &mut Harness<'_, ArtheffectApp>) {
     h.input_mut().events.push(Event::Key { key: Key::Escape, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE });
     h.input_mut().events.push(Event::Key { key: Key::Escape, physical_key: None, pressed: false, repeat: false, modifiers: Modifiers::NONE });
     h.run_steps(3);
 }
 
-fn undo_len(h: &Harness<'_, EffectcraftApp>) -> usize {
+fn undo_len(h: &Harness<'_, ArtheffectApp>) -> usize {
     h.state().session.history.undo.len()
 }
 
-fn solid_size(h: &Harness<'_, EffectcraftApp>, layer: u64) -> [u32; 2] {
+fn solid_size(h: &Harness<'_, ArtheffectApp>, layer: u64) -> [u32; 2] {
     let s = &h.state().session;
     let l = s.active_comp().unwrap().layer(LayerId(layer)).unwrap();
-    let effectcraft_engine::project::LayerSource::Solid { item } = l.source else { panic!("not a solid") };
+    let artheffect_engine::project::LayerSource::Solid { item } = l.source else { panic!("not a solid") };
     match &s.project.item(item).unwrap().kind {
         ItemKind::Solid(so) => [so.width, so.height],
         k => panic!("{k:?}"),
     }
 }
 
-fn scalar(h: &Harness<'_, EffectcraftApp>, layer: u64, path: &str) -> f64 {
+fn scalar(h: &Harness<'_, ArtheffectApp>, layer: u64, path: &str) -> f64 {
     let s = &h.state().session;
     let l = s.active_comp().unwrap().layer(LayerId(layer)).unwrap();
     l.props.prop(path).unwrap().value_at(l.layer_time(s.time())).as_f64()
 }
 
-fn comp_width(h: &Harness<'_, EffectcraftApp>) -> u32 {
+fn comp_width(h: &Harness<'_, ArtheffectApp>) -> u32 {
     h.state().session.active_comp().unwrap().width
 }
 
@@ -77,7 +77,7 @@ fn solid_setup(s: &mut Session) {
     s.execute("layer.newSolid", json!({"name": "Box", "color": "#ff0000", "width": 100, "height": 100})).unwrap();
 }
 
-fn solid_layer(h: &Harness<'_, EffectcraftApp>) -> u64 {
+fn solid_layer(h: &Harness<'_, ArtheffectApp>) -> u64 {
     h.state().session.active_comp().unwrap().layers[0].id.0
 }
 
@@ -270,7 +270,7 @@ fn previewing_dialogs_open_at_the_lower_right_and_new_ones_in_the_middle() {
     assert!(ok.x < 1000.0, "New Solid stays in the middle: {ok:?}");
 }
 
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'_, ArtheffectApp>, from: Pos2, to: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(from));
     h.step();
     h.input_mut().events.push(Event::PointerButton { pos: from, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });

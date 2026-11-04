@@ -1,4 +1,4 @@
-//! Premiere Pro interop (`effectcraft-interchange`): File ▸ Import ▸ Adobe Premiere Pro Project /
+//! Premiere Pro interop (`artheffect-interchange`): File ▸ Import ▸ Adobe Premiere Pro Project /
 //! Timeline Interchange… and File ▸ Export ▸ Adobe Premiere Pro Project…, through the public
 //! interchange formats Premiere reads and writes. Export writes Final Cut Pro XML (`.xml`) by
 //! default, which Premiere Pro imports (File ▸ Import); FCPXML, OpenTimelineIO and EDL on request.
@@ -7,9 +7,9 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use effectcraft_interchange::{ExportOptions, ImportOptions, PrecompMode, PrerenderMode, Prerendered, TimelineFormat};
-use effectcraft_project::render_queue::{AudioOutput, Channels, OutputFormat, OutputModule, ProResProfile, RenderQueueItem, TimeSpan};
-use effectcraft_project::{ItemId, LayerId, LayerSource, Project};
+use artheffect_interchange::{ExportOptions, ImportOptions, PrecompMode, PrerenderMode, Prerendered, TimelineFormat};
+use artheffect_project::render_queue::{AudioOutput, Channels, OutputFormat, OutputModule, ProResProfile, RenderQueueItem, TimeSpan};
+use artheffect_project::{ItemId, LayerId, LayerSource, Project};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, always, b_p, bad, comp_id, f_p, has_comp, str_p};
@@ -45,14 +45,14 @@ fn import_timeline(s: &mut Session, p: &Value) -> Result<Value> {
     let importer = s.importer.clone();
     let services = s.services.clone();
     let rate = s.sequence_rate();
-    let mut probe = move |m: &str| -> Option<effectcraft_project::Footage> {
+    let mut probe = move |m: &str| -> Option<artheffect_project::Footage> {
         if !services.exists(m) {
             return None;
         }
         crate::sequence::probe_path(importer.as_deref()?, services.as_ref(), m, rate).ok()
     };
     let res = s.edit("Import Timeline", None, |proj, st| {
-        let r = effectcraft_interchange::import(proj, &bytes, format, &opts, &mut probe).map_err(|e| EngineError::Other(e.to_string()))?;
+        let r = artheffect_interchange::import(proj, &bytes, format, &opts, &mut probe).map_err(|e| EngineError::Other(e.to_string()))?;
         st.project_selection = r.comps.clone();
         Ok(r)
     })?;
@@ -103,9 +103,9 @@ fn isolate(project: &Project, cid: ItemId, lid: LayerId) -> Option<Project> {
 struct PrerenderCx {
     protected: crate::output_guard::Protected,
     exporter: Option<Arc<dyn Exporter>>,
-    footage: Arc<dyn effectcraft_render::FootageSource>,
-    expr: Option<Arc<dyn effectcraft_render::ExprHost>>,
-    accel: Option<Arc<dyn effectcraft_render::Accelerator>>,
+    footage: Arc<dyn artheffect_render::FootageSource>,
+    expr: Option<Arc<dyn artheffect_render::ExprHost>>,
+    accel: Option<Arc<dyn artheffect_render::Accelerator>>,
     nested_switches: bool,
 }
 
@@ -125,7 +125,7 @@ fn prerender(
     let comp = project.comp(cid).ok_or("no composition")?;
     let l = comp.layer(lid).ok_or("no layer")?;
     let fd = comp.frame_duration();
-    let start = comp.frame_rate.snap(l.in_point.max(effectcraft_time::Tick::ZERO));
+    let start = comp.frame_rate.snap(l.in_point.max(artheffect_time::Tick::ZERO));
     let end = l.out_point.min(comp.duration).max(start + fd);
     let q = isolate(project, cid, lid).ok_or("no composition")?;
     let mut item = RenderQueueItem::new(0, cid);
@@ -225,7 +225,7 @@ fn export_timeline_work(
     let mut rendered = vec![];
     let mut errors = vec![];
     let mut staged = vec![];
-    let plan = effectcraft_interchange::plan_prerender(project, cid, opts);
+    let plan = artheffect_interchange::plan_prerender(project, cid, opts);
     if plan.len() > staging::MAX_MOVIES {
         return Err(format!("too many pre-render movies (limit {})", staging::MAX_MOVIES));
     }
@@ -254,7 +254,7 @@ fn export_timeline_work(
             Err(e) => errors.push(format!("{comp_name} ▸ {layer_name}: {e}")),
         }
     }
-    let out = effectcraft_interchange::export(project, cid, opts, &pre).map_err(|e| e.to_string())?;
+    let out = artheffect_interchange::export(project, cid, opts, &pre).map_err(|e| e.to_string())?;
     let mut warnings = out.warnings.clone();
     warnings.extend(errors.iter().map(|e| format!("pre-render failed: {e}")));
     let result = json!({

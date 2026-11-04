@@ -15,7 +15,7 @@ $ns.AddNamespace('w', 'http://wixtoolset.org/schemas/v4/wxs')
 if ($legacy.SelectNodes('//w:RegistryValue[@Name="Path" or @Name="InstallDir" or @Name="InstallFolder"]', $ns).Count) {
   throw 'Legacy fixture must omit every modern folder record so discovery uses the executable fallback.'
 }
-if (-not $legacy.SelectNodes('//w:RegistryValue[contains(@Value,"EffectcraftExe")]', $ns).Count) {
+if (-not $legacy.SelectNodes('//w:RegistryValue[contains(@Value,"ArtheffectExe")]', $ns).Count) {
   throw 'Legacy fixture must retain its executable registration.'
 }
 Write-Output 'PASS legacy fixture exposes only the executable-path fallback.'

@@ -15,11 +15,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use effectcraft_effects::Buf;
-use effectcraft_geom::{Mat4, Vec3, vec3};
-use effectcraft_model::{self as model, Primitive};
-use effectcraft_project::{ItemKind, Layer, LayerSource, LightKind, PrimitiveKind, Property};
-use effectcraft_time::Tick;
+use artheffect_effects::Buf;
+use artheffect_geom::{Mat4, Vec3, vec3};
+use artheffect_model::{self as model, Primitive};
+use artheffect_project::{ItemKind, Layer, LayerSource, LightKind, PrimitiveKind, Property};
+use artheffect_time::Tick;
 
 use super::shade::srgb_to_linear;
 use crate::three_d::camera::{CameraState, NEAR};
@@ -612,7 +612,7 @@ pub fn extruded_meshes(ctx: &EvalCtx, layer: &Layer, p: &model::extrude::Extrude
                         groups.push((vec![g.local.clone()], c, g.m, usize::from(!stroke_on_top), g.xf.surface_colors(c)));
                     }
                     if g.stroke_width > 0.0 && g.stroke[3] * op > 0.0 {
-                        let st = effectcraft_path::StrokeStyle { width: g.stroke_width, join: g.join, ..Default::default() };
+                        let st = artheffect_path::StrokeStyle { width: g.stroke_width, join: g.join, ..Default::default() };
                         if let Some(region) = crate::shapes::stroke_region(std::slice::from_ref(&g.local), &st) {
                             let c = [g.stroke[0], g.stroke[1], g.stroke[2], g.stroke[3] * op];
                             groups.push((vec![region], c, g.m, usize::from(stroke_on_top), g.xf.surface_colors(c)));
@@ -951,7 +951,7 @@ enum EnvPixels {
 
 fn env_pixels(r: &Renderer, ctx: &EvalCtx, src: Option<u64>, lin: bool) -> EnvPixels {
     let layer = match src {
-        Some(id) => ctx.comp.layer(effectcraft_project::LayerId(id)),
+        Some(id) => ctx.comp.layer(artheffect_project::LayerId(id)),
         None => ctx.comp.layers.iter().find(|l| l.environment && l.is_active_at(ctx.time)),
     };
     let Some(layer) = layer else {

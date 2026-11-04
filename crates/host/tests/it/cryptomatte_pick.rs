@@ -2,9 +2,9 @@
 //! file's Cryptomatte ranks and manifest, edits the Selection, and the rendered matte follows,
 //! including undo.
 
-use effectcraft_engine::Session;
-use effectcraft_engine::time::Tick;
-use effectcraft_raster::channels3d::{crypto_float, crypto_hash};
+use artheffect_engine::Session;
+use artheffect_engine::time::Tick;
+use artheffect_raster::channels3d::{crypto_float, crypto_hash};
 use serde_json::json;
 
 const RIGHT: &str = "Right, \"Box\"";
@@ -36,7 +36,7 @@ fn crypto_exr(tag: &str, split: usize) -> String {
 /// A session with the EXR as a layer of a 2 s comp, under a Cryptomatte effect.
 fn footage(tag: &str, split: usize) -> (Session, String) {
     let path = crypto_exr(tag, split);
-    let mut s = effectcraft_host::session();
+    let mut s = artheffect_host::session();
     let r = s.execute("file.import", json!({"paths": [path]})).unwrap();
     assert_eq!(r["errors"], json!([]), "{r}");
     s.execute("comp.new", json!({"name": "Crypto", "width": 8, "height": 4, "frameRate": 24, "duration": 2})).unwrap();
@@ -81,7 +81,7 @@ fn a_pick_at_preview_resolution_reads_the_pixel_the_preview_shows() {
     s.execute_checked("prop.set", json!({"path": "effects/#1/matteOnly", "value": true})).unwrap();
     let r = s.execute_checked("effect.pickCryptomatte", json!({"effect": 1, "x": 2.5, "y": 1.5, "scale": 0.5})).unwrap();
     assert_eq!(r["name"], RIGHT, "{r}");
-    let opts = effectcraft_engine::render::RenderOpts { scale: 0.5, ..Default::default() };
+    let opts = artheffect_engine::render::RenderOpts { scale: 0.5, ..Default::default() };
     assert_eq!(s.render(s.active_comp_id().unwrap(), Tick::ZERO, opts).get(1, 0)[3], 1.0);
     // At full resolution the same point is Left's pixel.
     let r = s.execute_checked("effect.cryptomatteAt", json!({"effect": 1, "x": 2.5, "y": 1.5})).unwrap();
@@ -110,7 +110,7 @@ fn a_keyframed_selection_is_edited_where_it_was_read() {
 /// (the pick's aux pass runs the session's expressions).
 #[test]
 fn a_pick_on_a_precomp_follows_expressions() {
-    let mut s = effectcraft_host::session();
+    let mut s = artheffect_host::session();
     let inner = s.execute("comp.new", json!({"name": "Inner", "width": 40, "height": 20, "frameRate": 24, "duration": 1})).unwrap()["comp"].clone();
     let l = s.execute("layer.newSolid", json!({"name": "Ball", "width": 6, "height": 6})).unwrap()["layer"].clone();
     s.execute("layer.setSwitch", json!({"layers": [l], "switch": "threeD", "value": true})).unwrap();

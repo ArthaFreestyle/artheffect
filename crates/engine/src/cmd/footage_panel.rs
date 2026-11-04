@@ -4,8 +4,8 @@
 //! Edit** (the same, after pushing later layers — and the later part of layers crossing the
 //! current time — back by the clip's duration).
 
-use effectcraft_project::{ItemId, ItemKind, LayerSource, build};
-use effectcraft_time::Tick;
+use artheffect_project::{ItemId, ItemKind, LayerSource, build};
+use artheffect_time::Tick;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -32,34 +32,34 @@ fn footage_item(s: &Session, p: &Value, cmd: &str) -> Result<ItemId> {
     }
     .ok_or_else(|| bad(cmd, "no footage: pass `item` or open one in the Footage panel"))?;
     match s.project.item(id).map(|i| &i.kind) {
-        Some(ItemKind::Footage(f)) if f.kind != effectcraft_project::FootageKind::Data => Ok(id),
+        Some(ItemKind::Footage(f)) if f.kind != artheffect_project::FootageKind::Data => Ok(id),
         Some(ItemKind::Solid(_)) => Ok(id),
         _ => Err(bad(cmd, format!("item {} is not footage", id.0))),
     }
 }
 
 /// Source duration and frame rate of a footage / solid item (stills: `None`).
-fn source_timing(s: &Session, item: ItemId) -> (Option<Tick>, effectcraft_time::FrameRate) {
+fn source_timing(s: &Session, item: ItemId) -> (Option<Tick>, artheffect_time::FrameRate) {
     match s.project.item(item).map(|i| &i.kind) {
-        Some(ItemKind::Footage(f)) if f.kind != effectcraft_project::FootageKind::Still && f.duration > Tick::ZERO => (Some(f.duration), f.frame_rate),
+        Some(ItemKind::Footage(f)) if f.kind != artheffect_project::FootageKind::Still && f.duration > Tick::ZERO => (Some(f.duration), f.frame_rate),
         Some(ItemKind::Footage(f)) => (None, f.frame_rate),
-        _ => (None, s.active_comp().map(|c| c.frame_rate).unwrap_or(effectcraft_time::FrameRate::FPS_30)),
+        _ => (None, s.active_comp().map(|c| c.frame_rate).unwrap_or(artheffect_time::FrameRate::FPS_30)),
     }
 }
 
 /// The Footage panel's current time: footage shows its timecode (Start Timecode), anything else
 /// time from 0.
-pub fn timecode(item: Option<&effectcraft_project::Item>, fr: effectcraft_time::FrameRate, frame: i64) -> String {
+pub fn timecode(item: Option<&artheffect_project::Item>, fr: artheffect_time::FrameRate, frame: i64) -> String {
     match item.map(|i| &i.kind) {
         Some(ItemKind::Footage(f)) => f.timecode(frame),
-        _ => effectcraft_time::format_timecode_ae(frame, fr, false),
+        _ => artheffect_time::format_timecode_ae(frame, fr, false),
     }
 }
 
 /// The frame the Footage panel shows: footage `f` at source time `t`, with its Cineon Settings
 /// applied.
-pub fn frame(s: &Session, item: ItemId, f: &effectcraft_project::Footage, t: Tick) -> Option<std::sync::Arc<effectcraft_raster::Image>> {
-    s.footage.frame(item, f, t).map(|img| effectcraft_render::cineon_frame(img, f))
+pub fn frame(s: &Session, item: ItemId, f: &artheffect_project::Footage, t: Tick) -> Option<std::sync::Arc<artheffect_raster::Image>> {
+    s.footage.frame(item, f, t).map(|img| artheffect_render::cineon_frame(img, f))
 }
 
 fn source_time(s: &Session, p: &Value, item: ItemId) -> Option<Tick> {

@@ -1,12 +1,12 @@
 {
   "mcpServers": {
-    "effectcraft": {
+    "artheffect": {
       "command": "cargo",
-      "args": ["run", "--quiet", "--release", "-p", "effectcraft-cli", "--", "mcp", "--demo"]
+      "args": ["run", "--quiet", "--release", "-p", "artheffect-cli", "--", "mcp", "--demo"]
     },
-    "effectcraft-app": {
+    "artheffect-app": {
       "command": "cargo",
-      "args": ["run", "--quiet", "--release", "-p", "effectcraft-cli", "--", "mcp", "--bridge", "9877"]
+      "args": ["run", "--quiet", "--release", "-p", "artheffect-cli", "--", "mcp", "--bridge", "9877"]
     }
   }
 }

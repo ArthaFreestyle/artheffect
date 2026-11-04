@@ -115,7 +115,7 @@ pub(crate) fn record(e: &mut Enc, yp: &YuvPipe, img: &GpuImage, bg: [f32; 3]) ->
     }) {
         Ok(buffers) => buffers,
         Err(err) => {
-            log::warn!(target: "effectcraft_gpu", "yuv420 buffers: {err}");
+            log::warn!(target: "artheffect_gpu", "yuv420 buffers: {err}");
             return None;
         }
     };
@@ -147,17 +147,17 @@ pub(crate) fn record(e: &mut Enc, yp: &YuvPipe, img: &GpuImage, bg: [f32; 3]) ->
 pub(crate) fn convert(e: &mut Enc, yp: &YuvPipe, img: &GpuImage, bg: [f32; 3]) -> Option<Vec<u8>> {
     let stg = record(e, yp, img, bg)?;
     let n = planes_len(img.width, img.height) as usize;
-    e.g.read_buffer(&stg, n, n, 1).map_err(|err| log::error!(target: "effectcraft_gpu", "yuv420 readback: {err}")).ok()
+    e.g.read_buffer(&stg, n, n, 1).map_err(|err| log::error!(target: "artheffect_gpu", "yuv420 readback: {err}")).ok()
 }
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use effectcraft_raster::Image;
+    use artheffect_raster::Image;
 
     /// The export's conversion (`to_rgba8_over` + `rgba_to_yuv420`), the reference the kernel
     /// is held to.
     pub(crate) fn cpu(img: &Image, bg: [f32; 3]) -> Vec<u8> {
-        effectcraft_raster::yuv::yuv420_over(img, bg)
+        artheffect_raster::yuv::yuv420_over(img, bg)
     }
 
     /// Premultiplied noise with some out-of-range values, opaque pixels, exact 8-bit levels and
@@ -264,10 +264,10 @@ pub(crate) mod tests {
 
 #[cfg(test)]
 mod accel_tests {
-    use effectcraft_color::Label;
-    use effectcraft_project::{BitDepth, Comp, ItemKind};
-    use effectcraft_render::{Accelerator, Backend, RenderOpts, Renderer};
-    use effectcraft_time::{FrameRate, Tick};
+    use artheffect_color::Label;
+    use artheffect_project::{BitDepth, Comp, ItemKind};
+    use artheffect_render::{Accelerator, Backend, RenderOpts, Renderer};
+    use artheffect_time::{FrameRate, Tick};
 
     use crate::tests::{Pattern, Scene, opts};
 
@@ -321,7 +321,7 @@ mod accel_tests {
 
 #[cfg(test)]
 mod tie_tests {
-    use effectcraft_raster::Image;
+    use artheffect_raster::Image;
 
     fn lum(r: u8, g: u8, b: u8) -> f32 {
         let (r, g, b) = (r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0);

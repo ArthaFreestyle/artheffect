@@ -19,10 +19,10 @@
 //! it (`fromComp` of the null's anchor, so parented nulls rig limbs), and Nulls Follow Points makes
 //! nulls whose Position follows each pin (`toComp` of its Position).
 
-use effectcraft_effects::puppet::PinKind;
-use effectcraft_geom::vec2;
-use effectcraft_keyframe::Value as KV;
-use effectcraft_project::{Comp, ItemId, Layer, LayerId, Uid};
+use artheffect_effects::puppet::PinKind;
+use artheffect_geom::vec2;
+use artheffect_keyframe::Value as KV;
+use artheffect_project::{Comp, ItemId, Layer, LayerId, Uid};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, b_p, bad, comp_id, has_layers};
@@ -55,7 +55,7 @@ fn target(s: &Session, p: &Value, cmd: &str) -> Result<(ItemId, LayerId, Uid)> {
     let layer = comp.layer(lid).ok_or(EngineError::NoComp)?;
     let mut found = None;
     layer.props.walk("", &mut |_, pr| {
-        if found.is_none() && matches!(pr.value, KV::Path(_)) && !matches!(pr.ui, effectcraft_project::ParamUi::Hidden) {
+        if found.is_none() && matches!(pr.value, KV::Path(_)) && !matches!(pr.ui, artheffect_project::ParamUi::Hidden) {
             found = Some(pr.uid);
         }
     });
@@ -66,7 +66,7 @@ fn target(s: &Session, p: &Value, cmd: &str) -> Result<(ItemId, LayerId, Uid)> {
 /// expression reference to it and its layer's name.
 struct PathInfo {
     comp_pts: Vec<[f64; 2]>,
-    path: effectcraft_keyframe::ShapePath,
+    path: artheffect_keyframe::ShapePath,
     reference: String,
     layer_name: String,
     prop_name: String,
@@ -78,7 +78,7 @@ fn info(s: &Session, cid: ItemId, lid: LayerId, uid: Uid, cmd: &str) -> Result<P
     let layer = comp.layer(lid).ok_or(EngineError::NoComp)?;
     let pr = layer.props.find(uid).ok_or_else(|| bad(cmd, "no such property"))?;
     let t = s.time();
-    let ctx = effectcraft_render::EvalCtx {
+    let ctx = artheffect_render::EvalCtx {
         project: &s.project,
         comp_id: cid,
         comp,
@@ -156,7 +156,7 @@ fn pin_targets(s: &Session, p: &Value, cmd: &str) -> Result<Option<(ItemId, Vec<
     };
     let cid = pins.first().map(|x| x.0).ok_or_else(|| bad(cmd, "no puppet pins"))?;
     let comp = s.project.comp(cid).ok_or(EngineError::NoComp)?;
-    let ctx = effectcraft_render::EvalCtx {
+    let ctx = artheffect_render::EvalCtx {
         project: &s.project,
         comp_id: cid,
         comp,

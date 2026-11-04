@@ -27,8 +27,8 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 
-use effectcraft_effects::Buf;
-use effectcraft_raster::Image;
+use artheffect_effects::Buf;
+use artheffect_raster::Image;
 
 /// File format version (part of the folder layout).
 const VERSION: &str = "v1";
@@ -95,7 +95,7 @@ struct Meta {
 
 /// The cache's index: entry sizes and least-recently-used order under a size limit. Portable
 /// (no file system): [`DiskCache`] keeps one over its folder, and the browser keeps one over the
-/// Origin Private File System (`apps/effectcraft-web`, where the files are written by workers).
+/// Origin Private File System (`apps/artheffect-web`, where the files are written by workers).
 #[derive(Default)]
 pub struct DiskIndex {
     map: HashMap<(Kind, u128), Meta>,
@@ -289,17 +289,17 @@ pub fn default_folder() -> PathBuf {
     if cfg!(target_os = "macos")
         && let Some(h) = &home
     {
-        return h.join("Library/Caches/EffectCraft/Disk Cache");
+        return h.join("Library/Caches/Artheffect/Disk Cache");
     }
     if cfg!(windows)
         && let Some(l) = std::env::var_os("LOCALAPPDATA")
     {
-        return PathBuf::from(l).join("EffectCraft").join("Disk Cache");
+        return PathBuf::from(l).join("Artheffect").join("Disk Cache");
     }
     if let Some(x) = std::env::var_os("XDG_CACHE_HOME") {
-        return PathBuf::from(x).join("effectcraft/disk-cache");
+        return PathBuf::from(x).join("artheffect/disk-cache");
     }
-    home.map(|h| h.join(".cache/effectcraft/disk-cache")).unwrap_or_else(|| std::env::temp_dir().join("effectcraft-disk-cache"))
+    home.map(|h| h.join(".cache/artheffect/disk-cache")).unwrap_or_else(|| std::env::temp_dir().join("artheffect-disk-cache"))
 }
 
 impl DiskCache {
@@ -622,14 +622,14 @@ impl DiskCache {
     }
 
     /// A segmentation (chain key, scale) written by [`DiskCache::put_seg`].
-    pub fn get_seg(&self, key: u64, scale: f64) -> Option<effectcraft_effects::roto::FrameSeg> {
+    pub fn get_seg(&self, key: u64, scale: f64) -> Option<artheffect_effects::roto::FrameSeg> {
         let p = self.read(Kind::Matte, seg_key(key, scale))?;
         let raw = lz4_flex::decompress_size_prepended(&p).ok()?;
-        effectcraft_effects::roto::FrameSeg::from_bytes(&raw)
+        artheffect_effects::roto::FrameSeg::from_bytes(&raw)
     }
 
     /// Queue a segmentation for writing.
-    pub fn put_seg(&self, key: u64, scale: f64, seg: &effectcraft_effects::roto::FrameSeg) {
+    pub fn put_seg(&self, key: u64, scale: f64, seg: &artheffect_effects::roto::FrameSeg) {
         let k = seg_key(key, scale);
         if self.contains(Kind::Matte, k) {
             return;
@@ -727,11 +727,11 @@ fn seg_key(key: u64, scale: f64) -> u128 {
     h.finish()
 }
 
-impl effectcraft_effects::roto::SegStore for DiskCache {
-    fn get_seg(&self, key: u64, scale: f64) -> Option<effectcraft_effects::roto::FrameSeg> {
+impl artheffect_effects::roto::SegStore for DiskCache {
+    fn get_seg(&self, key: u64, scale: f64) -> Option<artheffect_effects::roto::FrameSeg> {
         DiskCache::get_seg(self, key, scale)
     }
-    fn put_seg(&self, key: u64, scale: f64, seg: &effectcraft_effects::roto::FrameSeg) {
+    fn put_seg(&self, key: u64, scale: f64, seg: &artheffect_effects::roto::FrameSeg) {
         DiskCache::put_seg(self, key, scale, seg);
     }
 }
@@ -841,7 +841,7 @@ fn decode_layer(p: &[u8]) -> Option<Buf> {
 // ---------------------------------------------------------------- content keys
 
 /// Bump when rendering changes in a way that makes old disk entries wrong.
-const RENDER_VERSION: &str = "effectcraft-render-5";
+const RENDER_VERSION: &str = "artheffect-render-5";
 
 fn hash_debug(h: &mut Hash128, v: &impl std::fmt::Debug) {
     h.write(format!("{v:?}").as_bytes());
@@ -872,7 +872,7 @@ fn file_stamp(h: &mut Hash128, path: &str, virtual_id: Option<VirtualFileId<'_>>
     }
 }
 
-fn footage_stamp(h: &mut Hash128, f: &effectcraft_project::Footage, virtual_id: Option<VirtualFileId<'_>>) {
+fn footage_stamp(h: &mut Hash128, f: &artheffect_project::Footage, virtual_id: Option<VirtualFileId<'_>>) {
     file_stamp(h, &f.path, virtual_id);
     for p in &f.sequence {
         file_stamp(h, p, virtual_id);
@@ -881,16 +881,16 @@ fn footage_stamp(h: &mut Hash128, f: &effectcraft_project::Footage, virtual_id: 
 
 /// Salt for layer cache keys on disk: the renderer version and every footage file's identity
 /// (layer keys name footage items, not file contents).
-pub fn footage_salt(project: &effectcraft_project::Project) -> u64 {
+pub fn footage_salt(project: &artheffect_project::Project) -> u64 {
     footage_salt_with(project, None)
 }
 
 /// [`footage_salt`] with [`VirtualFileId`] for paths `std::fs::metadata` cannot describe.
-pub fn footage_salt_with(project: &effectcraft_project::Project, virtual_id: Option<VirtualFileId<'_>>) -> u64 {
+pub fn footage_salt_with(project: &artheffect_project::Project, virtual_id: Option<VirtualFileId<'_>>) -> u64 {
     let mut h = Hash128::default();
     h.write(RENDER_VERSION.as_bytes());
     for (id, it) in &project.items {
-        if let effectcraft_project::ItemKind::Footage(f) = &it.kind {
+        if let artheffect_project::ItemKind::Footage(f) = &it.kind {
             h.write_u64(id.0);
             hash_debug(&mut h, f);
             footage_stamp(&mut h, f, virtual_id);
@@ -905,22 +905,22 @@ pub fn footage_salt_with(project: &effectcraft_project::Project, virtual_id: Opt
 /// files' size and time). With expressions in play (which can read any comp) the whole project
 /// counts. Switches that don't change pixels (Audio, Lock, Shy, Hide Shy Layers) don't count, and
 /// neither do markers unless an expression mentions them.
-pub fn comp_content_key(project: &effectcraft_project::Project, comp: effectcraft_project::ItemId) -> u128 {
+pub fn comp_content_key(project: &artheffect_project::Project, comp: artheffect_project::ItemId) -> u128 {
     comp_content_key_with(project, comp, None)
 }
 
 /// [`comp_content_key`] with [`VirtualFileId`] for paths `std::fs::metadata` cannot describe.
-pub fn comp_content_key_with(project: &effectcraft_project::Project, comp: effectcraft_project::ItemId, virtual_id: Option<VirtualFileId<'_>>) -> u128 {
+pub fn comp_content_key_with(project: &artheffect_project::Project, comp: artheffect_project::ItemId, virtual_id: Option<VirtualFileId<'_>>) -> u128 {
     comp_content_key_for_renderer(project, comp, virtual_id, RENDER_VERSION)
 }
 
 fn comp_content_key_for_renderer(
-    project: &effectcraft_project::Project,
-    comp: effectcraft_project::ItemId,
+    project: &artheffect_project::Project,
+    comp: artheffect_project::ItemId,
     virtual_id: Option<VirtualFileId<'_>>,
     renderer: &str,
 ) -> u128 {
-    use effectcraft_project::{ItemKind, LayerSource};
+    use artheffect_project::{ItemKind, LayerSource};
     let mut h = Hash128::default();
     h.write(renderer.as_bytes());
     hash_debug(&mut h, &project.settings);
@@ -945,7 +945,7 @@ fn comp_content_key_for_renderer(
     }
     // Markers are pixels only to the expressions that read them (#1083).
     let markers = project.reads_markers();
-    let ids: Vec<effectcraft_project::ItemId> = if expressions { project.items.keys().copied().collect() } else { seen.into_iter().collect() };
+    let ids: Vec<artheffect_project::ItemId> = if expressions { project.items.keys().copied().collect() } else { seen.into_iter().collect() };
     for id in ids {
         let Some(it) = project.item(id) else { continue };
         h.write_u64(id.0);
@@ -981,7 +981,7 @@ mod tests {
     use super::*;
 
     fn tmpdir(name: &str) -> PathBuf {
-        let d = std::env::temp_dir().join(format!("effectcraft-disk-cache-{name}-{}", std::process::id()));
+        let d = std::env::temp_dir().join(format!("artheffect-disk-cache-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&d);
         d
     }
@@ -1033,7 +1033,7 @@ mod tests {
     /// the size limit like every entry, and a damaged file is a miss.
     #[test]
     fn segmentations_round_trip_and_reopen() {
-        use effectcraft_effects::roto::FrameSeg;
+        use artheffect_effects::roto::FrameSeg;
         let dir = tmpdir("seg");
         let dc = DiskCache::open(&dir, 1 << 30).unwrap();
         let seg = FrameSeg { w: 7, h: 5, matte: (0..35).map(|i| (i % 3 == 0) as u8).collect(), refine: vec![0; 35], ..Default::default() };
@@ -1084,14 +1084,14 @@ mod tests {
 
     #[test]
     fn previous_renderer_frames_are_not_reused() {
-        use effectcraft_project::{Comp, ItemKind, Project};
-        use effectcraft_time::{FrameRate, Tick};
+        use artheffect_project::{Comp, ItemKind, Project};
+        use artheffect_time::{FrameRate, Tick};
 
         let mut project = Project::default();
         let comp = Comp::new(2, 2, FrameRate::FPS_30, Tick::from_seconds_f64(1.0));
-        let id = project.add_item("Cached composition", effectcraft_color::Label::None, None, ItemKind::Comp(comp.into()));
+        let id = project.add_item("Cached composition", artheffect_color::Label::None, None, ItemKind::Comp(comp.into()));
         let key = frame_key(comp_content_key(&project, id), 0, 1000, 0);
-        let previous_key = frame_key(comp_content_key_for_renderer(&project, id, None, "effectcraft-render-4"), 0, 1000, 0);
+        let previous_key = frame_key(comp_content_key_for_renderer(&project, id, None, "artheffect-render-4"), 0, 1000, 0);
         let dir = tmpdir("previous-renderer");
         {
             let cache = DiskCache::open(&dir, 1 << 30).unwrap();
@@ -1270,16 +1270,16 @@ mod tests {
     /// A path with no native metadata takes its key from the caller's size and content hash (#1253).
     #[test]
     fn virtual_file_bytes_change_content_keys() {
-        use effectcraft_project::build;
-        use effectcraft_project::{Comp, Footage, ItemKind, LayerSource, Project};
-        use effectcraft_time::{FrameRate, Tick};
+        use artheffect_project::build;
+        use artheffect_project::{Comp, Footage, ItemKind, LayerSource, Project};
+        use artheffect_time::{FrameRate, Tick};
 
         let mut p = Project::default();
         let f = Footage { path: "/virtual.mov".into(), width: 16, height: 9, duration: Tick::from_seconds_f64(1.0), has_video: true, ..Default::default() };
-        let fid = p.add_item("virtual.mov", effectcraft_color::Label::None, None, ItemKind::Footage(f));
+        let fid = p.add_item("virtual.mov", artheffect_color::Label::None, None, ItemKind::Footage(f));
         let mut comp = Comp::new(16, 9, FrameRate::FPS_30, Tick::from_seconds_f64(1.0));
         comp.layers = vec![build::layer(&mut p, &comp, "clip", LayerSource::Footage { item: fid }, (16, 9), None)].into();
-        let cid = p.add_item("C", effectcraft_color::Label::None, None, ItemKind::Comp(comp.into()));
+        let cid = p.add_item("C", artheffect_color::Label::None, None, ItemKind::Comp(comp.into()));
 
         let id = |mark: u64| move |path: &str| (path == "/virtual.mov").then_some((8, mark));
         let (one, two) = (id(1), id(2));

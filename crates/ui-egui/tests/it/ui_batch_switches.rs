@@ -3,17 +3,17 @@
 //! swatch and the Modes column. The engine commands already took several layers; the row
 //! controls used to pass the clicked layer alone.
 
-use effectcraft_engine::Session;
-use effectcraft_engine::color::{BlendMode, Label};
-use effectcraft_engine::project::{Layer, LayerId, Switches};
-use effectcraft_ui_egui::EffectcraftApp;
+use artheffect_engine::Session;
+use artheffect_engine::color::{BlendMode, Label};
+use artheffect_engine::project::{Layer, LayerId, Switches};
+use artheffect_ui_egui::ArtheffectApp;
 use egui::{Event, Modifiers, Pos2, Rect, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
 use serde_json::json;
 
 /// Comp "Main" with solids A (top) to D (bottom); returns their ids top to bottom.
-fn harness() -> (Harness<'static, EffectcraftApp>, Vec<u64>) {
+fn harness() -> (Harness<'static, ArtheffectApp>, Vec<u64>) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "frameRate": 30, "duration": 4})).unwrap();
     let mut ids: Vec<u64> = ["D", "C", "B", "A"]
@@ -22,18 +22,18 @@ fn harness() -> (Harness<'static, EffectcraftApp>, Vec<u64>) {
         .collect();
     ids.reverse();
     s.execute("edit.deselectAll", json!({})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     (h, ids)
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, ArtheffectApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).clone();
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
 /// Press on `from`, move to `to` in `steps`, release there.
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, steps: u32) {
+fn drag(h: &mut Harness<'_, ArtheffectApp>, from: Pos2, to: Pos2, steps: u32) {
     h.event(Event::PointerMoved(from));
     h.step();
     h.event(Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -47,17 +47,17 @@ fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, steps: u32) {
 }
 
 /// A click on the Timeline control `id`.
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, id: &str) {
     let p = rect(h, id).center();
     drag(h, p, p, 1);
 }
 
 /// A click at `p` (a menu entry, found by its label).
-fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+fn click_at(h: &mut Harness<'_, ArtheffectApp>, p: Pos2) {
     drag(h, p, p, 1);
 }
 
-fn alt_click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn alt_click(h: &mut Harness<'_, ArtheffectApp>, id: &str) {
     let p = rect(h, id).center();
     let modifiers = Modifiers::ALT;
     h.event(Event::PointerMoved(p));
@@ -71,18 +71,18 @@ fn alt_click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
 }
 
 /// Select `ids` in the Timeline, as a Shift range or a Cmd toggle would.
-fn select(h: &mut Harness<'_, EffectcraftApp>, ids: &[u64]) {
+fn select(h: &mut Harness<'_, ArtheffectApp>, ids: &[u64]) {
     h.state_mut().session.execute("layer.select", json!({"layers": ids})).unwrap();
     h.run_steps(2);
 }
 
 /// The state of switch `f` on each layer of `ids`, top to bottom.
-fn states(h: &Harness<'_, EffectcraftApp>, ids: &[u64], f: fn(&Layer) -> bool) -> Vec<bool> {
+fn states(h: &Harness<'_, ArtheffectApp>, ids: &[u64], f: fn(&Layer) -> bool) -> Vec<bool> {
     let comp = h.state().session.active_comp().unwrap();
     ids.iter().map(|id| f(comp.layer(LayerId(*id)).unwrap())).collect()
 }
 
-fn switches(h: &Harness<'_, EffectcraftApp>, id: u64) -> Switches {
+fn switches(h: &Harness<'_, ArtheffectApp>, id: u64) -> Switches {
     h.state().session.active_comp().unwrap().layer(LayerId(id)).unwrap().switches.clone()
 }
 
@@ -165,7 +165,7 @@ fn switch_targets_skip_the_layers_the_switch_does_not_apply_to() {
     let cam = s.execute("layer.newCamera", json!({})).unwrap()["layer"].as_u64().unwrap();
     s.execute("effect.apply", json!({"effect": "ec.blur.gaussian", "layers": [solid]})).unwrap();
     s.execute("edit.deselectAll", json!({})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     select(&mut h, &[solid, null, cam]);
 

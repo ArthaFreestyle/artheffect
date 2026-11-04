@@ -1,9 +1,9 @@
-use effectcraft_color::Label;
-use effectcraft_keyframe::{Keyframe, ShapePath, TextDoc, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{Comp, ItemId, ItemKind, Layer, LayerSource, MaskMode, Node, Project, PropGroup};
-use effectcraft_text::layout_doc;
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_keyframe::{Keyframe, ShapePath, TextDoc, Value};
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{Comp, ItemId, ItemKind, Layer, LayerSource, MaskMode, Node, Project, PropGroup};
+use artheffect_text::layout_doc;
+use artheffect_time::{FrameRate, Tick};
 
 use super::*;
 
@@ -210,7 +210,7 @@ fn wiggly_selector_is_deterministic_and_time_dependent() {
 
 fn bounds_of(paths: &[(BezPath, CharXf)]) -> kurbo::Rect {
     let v: Vec<BezPath> = paths.iter().map(|p| p.0.clone()).collect();
-    effectcraft_path::bounds(&v).unwrap()
+    artheffect_path::bounds(&v).unwrap()
 }
 
 #[test]
@@ -253,7 +253,7 @@ fn tracking_line_anchor_and_character_offset() {
 /// left text grows right, centred text around its centre, right text to the left (#146).
 #[test]
 fn tracking_grows_from_each_paragraphs_alignment() {
-    use effectcraft_keyframe::{Justify, ParaStyle};
+    use artheffect_keyframe::{Justify, ParaStyle};
     let tracked = |d: TextDoc, amount: f64| {
         let (mut p, cid, comp) = setup(600, 300);
         let mut l = text_layer(&mut p, &comp, d);
@@ -315,13 +315,13 @@ fn anchor_grouping_line_rotates_around_line_centre() {
     set(&mut l, "text/animators/#1/properties/rotation", Value::Scalar(90.0));
     p.comp_mut(cid).unwrap().layers.push(l);
     let per_char = glyph_paths(&ctx(&p, cid, 0.0), &p.comp(cid).unwrap().layers[0]);
-    let cx: Vec<f64> = per_char.iter().map(|g| effectcraft_path::bounds(std::slice::from_ref(&g.0)).unwrap().center().x).collect();
+    let cx: Vec<f64> = per_char.iter().map(|g| artheffect_path::bounds(std::slice::from_ref(&g.0)).unwrap().center().x).collect();
     assert!(cx.windows(2).all(|w| w[1] > w[0] + 10.0), "characters rotate in place: {cx:?}");
     set(&mut p.comp_mut(cid).unwrap().layers[0], "text/moreOptions/anchorGrouping", Value::Enum(2));
     let line = glyph_paths(&ctx(&p, cid, 0.0), &p.comp(cid).unwrap().layers[0]);
-    let cx: Vec<f64> = line.iter().map(|g| effectcraft_path::bounds(std::slice::from_ref(&g.0)).unwrap().center().x).collect();
+    let cx: Vec<f64> = line.iter().map(|g| artheffect_path::bounds(std::slice::from_ref(&g.0)).unwrap().center().x).collect();
     assert!(cx.windows(2).all(|w| (w[1] - w[0]).abs() < 1.0), "the line turns as one: {cx:?}");
-    let cy: Vec<f64> = line.iter().map(|g| effectcraft_path::bounds(std::slice::from_ref(&g.0)).unwrap().center().y).collect();
+    let cy: Vec<f64> = line.iter().map(|g| artheffect_path::bounds(std::slice::from_ref(&g.0)).unwrap().center().y).collect();
     assert!(cy.windows(2).all(|w| w[1] > w[0] + 10.0), "{cy:?}");
 }
 
@@ -346,7 +346,7 @@ fn path_text_follows_a_mask() {
     p.comp_mut(cid).unwrap().layers.push(l);
     let g = glyph_paths(&ctx(&p, cid, 0.0), &p.comp(cid).unwrap().layers[0]);
     assert_eq!(g.len(), 4);
-    let bs: Vec<kurbo::Rect> = g.iter().map(|x| effectcraft_path::bounds(std::slice::from_ref(&x.0)).unwrap()).collect();
+    let bs: Vec<kurbo::Rect> = g.iter().map(|x| artheffect_path::bounds(std::slice::from_ref(&x.0)).unwrap()).collect();
     // Perpendicular: glyphs stand on the path, rotated 90° (to the right of x = 100), in order down.
     for b in &bs {
         assert!(b.x0 > 99.0 && b.x1 < 100.0 + 30.0, "{b:?}");
@@ -357,12 +357,12 @@ fn path_text_follows_a_mask() {
     // Reverse Path: starts from the bottom.
     set(&mut p.comp_mut(cid).unwrap().layers[0], "text/pathOptions/reversePath", Value::Bool(true));
     let g = glyph_paths(&ctx(&p, cid, 0.0), &p.comp(cid).unwrap().layers[0]);
-    let b0 = effectcraft_path::bounds(std::slice::from_ref(&g[0].0)).unwrap();
+    let b0 = artheffect_path::bounds(std::slice::from_ref(&g[0].0)).unwrap();
     assert!(b0.center().y > 300.0 && b0.x1 < 101.0, "{b0:?}");
     // Not perpendicular: glyphs stay upright.
     set(&mut p.comp_mut(cid).unwrap().layers[0], "text/pathOptions/perpendicular", Value::Bool(false));
     let g = glyph_paths(&ctx(&p, cid, 0.0), &p.comp(cid).unwrap().layers[0]);
-    let b0 = effectcraft_path::bounds(std::slice::from_ref(&g[0].0)).unwrap();
+    let b0 = artheffect_path::bounds(std::slice::from_ref(&g[0].0)).unwrap();
     assert!(b0.height() > b0.width(), "{b0:?}");
     // Force alignment spreads to the margins.
     let l = &mut p.comp_mut(cid).unwrap().layers[0];
@@ -370,8 +370,8 @@ fn path_text_follows_a_mask() {
     set(l, "text/pathOptions/forceAlignment", Value::Bool(true));
     set(l, "text/pathOptions/firstMargin", Value::Scalar(0.0));
     let g = glyph_paths(&ctx(&p, cid, 0.0), &p.comp(cid).unwrap().layers[0]);
-    let first = effectcraft_path::bounds(std::slice::from_ref(&g[0].0)).unwrap().center().y;
-    let last = effectcraft_path::bounds(std::slice::from_ref(&g[3].0)).unwrap().center().y;
+    let first = artheffect_path::bounds(std::slice::from_ref(&g[0].0)).unwrap().center().y;
+    let last = artheffect_path::bounds(std::slice::from_ref(&g[3].0)).unwrap().center().y;
     assert!(first < 40.0 && last > 360.0, "{first} {last}");
 }
 
@@ -462,7 +462,7 @@ fn fill_stroke_modes_order_layers() {
 #[test]
 fn per_character_3d_projects_characters() {
     let (mut p, cid, comp) = setup(400, 200);
-    let mut l = text_layer(&mut p, &comp, TextDoc { text: "MM".into(), size: 80.0, justify: effectcraft_keyframe::Justify::Center, ..Default::default() });
+    let mut l = text_layer(&mut p, &comp, TextDoc { text: "MM".into(), size: 80.0, justify: artheffect_keyframe::Justify::Center, ..Default::default() });
     set(&mut l, "transform/position", Value::Vec3([200.0, 130.0, 0.0]));
     l.switches.three_d = true;
     animator(&mut p, &mut l, &["position", "rotation"], &["range"]);
@@ -596,7 +596,7 @@ fn caret_follows_animators_and_path_text() {
     let (qt, qb) = (maps[2].apply(vec2(t.x, t.y)), maps[2].apply(vec2(b.x, b.y)));
     assert!((qt.y - qb.y).abs() < 1.0 && (qt.x - qb.x).abs() > 20.0, "caret across the path: {qt:?} {qb:?}");
     assert!(qb.x < 100.5 && qt.x > 100.0, "baseline end on the path, top to its right: {qt:?} {qb:?}");
-    let glyph_c = glyph_paths(&c, ly).iter().map(|g| effectcraft_path::bounds(std::slice::from_ref(&g.0)).unwrap().center().y).collect::<Vec<_>>();
+    let glyph_c = glyph_paths(&c, ly).iter().map(|g| artheffect_path::bounds(std::slice::from_ref(&g.0)).unwrap().center().y).collect::<Vec<_>>();
     assert!(qt.y > glyph_c[1] && qt.y < glyph_c[2], "between the 2nd and 3rd characters: {} in {glyph_c:?}", qt.y);
 }
 
@@ -614,7 +614,7 @@ fn touching_glyphs_join_without_a_seam() {
             fill,
             stroke: [0.0; 4],
             stroke_width: 0.0,
-            join: effectcraft_path::Join::Miter,
+            join: artheffect_path::Join::Miter,
             bold: 0.0,
             apply_fill: true,
             char_index: 0,
@@ -685,7 +685,7 @@ fn faux_bold_under_a_non_uniform_scale() {
         fill: [1.0; 4],
         stroke: [0.0; 4],
         stroke_width: 0.0,
-        join: effectcraft_path::Join::Miter,
+        join: artheffect_path::Join::Miter,
         bold: 2.0,
         apply_fill: true,
         char_index: 0,

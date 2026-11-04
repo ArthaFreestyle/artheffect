@@ -12,15 +12,15 @@
 //! Edge tools paint their strokes here (see [`super::roto_tool`]).
 
 use crate::i18n::{tr, tr_args};
-use effectcraft_engine::effects::paint;
-use effectcraft_engine::project::{Layer, LayerId};
-use effectcraft_engine::render::{EvalCtx, RenderOpts, Renderer};
+use artheffect_engine::effects::paint;
+use artheffect_engine::project::{Layer, LayerId};
+use artheffect_engine::render::{EvalCtx, RenderOpts, Renderer};
 use egui::{Align2, Color32, Pos2, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
 use serde_json::json;
 
 use crate::state::Tool;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{ArtheffectApp, widgets};
 
 /// A stroke being drawn.
 #[derive(Clone, Debug)]
@@ -59,7 +59,7 @@ pub fn last_fit(ctx: &egui::Context) -> f32 {
 }
 
 /// Zoom to `nz` (points per layer pixel) keeping layer point `q` under screen point `at`.
-fn zoom_at(app: &mut EffectcraftApp, area: Rect, size: [f64; 2], at: Pos2, q: [f64; 2], nz: f32) {
+fn zoom_at(app: &mut ArtheffectApp, area: Rect, size: [f64; 2], at: Pos2, q: [f64; 2], nz: f32) {
     let nz = nz.clamp(0.01, 32.0);
     let origin = at - vec2(q[0] as f32 * nz, q[1] as f32 * nz);
     let pan = origin + vec2(size[0] as f32 * nz / 2.0, size[1] as f32 * nz / 2.0) - area.center();
@@ -70,7 +70,7 @@ fn zoom_at(app: &mut EffectcraftApp, area: Rect, size: [f64; 2], at: Pos2, q: [f
 }
 
 /// The layer shown: the opened one, else the first selected layer.
-pub fn current_layer(app: &EffectcraftApp) -> Option<Layer> {
+pub fn current_layer(app: &ArtheffectApp) -> Option<Layer> {
     let comp = app.session.active_comp()?;
     let id = app.ui.layer_panel.map(LayerId).filter(|id| comp.layer(*id).is_some()).or_else(|| app.session.state.selected_layers.first().copied())?;
     comp.layer(id).cloned()
@@ -90,10 +90,10 @@ fn default_view(layer: &Layer, tool: Tool) -> usize {
 /// The layer's rendered view `view` at `scale`, cached in egui's temp data per revision, layer,
 /// time, view and scale (the layer cache makes repeats cheap).
 fn render_tex(
-    app: &EffectcraftApp,
+    app: &ArtheffectApp,
     ctx: &egui::Context,
-    cid: effectcraft_engine::project::ItemId,
-    comp: &effectcraft_engine::project::Comp,
+    cid: artheffect_engine::project::ItemId,
+    comp: &artheffect_engine::project::Comp,
     layer: &Layer,
     view: usize,
     scale: f64,
@@ -146,7 +146,7 @@ struct StrokeCtx<'a> {
 
 /// Records a paint stroke's layer-space points while dragging, previews it, and runs
 /// `paint.stroke` on release (or on a click).
-fn paint_stroke(app: &mut EffectcraftApp, ui: &egui::Ui, painter: &egui::Painter, resp: &egui::Response, sc: &StrokeCtx) {
+fn paint_stroke(app: &mut ArtheffectApp, ui: &egui::Ui, painter: &egui::Painter, resp: &egui::Response, sc: &StrokeCtx) {
     let StrokeCtx { layer, kind, zoom, did, diameter, color, to_layer, to_screen } = *sc;
     let ctx = ui.ctx().clone();
     let now = ui.input(|i| i.time);
@@ -198,7 +198,7 @@ fn paint_stroke(app: &mut EffectcraftApp, ui: &egui::Ui, painter: &egui::Painter
 
 /// The bottom bar: the magnification menu and the View menu over `names` (Masks, then the
 /// effects). Returns where the View dropdown ends.
-fn bottom_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, bar: Rect, names: &[String], view: usize, (zoom, fit): (f64, f32)) -> f32 {
+fn bottom_bar(app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, bar: Rect, names: &[String], view: usize, (zoom, fit): (f64, f32)) -> f32 {
     let t = app.tokens;
     p.rect_filled(bar, 0.0, t.panel_bg);
     let mr = Rect::from_min_size(pos2(bar.min.x + 8.0, bar.center().y - 10.0), vec2(80.0, 20.0));
@@ -238,7 +238,7 @@ fn bottom_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, ba
 /// points while dragging and run `paint.stroke` on release (or on a click); Alt-click with the
 /// Clone Stamp sets its source. With a Roto Brush effect it hands the canvas to
 /// [`super::roto_tool`]. Without a current layer it shows how to open one.
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let p = ui.painter().with_clip_rect(rect);
@@ -248,7 +248,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         app.auto.add("layerPanel.empty", rect, "Layer panel (empty)");
         return;
     };
-    let comp = app.session.project.comp_arc(cid).unwrap_or_else(|| effectcraft_engine::project::Comp::new(1, 1, Default::default(), Default::default()).into());
+    let comp = app.session.project.comp_arc(cid).unwrap_or_else(|| artheffect_engine::project::Comp::new(1, 1, Default::default(), Default::default()).into());
     let time = app.session.time();
     let fx_count = layer.effects().map(|f| f.groups().count()).unwrap_or(0);
     let view = app.ui.layer_view.map(|v| v.min(fx_count)).unwrap_or_else(|| default_view(&layer, app.ui.tool));
@@ -264,7 +264,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let canvas_bottom = if roto.is_some() { bar.min.y - 18.0 } else { bar.min.y };
     let area = Rect::from_min_max(pos2(rect.min.x, top.max.y), pos2(rect.max.x, canvas_bottom));
     // The layer's effect bounds, in effect space (where paint and Roto Brush strokes are).
-    let [lw, lh] = effectcraft_engine::render::effect_bounds(&app.session.project, &comp, &layer).0;
+    let [lw, lh] = artheffect_engine::render::effect_bounds(&app.session.project, &comp, &layer).0;
     let fit = ((area.width() - 40.0) as f64 / lw).min((area.height() - 40.0) as f64 / lh).max(0.01) as f32;
     ctx.data_mut(|d| d.insert_temp(fit_id(), fit));
     let zoom = app.ui.layer_zoom.filter(|z| z.is_finite() && *z > 0.0).unwrap_or(fit) as f64;

@@ -1,4 +1,4 @@
-//! The EffectCraft GPU compositor (Mercury GPU Acceleration's counterpart), on wgpu compute
+//! The Artheffect GPU compositor (Mercury GPU Acceleration's counterpart), on wgpu compute
 //! shaders: Metal, Vulkan, Direct3D 12 and WebGPU.
 //!
 //! The CPU [`Renderer`] stays the reference and keeps rendering layer *content* (sources, masks,
@@ -19,7 +19,7 @@
 //! scene and composite it through the 2D path here too; environment backgrounds (Classic and
 //! Advanced 3D) draw their sky in a kernel (`Renderer::sky_draw`).
 //!
-//! GPU effects ([`effectcraft_effects::GPU_EFFECTS`]) run as compute kernels with the CPU
+//! GPU effects ([`artheffect_effects::GPU_EFFECTS`]) run as compute kernels with the CPU
 //! effect's exact steps (padding, box-blur radii, parameter conversions); chains of them are
 //! uploaded and read back once. Each family lives in its own module with its own WGSL file
 //! (`fx_color`, `fx_depth`, `fx_distort`, `fx_extra`, `fx_gen2`, `fx_generate`, `fx_key`,
@@ -37,17 +37,17 @@
 //! RGBA f32 images per layer, and creating and zeroing those cost more than compositing a small
 //! layer. A released texture is reused once every encoder that could still read it has been
 //! submitted. 8/16 bpc quantisation after each layer is fused into that layer's composite.
-//! [`Backend::Auto`](effectcraft_render::Backend) renders each comp on whichever compositor
-//! measured faster for it ([`effectcraft_render::AutoPick`], kept by [`Gpu`]): a light comp
+//! [`Backend::Auto`](artheffect_render::Backend) renders each comp on whichever compositor
+//! measured faster for it ([`artheffect_render::AutoPick`], kept by [`Gpu`]): a light comp
 //! that the CPU composites in a millisecond stays there rather than paying for a full-frame
 //! readback.
 //!
 //! GPU particles (`particles`): the stepped particle effects hand their simulation to
-//! [`effectcraft_effects::psim::ParticleSim`], implemented here with one invocation per particle
+//! [`artheffect_effects::psim::ParticleSim`], implemented here with one invocation per particle
 //! and GPU-resident checkpoints.
 //!
 //! Plug a [`Gpu`] into [`Renderer::accel`] (it implements [`Accelerator`]); renders then use it
-//! when [`RenderOpts::backend`](effectcraft_render::RenderOpts) asks for it. The viewer can
+//! when [`RenderOpts::backend`](artheffect_render::RenderOpts) asks for it. The viewer can
 //! skip readback entirely with [`Gpu::render_display`], which leaves an RGBA8 texture for
 //! egui-wgpu to draw.
 
@@ -89,12 +89,12 @@ mod yuv;
 
 use std::sync::Arc;
 
+use artheffect_effects::Buf;
+use artheffect_project::ItemId;
+use artheffect_raster::Image;
+use artheffect_render::{Accelerator, FxStep, Renderer};
+use artheffect_time::Tick;
 pub use context::{GpuContext, GpuImage, TransferStats};
-use effectcraft_effects::Buf;
-use effectcraft_project::ItemId;
-use effectcraft_raster::Image;
-use effectcraft_render::{Accelerator, FxStep, Renderer};
-use effectcraft_time::Tick;
 pub use wgpu;
 
 use crate::context::Enc;
@@ -127,7 +127,7 @@ impl std::error::Error for FrameError {}
 pub struct Gpu {
     ctx: Arc<GpuContext>,
     /// Backend::Auto's per-comp CPU / GPU timings.
-    auto: Arc<effectcraft_render::AutoPick>,
+    auto: Arc<artheffect_render::AutoPick>,
     /// (comp, reason) pairs already warned about when the GPU declined a frame.
     declined: Arc<std::sync::Mutex<std::collections::HashSet<(u64, String)>>>,
 }
@@ -366,9 +366,9 @@ impl Accelerator for Gpu {
             let reason = self.decline_reason();
             let first = self.declined.lock().map(|mut seen| seen.len() < 256 && seen.insert((comp.0, reason.clone()))).unwrap_or(false);
             if first {
-                log::warn!(target: "effectcraft_gpu", "GPU declined the frame at {:.3} s, the CPU renders it: {reason}", t.seconds());
+                log::warn!(target: "artheffect_gpu", "GPU declined the frame at {:.3} s, the CPU renders it: {reason}", t.seconds());
             } else {
-                log::debug!(target: "effectcraft_gpu", "GPU declined the frame at {:.3} s: {reason}", t.seconds());
+                log::debug!(target: "artheffect_gpu", "GPU declined the frame at {:.3} s: {reason}", t.seconds());
             }
         }
         img
@@ -402,22 +402,22 @@ impl Accelerator for Gpu {
         effects::run_chain(&mut Enc::lent(&self.ctx), chain, buf, levels)
     }
 
-    fn raster_3d(&self, scene: &effectcraft_render::three_d::adv::Scene) -> Option<effectcraft_render::three_d::adv::Target> {
+    fn raster_3d(&self, scene: &artheffect_render::three_d::adv::Scene) -> Option<artheffect_render::three_d::adv::Target> {
         self.ctx.check_health().ok()?;
         adv3d::render(&self.ctx, scene)
     }
 
-    fn render_3d(&self, run: &effectcraft_render::three_d::adv::Prepared) -> Option<effectcraft_render::three_d::adv::Rendered> {
+    fn render_3d(&self, run: &artheffect_render::three_d::adv::Prepared) -> Option<artheffect_render::three_d::adv::Rendered> {
         self.ctx.check_health().ok()?;
         adv3d::render_prepared(&self.ctx, run)
     }
 
-    fn particles(&self) -> Option<&dyn effectcraft_effects::psim::ParticleSim> {
+    fn particles(&self) -> Option<&dyn artheffect_effects::psim::ParticleSim> {
         self.ctx.check_health().ok()?;
-        self.ctx.can_readback().then_some(self as &dyn effectcraft_effects::psim::ParticleSim)
+        self.ctx.can_readback().then_some(self as &dyn artheffect_effects::psim::ParticleSim)
     }
 
-    fn inpaint(&self) -> Option<&dyn effectcraft_raster::inpaint::FillBackend> {
+    fn inpaint(&self) -> Option<&dyn artheffect_raster::inpaint::FillBackend> {
         self.ctx.check_health().ok()?;
         // Readback is synchronous-only, and a kernel that failed to build would make every stage
         // fall back to the CPU *after* paying the upload and a failed dispatch (and the fill
@@ -425,10 +425,10 @@ impl Accelerator for Gpu {
         if !self.ctx.can_wait() || !crate::inpaint::KERNELS.iter().all(|e| self.ctx.has_kernel(e)) {
             return None;
         }
-        Some(self as &dyn effectcraft_raster::inpaint::FillBackend)
+        Some(self as &dyn artheffect_raster::inpaint::FillBackend)
     }
 
-    fn auto_pick(&self) -> Option<&effectcraft_render::AutoPick> {
+    fn auto_pick(&self) -> Option<&artheffect_render::AutoPick> {
         Some(&self.auto)
     }
 
@@ -436,7 +436,7 @@ impl Accelerator for Gpu {
         let (hits, misses) = self.ctx.pool_stats();
         let pct = hits.saturating_mul(100) / hits.saturating_add(misses).max(1);
         log::debug!(
-            target: "effectcraft_gpu",
+            target: "artheffect_gpu",
             "gpu pool: {hits} working textures reused, {misses} allocated ({pct}% reuse) so far"
         );
         self.ctx.trim_pool();
@@ -477,8 +477,8 @@ impl Accelerator for Gpu {
     }
 }
 
-impl effectcraft_effects::psim::ParticleSim for Gpu {
-    fn simulate(&self, req: &effectcraft_effects::psim::SimRequest) -> Option<Vec<effectcraft_effects::psim::SimParticle>> {
+impl artheffect_effects::psim::ParticleSim for Gpu {
+    fn simulate(&self, req: &artheffect_effects::psim::SimRequest) -> Option<Vec<artheffect_effects::psim::SimParticle>> {
         self.ctx.check_health().ok()?;
         particles::simulate(&self.ctx, req)
     }

@@ -237,6 +237,588 @@ dependencies = [
 ]
 
 [[package]]
+name = "artheffect"
+version = "0.21.0"
+dependencies = [
+ "artheffect-engine",
+ "artheffect-host",
+ "artheffect-ui-egui",
+ "cpal",
+ "craft-update",
+ "eframe",
+ "egui",
+ "fmv-macos-events",
+ "log",
+ "muda",
+ "objc2 0.6.5",
+ "objc2-app-kit 0.3.2",
+ "objc2-foundation 0.3.2",
+ "pollster 1.0.1",
+ "rfd",
+ "serde",
+ "serde_json",
+ "winit",
+ "winresource",
+ "zbus",
+]
+
+[[package]]
+name = "artheffect-automation"
+version = "0.21.0"
+dependencies = [
+ "artheffect-engine",
+ "artheffect-host",
+ "artheffect-model",
+ "artheffect-script",
+ "image",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "artheffect-av1enc"
+version = "0.21.0"
+dependencies = [
+ "filmcraft-av1",
+]
+
+[[package]]
+name = "artheffect-cli"
+version = "0.21.0"
+dependencies = [
+ "artheffect-automation",
+ "artheffect-engine",
+ "artheffect-gpu",
+ "artheffect-host",
+ "artheffect-render",
+ "artheffect-sam2",
+ "artheffect-segment",
+ "artheffect-time",
+ "artheffect-track",
+ "artheffect-ui-egui",
+ "cpu-time",
+ "image",
+ "serde_json",
+]
+
+[[package]]
+name = "artheffect-color"
+version = "0.21.0"
+dependencies = [
+ "proptest",
+ "serde",
+]
+
+[[package]]
+name = "artheffect-effects"
+version = "0.21.0"
+dependencies = [
+ "artheffect-color",
+ "artheffect-geom",
+ "artheffect-keyframe",
+ "artheffect-project",
+ "artheffect-raster",
+ "artheffect-segment",
+ "artheffect-track",
+ "chrono",
+ "log",
+ "rayon",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "artheffect-engine"
+version = "0.21.0"
+dependencies = [
+ "artheffect-color",
+ "artheffect-effects",
+ "artheffect-geom",
+ "artheffect-interchange",
+ "artheffect-keyframe",
+ "artheffect-lottie",
+ "artheffect-model",
+ "artheffect-path",
+ "artheffect-pdf",
+ "artheffect-project",
+ "artheffect-psd",
+ "artheffect-raster",
+ "artheffect-render",
+ "artheffect-sam2",
+ "artheffect-segment",
+ "artheffect-svg",
+ "artheffect-text",
+ "artheffect-time",
+ "artheffect-track",
+ "chrono",
+ "craft-docpath",
+ "exr",
+ "image",
+ "kurbo",
+ "log",
+ "rayon",
+ "same-file",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.21",
+ "web-time",
+]
+
+[[package]]
+name = "artheffect-export"
+version = "0.21.0"
+dependencies = [
+ "artheffect-av1enc",
+ "artheffect-color",
+ "artheffect-effects",
+ "artheffect-hevcenc",
+ "artheffect-keyframe",
+ "artheffect-media",
+ "artheffect-opusenc",
+ "artheffect-project",
+ "artheffect-raster",
+ "artheffect-render",
+ "artheffect-time",
+ "artheffect-vp9enc",
+ "exr",
+ "filmcraft-aac",
+ "filmcraft-h264enc",
+ "filmcraft-isobmff",
+ "filmcraft-opus",
+ "filmcraft-prores",
+ "filmcraft-vp9",
+ "gif",
+ "image",
+ "log",
+ "rayon",
+ "thiserror 2.0.21",
+ "web-time",
+]
+
+[[package]]
+name = "artheffect-expr"
+version = "0.21.0"
+dependencies = [
+ "artheffect-color",
+ "artheffect-effects",
+ "artheffect-geom",
+ "artheffect-keyframe",
+ "artheffect-path",
+ "artheffect-project",
+ "artheffect-render",
+ "artheffect-text",
+ "artheffect-time",
+ "boa_engine",
+ "serde_json",
+]
+
+[[package]]
+name = "artheffect-geom"
+version = "0.21.0"
+dependencies = [
+ "proptest",
+ "serde",
+]
+
+[[package]]
+name = "artheffect-gpu"
+version = "0.21.0"
+dependencies = [
+ "artheffect-color",
+ "artheffect-effects",
+ "artheffect-geom",
+ "artheffect-keyframe",
+ "artheffect-project",
+ "artheffect-raster",
+ "artheffect-render",
+ "artheffect-text",
+ "artheffect-time",
+ "bytemuck",
+ "js-sys",
+ "log",
+ "pollster 1.0.1",
+ "rayon",
+ "wasm-bindgen",
+ "web-time",
+ "wgpu",
+]
+
+[[package]]
+name = "artheffect-hevcenc"
+version = "0.21.0"
+dependencies = [
+ "filmcraft-hevc",
+]
+
+[[package]]
+name = "artheffect-host"
+version = "0.21.0"
+dependencies = [
+ "artheffect-engine",
+ "artheffect-export",
+ "artheffect-expr",
+ "artheffect-interchange",
+ "artheffect-media",
+ "artheffect-pdf",
+ "artheffect-plugin",
+ "artheffect-project",
+ "artheffect-psd",
+ "artheffect-raster",
+ "artheffect-script",
+ "artheffect-svg",
+ "artheffect-time",
+ "exr",
+ "gif",
+ "image",
+ "log",
+ "rayon",
+ "serde_json",
+]
+
+[[package]]
+name = "artheffect-interchange"
+version = "0.21.0"
+dependencies = [
+ "artheffect-color",
+ "artheffect-keyframe",
+ "artheffect-project",
+ "artheffect-time",
+ "filmcraft-color",
+ "filmcraft-geom",
+ "filmcraft-interchange",
+ "filmcraft-media",
+ "filmcraft-project",
+ "filmcraft-time",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "artheffect-keyframe"
+version = "0.21.0"
+dependencies = [
+ "artheffect-color",
+ "artheffect-geom",
+ "artheffect-time",
+ "proptest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "artheffect-lottie"
+version = "0.21.0"
+dependencies = [
+ "artheffect-color",
+ "artheffect-effects",
+ "artheffect-keyframe",
+ "artheffect-path",
+ "artheffect-project",
+ "artheffect-render",
+ "artheffect-text",
+ "artheffect-time",
+ "craft-docpath",
+ "kurbo",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "artheffect-media"
+version = "0.21.0"
+dependencies = [
+ "artheffect-color",
+ "artheffect-model",
+ "artheffect-pdf",
+ "artheffect-project",
+ "artheffect-psd",
+ "artheffect-raster",
+ "artheffect-render",
+ "artheffect-svg",
+ "artheffect-time",
+ "craft-docpath",
+ "exr",
+ "filmcraft-aac",
+ "filmcraft-codecs",
+ "filmcraft-color",
+ "filmcraft-frame",
+ "filmcraft-isobmff",
+ "filmcraft-matroska",
+ "filmcraft-media",
+ "filmcraft-mpegts",
+ "filmcraft-time",
+ "gif",
+ "image",
+ "log",
+ "rayon",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "artheffect-model"
+version = "0.21.0"
+dependencies = [
+ "artheffect-geom",
+ "image",
+ "log",
+ "miniz_oxide 0.9.1",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "artheffect-opusenc"
+version = "0.21.0"
+dependencies = [
+ "filmcraft-opus",
+]
+
+[[package]]
+name = "artheffect-path"
+version = "0.21.0"
+dependencies = [
+ "artheffect-geom",
+ "artheffect-keyframe",
+ "artheffect-raster",
+ "kurbo",
+ "linesweeper",
+ "tiny-skia 0.12.0",
+]
+
+[[package]]
+name = "artheffect-pdf"
+version = "0.21.0"
+dependencies = [
+ "artheffect-raster",
+ "artheffect-svg",
+ "artheffect-text",
+ "craft-pdf",
+ "image",
+ "kurbo",
+ "miniz_oxide 0.9.1",
+ "skrifa",
+ "wasm-bindgen-test",
+ "zune-jpeg",
+]
+
+[[package]]
+name = "artheffect-plugin"
+version = "0.21.0"
+dependencies = [
+ "artheffect-effects",
+ "artheffect-keyframe",
+ "artheffect-project",
+ "artheffect-raster",
+ "serde_json",
+ "wasmi",
+]
+
+[[package]]
+name = "artheffect-project"
+version = "0.21.0"
+dependencies = [
+ "artheffect-color",
+ "artheffect-geom",
+ "artheffect-keyframe",
+ "artheffect-time",
+ "craft-ecproj-format",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "artheffect-psd"
+version = "0.21.0"
+dependencies = [
+ "miniz_oxide 0.9.1",
+]
+
+[[package]]
+name = "artheffect-raster"
+version = "0.21.0"
+dependencies = [
+ "artheffect-color",
+ "artheffect-geom",
+ "rayon",
+]
+
+[[package]]
+name = "artheffect-render"
+version = "0.21.0"
+dependencies = [
+ "artheffect-color",
+ "artheffect-effects",
+ "artheffect-geom",
+ "artheffect-keyframe",
+ "artheffect-model",
+ "artheffect-path",
+ "artheffect-project",
+ "artheffect-raster",
+ "artheffect-text",
+ "artheffect-time",
+ "kurbo",
+ "log",
+ "lz4_flex",
+ "rayon",
+ "serde",
+ "web-time",
+]
+
+[[package]]
+name = "artheffect-sam2"
+version = "0.21.0"
+dependencies = [
+ "artheffect-segment",
+ "bytemuck",
+ "candle-core",
+ "candle-nn",
+ "half",
+ "log",
+ "pollster 1.0.1",
+ "rayon",
+ "wgpu",
+]
+
+[[package]]
+name = "artheffect-script"
+version = "0.21.0"
+dependencies = [
+ "artheffect-engine",
+ "artheffect-expr",
+ "artheffect-keyframe",
+ "artheffect-path",
+ "artheffect-project",
+ "artheffect-psd",
+ "artheffect-render",
+ "artheffect-time",
+ "boa_engine",
+ "serde_json",
+ "socket2",
+ "web-time",
+]
+
+[[package]]
+name = "artheffect-segment"
+version = "0.21.0"
+dependencies = [
+ "miniz_oxide 0.9.1",
+ "ndarray",
+ "rayon",
+]
+
+[[package]]
+name = "artheffect-svg"
+version = "0.21.0"
+dependencies = [
+ "artheffect-geom",
+ "artheffect-path",
+ "artheffect-raster",
+ "kurbo",
+ "rayon",
+ "roxmltree",
+]
+
+[[package]]
+name = "artheffect-text"
+version = "0.21.0"
+dependencies = [
+ "artheffect-keyframe",
+ "harfrust",
+ "kurbo",
+ "skrifa",
+ "unicode-bidi",
+ "unicode-linebreak",
+]
+
+[[package]]
+name = "artheffect-time"
+version = "0.21.0"
+dependencies = [
+ "proptest",
+ "serde",
+]
+
+[[package]]
+name = "artheffect-track"
+version = "0.21.0"
+dependencies = [
+ "artheffect-raster",
+ "artheffect-segment",
+ "rayon",
+ "serde",
+ "serde_json",
+ "web-time",
+]
+
+[[package]]
+name = "artheffect-ui-egui"
+version = "0.21.0"
+dependencies = [
+ "artheffect-color",
+ "artheffect-engine",
+ "artheffect-geom",
+ "artheffect-gpu",
+ "artheffect-host",
+ "artheffect-keyframe",
+ "artheffect-path",
+ "artheffect-project",
+ "artheffect-render",
+ "artheffect-segment",
+ "artheffect-text",
+ "artheffect-time",
+ "chrono",
+ "craft-quit",
+ "craft-ui",
+ "craft-update",
+ "eframe",
+ "egui",
+ "egui_kittest",
+ "exr",
+ "image",
+ "kurbo",
+ "log",
+ "pollster 1.0.1",
+ "rayon",
+ "serde",
+ "serde_json",
+ "sys-locale",
+ "toml",
+ "web-time",
+]
+
+[[package]]
+name = "artheffect-vp9enc"
+version = "0.21.0"
+
+[[package]]
+name = "artheffect-web"
+version = "0.21.0"
+dependencies = [
+ "artheffect-engine",
+ "artheffect-export",
+ "artheffect-expr",
+ "artheffect-gpu",
+ "artheffect-host",
+ "artheffect-media",
+ "artheffect-ui-egui",
+ "eframe",
+ "egui",
+ "js-sys",
+ "log",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "web-time",
+]
+
+[[package]]
 name = "as-raw-xcb-connection"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1408,588 +1990,6 @@ source = "git+https://github.com/storytold/egui.git?rev=6d518fc799681571963842f9
 dependencies = [
  "bytemuck",
  "emath",
-]
-
-[[package]]
-name = "effectcraft"
-version = "0.21.0"
-dependencies = [
- "cpal",
- "craft-update",
- "effectcraft-engine",
- "effectcraft-host",
- "effectcraft-ui-egui",
- "eframe",
- "egui",
- "fmv-macos-events",
- "log",
- "muda",
- "objc2 0.6.5",
- "objc2-app-kit 0.3.2",
- "objc2-foundation 0.3.2",
- "pollster 1.0.1",
- "rfd",
- "serde",
- "serde_json",
- "winit",
- "winresource",
- "zbus",
-]
-
-[[package]]
-name = "effectcraft-automation"
-version = "0.21.0"
-dependencies = [
- "effectcraft-engine",
- "effectcraft-host",
- "effectcraft-model",
- "effectcraft-script",
- "image",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "effectcraft-av1enc"
-version = "0.21.0"
-dependencies = [
- "filmcraft-av1",
-]
-
-[[package]]
-name = "effectcraft-cli"
-version = "0.21.0"
-dependencies = [
- "cpu-time",
- "effectcraft-automation",
- "effectcraft-engine",
- "effectcraft-gpu",
- "effectcraft-host",
- "effectcraft-render",
- "effectcraft-sam2",
- "effectcraft-segment",
- "effectcraft-time",
- "effectcraft-track",
- "effectcraft-ui-egui",
- "image",
- "serde_json",
-]
-
-[[package]]
-name = "effectcraft-color"
-version = "0.21.0"
-dependencies = [
- "proptest",
- "serde",
-]
-
-[[package]]
-name = "effectcraft-effects"
-version = "0.21.0"
-dependencies = [
- "chrono",
- "effectcraft-color",
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-project",
- "effectcraft-raster",
- "effectcraft-segment",
- "effectcraft-track",
- "log",
- "rayon",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "effectcraft-engine"
-version = "0.21.0"
-dependencies = [
- "chrono",
- "craft-docpath",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-geom",
- "effectcraft-interchange",
- "effectcraft-keyframe",
- "effectcraft-lottie",
- "effectcraft-model",
- "effectcraft-path",
- "effectcraft-pdf",
- "effectcraft-project",
- "effectcraft-psd",
- "effectcraft-raster",
- "effectcraft-render",
- "effectcraft-sam2",
- "effectcraft-segment",
- "effectcraft-svg",
- "effectcraft-text",
- "effectcraft-time",
- "effectcraft-track",
- "exr",
- "image",
- "kurbo",
- "log",
- "rayon",
- "same-file",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.21",
- "web-time",
-]
-
-[[package]]
-name = "effectcraft-export"
-version = "0.21.0"
-dependencies = [
- "effectcraft-av1enc",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-hevcenc",
- "effectcraft-keyframe",
- "effectcraft-media",
- "effectcraft-opusenc",
- "effectcraft-project",
- "effectcraft-raster",
- "effectcraft-render",
- "effectcraft-time",
- "effectcraft-vp9enc",
- "exr",
- "filmcraft-aac",
- "filmcraft-h264enc",
- "filmcraft-isobmff",
- "filmcraft-opus",
- "filmcraft-prores",
- "filmcraft-vp9",
- "gif",
- "image",
- "log",
- "rayon",
- "thiserror 2.0.21",
- "web-time",
-]
-
-[[package]]
-name = "effectcraft-expr"
-version = "0.21.0"
-dependencies = [
- "boa_engine",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-path",
- "effectcraft-project",
- "effectcraft-render",
- "effectcraft-text",
- "effectcraft-time",
- "serde_json",
-]
-
-[[package]]
-name = "effectcraft-geom"
-version = "0.21.0"
-dependencies = [
- "proptest",
- "serde",
-]
-
-[[package]]
-name = "effectcraft-gpu"
-version = "0.21.0"
-dependencies = [
- "bytemuck",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-project",
- "effectcraft-raster",
- "effectcraft-render",
- "effectcraft-text",
- "effectcraft-time",
- "js-sys",
- "log",
- "pollster 1.0.1",
- "rayon",
- "wasm-bindgen",
- "web-time",
- "wgpu",
-]
-
-[[package]]
-name = "effectcraft-hevcenc"
-version = "0.21.0"
-dependencies = [
- "filmcraft-hevc",
-]
-
-[[package]]
-name = "effectcraft-host"
-version = "0.21.0"
-dependencies = [
- "effectcraft-engine",
- "effectcraft-export",
- "effectcraft-expr",
- "effectcraft-interchange",
- "effectcraft-media",
- "effectcraft-pdf",
- "effectcraft-plugin",
- "effectcraft-project",
- "effectcraft-psd",
- "effectcraft-raster",
- "effectcraft-script",
- "effectcraft-svg",
- "effectcraft-time",
- "exr",
- "gif",
- "image",
- "log",
- "rayon",
- "serde_json",
-]
-
-[[package]]
-name = "effectcraft-interchange"
-version = "0.21.0"
-dependencies = [
- "effectcraft-color",
- "effectcraft-keyframe",
- "effectcraft-project",
- "effectcraft-time",
- "filmcraft-color",
- "filmcraft-geom",
- "filmcraft-interchange",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-time",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "effectcraft-keyframe"
-version = "0.21.0"
-dependencies = [
- "effectcraft-color",
- "effectcraft-geom",
- "effectcraft-time",
- "proptest",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "effectcraft-lottie"
-version = "0.21.0"
-dependencies = [
- "craft-docpath",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-keyframe",
- "effectcraft-path",
- "effectcraft-project",
- "effectcraft-render",
- "effectcraft-text",
- "effectcraft-time",
- "kurbo",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "effectcraft-media"
-version = "0.21.0"
-dependencies = [
- "craft-docpath",
- "effectcraft-color",
- "effectcraft-model",
- "effectcraft-pdf",
- "effectcraft-project",
- "effectcraft-psd",
- "effectcraft-raster",
- "effectcraft-render",
- "effectcraft-svg",
- "effectcraft-time",
- "exr",
- "filmcraft-aac",
- "filmcraft-codecs",
- "filmcraft-color",
- "filmcraft-frame",
- "filmcraft-isobmff",
- "filmcraft-matroska",
- "filmcraft-media",
- "filmcraft-mpegts",
- "filmcraft-time",
- "gif",
- "image",
- "log",
- "rayon",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "effectcraft-model"
-version = "0.21.0"
-dependencies = [
- "effectcraft-geom",
- "image",
- "log",
- "miniz_oxide 0.9.1",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "effectcraft-opusenc"
-version = "0.21.0"
-dependencies = [
- "filmcraft-opus",
-]
-
-[[package]]
-name = "effectcraft-path"
-version = "0.21.0"
-dependencies = [
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-raster",
- "kurbo",
- "linesweeper",
- "tiny-skia 0.12.0",
-]
-
-[[package]]
-name = "effectcraft-pdf"
-version = "0.21.0"
-dependencies = [
- "craft-pdf",
- "effectcraft-raster",
- "effectcraft-svg",
- "effectcraft-text",
- "image",
- "kurbo",
- "miniz_oxide 0.9.1",
- "skrifa",
- "wasm-bindgen-test",
- "zune-jpeg",
-]
-
-[[package]]
-name = "effectcraft-plugin"
-version = "0.21.0"
-dependencies = [
- "effectcraft-effects",
- "effectcraft-keyframe",
- "effectcraft-project",
- "effectcraft-raster",
- "serde_json",
- "wasmi",
-]
-
-[[package]]
-name = "effectcraft-project"
-version = "0.21.0"
-dependencies = [
- "craft-ecproj-format",
- "effectcraft-color",
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-time",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "effectcraft-psd"
-version = "0.21.0"
-dependencies = [
- "miniz_oxide 0.9.1",
-]
-
-[[package]]
-name = "effectcraft-raster"
-version = "0.21.0"
-dependencies = [
- "effectcraft-color",
- "effectcraft-geom",
- "rayon",
-]
-
-[[package]]
-name = "effectcraft-render"
-version = "0.21.0"
-dependencies = [
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-model",
- "effectcraft-path",
- "effectcraft-project",
- "effectcraft-raster",
- "effectcraft-text",
- "effectcraft-time",
- "kurbo",
- "log",
- "lz4_flex",
- "rayon",
- "serde",
- "web-time",
-]
-
-[[package]]
-name = "effectcraft-sam2"
-version = "0.21.0"
-dependencies = [
- "bytemuck",
- "candle-core",
- "candle-nn",
- "effectcraft-segment",
- "half",
- "log",
- "pollster 1.0.1",
- "rayon",
- "wgpu",
-]
-
-[[package]]
-name = "effectcraft-script"
-version = "0.21.0"
-dependencies = [
- "boa_engine",
- "effectcraft-engine",
- "effectcraft-expr",
- "effectcraft-keyframe",
- "effectcraft-path",
- "effectcraft-project",
- "effectcraft-psd",
- "effectcraft-render",
- "effectcraft-time",
- "serde_json",
- "socket2",
- "web-time",
-]
-
-[[package]]
-name = "effectcraft-segment"
-version = "0.21.0"
-dependencies = [
- "miniz_oxide 0.9.1",
- "ndarray",
- "rayon",
-]
-
-[[package]]
-name = "effectcraft-svg"
-version = "0.21.0"
-dependencies = [
- "effectcraft-geom",
- "effectcraft-path",
- "effectcraft-raster",
- "kurbo",
- "rayon",
- "roxmltree",
-]
-
-[[package]]
-name = "effectcraft-text"
-version = "0.21.0"
-dependencies = [
- "effectcraft-keyframe",
- "harfrust",
- "kurbo",
- "skrifa",
- "unicode-bidi",
- "unicode-linebreak",
-]
-
-[[package]]
-name = "effectcraft-time"
-version = "0.21.0"
-dependencies = [
- "proptest",
- "serde",
-]
-
-[[package]]
-name = "effectcraft-track"
-version = "0.21.0"
-dependencies = [
- "effectcraft-raster",
- "effectcraft-segment",
- "rayon",
- "serde",
- "serde_json",
- "web-time",
-]
-
-[[package]]
-name = "effectcraft-ui-egui"
-version = "0.21.0"
-dependencies = [
- "chrono",
- "craft-quit",
- "craft-ui",
- "craft-update",
- "effectcraft-color",
- "effectcraft-engine",
- "effectcraft-geom",
- "effectcraft-gpu",
- "effectcraft-host",
- "effectcraft-keyframe",
- "effectcraft-path",
- "effectcraft-project",
- "effectcraft-render",
- "effectcraft-segment",
- "effectcraft-text",
- "effectcraft-time",
- "eframe",
- "egui",
- "egui_kittest",
- "exr",
- "image",
- "kurbo",
- "log",
- "pollster 1.0.1",
- "rayon",
- "serde",
- "serde_json",
- "sys-locale",
- "toml",
- "web-time",
-]
-
-[[package]]
-name = "effectcraft-vp9enc"
-version = "0.21.0"
-
-[[package]]
-name = "effectcraft-web"
-version = "0.21.0"
-dependencies = [
- "effectcraft-engine",
- "effectcraft-export",
- "effectcraft-expr",
- "effectcraft-gpu",
- "effectcraft-host",
- "effectcraft-media",
- "effectcraft-ui-egui",
- "eframe",
- "egui",
- "js-sys",
- "log",
- "serde",
- "serde_json",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "web-time",
 ]
 
 [[package]]

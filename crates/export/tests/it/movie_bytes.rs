@@ -6,14 +6,14 @@
 //! skipped and before blended pixels were quantised as they were drawn: those changes must not
 //! move a single byte.
 
-use effectcraft_color::{BlendMode, Label};
-use effectcraft_export::render_queue::{OutputFormat, OutputModule, RenderSettings, TimeSpan};
-use effectcraft_export::{Job, Sink, export};
-use effectcraft_keyframe::{Keyframe, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid};
-use effectcraft_render::NoFootage;
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::{BlendMode, Label};
+use artheffect_export::render_queue::{OutputFormat, OutputModule, RenderSettings, TimeSpan};
+use artheffect_export::{Job, Sink, export};
+use artheffect_keyframe::{Keyframe, Value};
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid};
+use artheffect_render::NoFootage;
+use artheffect_time::{FrameRate, Tick};
 
 fn fnv1a(data: &[u8]) -> u64 {
     data.iter().fold(0xcbf2_9ce4_8422_2325u64, |h, &b| (h ^ b as u64).wrapping_mul(0x100_0000_01b3))

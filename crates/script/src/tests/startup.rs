@@ -4,10 +4,10 @@
 
 use std::sync::Arc;
 
-use effectcraft_engine::Session;
-use effectcraft_engine::commands::scripts::{OPEN_PANELS_FILE, PANELS_DIR, SCRIPTS_DIR, SHUTDOWN_DIR, STARTUP_DIR};
-use effectcraft_engine::config::{ConfigStore, MemoryConfig};
-use effectcraft_engine::scriptui::WindowKind;
+use artheffect_engine::Session;
+use artheffect_engine::commands::scripts::{OPEN_PANELS_FILE, PANELS_DIR, SCRIPTS_DIR, SHUTDOWN_DIR, STARTUP_DIR};
+use artheffect_engine::config::{ConfigStore, MemoryConfig};
+use artheffect_engine::scriptui::WindowKind;
 use serde_json::json;
 
 fn session(store: &Arc<MemoryConfig>) -> Session {
@@ -49,7 +49,7 @@ fn startup_scripts_run_in_alphabetical_order_and_a_failing_one_does_not_stop_the
     assert_eq!(setting(&mut s, "order"), "AbBd");
     // The failing script is reported in a toast.
     let events = s.drain_events();
-    assert!(events.iter().any(|e| matches!(e, effectcraft_engine::Event::Toast { message, error: true } if message.starts_with("C.js"))), "{events:?}");
+    assert!(events.iter().any(|e| matches!(e, artheffect_engine::Event::Toast { message, error: true } if message.starts_with("C.js"))), "{events:?}");
     // The Startup folder's scripts are not offered in File ▸ Scripts.
     let list = s.execute("file.scripts.list", json!({})).unwrap();
     assert!(list.as_array().unwrap().iter().all(|e| e["name"] != "b.jsx"), "{list}");
@@ -147,13 +147,13 @@ fn oversized_scripts_are_not_run() {
     assert_eq!(r["ran"], json!([]));
     assert_eq!(r["failed"][0]["name"], "Big.jsx");
     let events = s.drain_events();
-    assert!(events.iter().any(|e| matches!(e, effectcraft_engine::Event::Toast { message, error: true } if message.starts_with("Big.jsx"))), "{events:?}");
+    assert!(events.iter().any(|e| matches!(e, artheffect_engine::Event::Toast { message, error: true } if message.starts_with("Big.jsx"))), "{events:?}");
     assert_eq!(setting(&mut s, "order"), "");
 }
 
 #[test]
 fn scripts_in_a_settings_folder_on_disk_include_files_beside_them() {
-    use effectcraft_engine::config::DirConfig;
+    use artheffect_engine::config::DirConfig;
     let root = std::env::temp_dir().join(format!("ec-startup-include-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     for (file, code) in [

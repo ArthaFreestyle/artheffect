@@ -1,7 +1,7 @@
 //! Copied keyframes as After Effects keyframe text for other applications (#1908).
 
-use effectcraft_project::{LayerId, Uid};
-use effectcraft_time::Tick;
+use artheffect_project::{LayerId, Uid};
+use artheffect_time::Tick;
 use serde_json::json;
 
 use crate::{KeyRef, Session};
@@ -22,7 +22,7 @@ fn uid(s: &Session, lid: LayerId, path: &str) -> Uid {
     s.active_comp().unwrap().layer(lid).unwrap().props.prop(path).unwrap().uid
 }
 
-fn edit_layer(s: &mut Session, lid: LayerId, f: impl FnOnce(&mut effectcraft_project::Layer)) {
+fn edit_layer(s: &mut Session, lid: LayerId, f: impl FnOnce(&mut artheffect_project::Layer)) {
     let cid = s.active_comp_id().unwrap();
     f(std::sync::Arc::make_mut(&mut s.project).comp_mut(cid).unwrap().layer_mut(lid).unwrap());
 }
@@ -412,7 +412,7 @@ fn keys_from_two_layers_have_no_text() {
     s.state.selected_keys = [a, b].map(|l| KeyRef { layer: l, prop: uid(&s, l, "transform/opacity"), time: Tick::ZERO }).to_vec();
     s.execute("keys.copy", json!({})).unwrap();
     assert_eq!(s.state.keyframe_text, None, "After Effects copies one layer's keys as text");
-    assert_eq!(s.state.key_clipboard.len(), 2, "EffectCraft's own clipboard has both");
+    assert_eq!(s.state.key_clipboard.len(), 2, "Artheffect's own clipboard has both");
     // A copied layer leaves no text behind.
     s.state.selected_keys = vec![KeyRef { layer: a, prop: uid(&s, a, "transform/opacity"), time: Tick::ZERO }];
     s.execute("keys.copy", json!({})).unwrap();

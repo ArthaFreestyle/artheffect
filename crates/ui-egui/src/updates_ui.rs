@@ -1,6 +1,6 @@
 //! Software updates, background check at startup, and startup prompt modal.
 
-use crate::EffectcraftApp;
+use crate::ArtheffectApp;
 
 #[cfg(not(target_arch = "wasm32"))]
 use craft_update::dialog::{CheckResultDialog, CheckResultResponse};
@@ -36,7 +36,7 @@ impl Default for Runtime {
     }
 }
 
-impl EffectcraftApp {
+impl ArtheffectApp {
     /// Whether the app asks for a newer release when it starts (off until the desktop app turns it on).
     #[cfg(not(target_arch = "wasm32"))]
     pub fn set_startup_update_check(&mut self, on: bool) {
@@ -44,7 +44,7 @@ impl EffectcraftApp {
     }
 }
 
-pub(crate) fn check(app: &mut EffectcraftApp) {
+pub(crate) fn check(app: &mut ArtheffectApp) {
     #[cfg(not(target_arch = "wasm32"))]
     {
         app.updates_rt.check_requested = true;
@@ -57,7 +57,7 @@ pub(crate) fn check(app: &mut EffectcraftApp) {
     }
 }
 
-pub(crate) fn tick(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub(crate) fn tick(app: &mut ArtheffectApp, ctx: &egui::Context) {
     #[cfg(not(target_arch = "wasm32"))]
     {
         let rt = &mut app.updates_rt;
@@ -72,7 +72,7 @@ pub(crate) fn tick(app: &mut EffectcraftApp, ctx: &egui::Context) {
     let _ = (app, ctx);
 }
 
-pub(crate) fn show(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub(crate) fn show(app: &mut ArtheffectApp, ctx: &egui::Context) {
     #[cfg(not(target_arch = "wasm32"))]
     {
         // The restart helper is scheduled before the app closes, so no update starts over unsaved work.

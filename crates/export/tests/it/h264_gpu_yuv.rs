@@ -5,13 +5,13 @@
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use effectcraft_color::Label;
-use effectcraft_export::render_queue::{ColorDepth, OutputFormat, OutputModule, RenderSettings, TimeSpan};
-use effectcraft_export::{Job, export};
-use effectcraft_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid, build};
-use effectcraft_raster::Image;
-use effectcraft_render::{Accelerator, NoFootage, Renderer};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_export::render_queue::{ColorDepth, OutputFormat, OutputModule, RenderSettings, TimeSpan};
+use artheffect_export::{Job, export};
+use artheffect_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid, build};
+use artheffect_raster::Image;
+use artheffect_render::{Accelerator, NoFootage, Renderer};
+use artheffect_time::{FrameRate, Tick};
 
 /// Renders on the CPU; converts to 4:2:0 with the export's own function when `yuv` is set.
 /// `deferred`: claims deferred readbacks (a browser worker's GPU), whose frames render in passes.
@@ -62,7 +62,7 @@ impl Accelerator for Fake {
             self.asking.fetch_sub(1, Ordering::SeqCst);
             return None;
         }
-        Some(effectcraft_raster::yuv::yuv420_over(&r.comp_frame_cpu(comp, t), bg))
+        Some(artheffect_raster::yuv::yuv420_over(&r.comp_frame_cpu(comp, t), bg))
     }
     fn frame_end(&self) {
         self.frame_ends.fetch_add(1, Ordering::SeqCst);
@@ -76,7 +76,7 @@ impl Accelerator for Fake {
     fn supports_effect(&self, _id: &str) -> bool {
         false
     }
-    fn effects(&self, _chain: &[effectcraft_render::FxStep], _buf: &effectcraft_effects::Buf, _levels: Option<f32>) -> Option<effectcraft_effects::Buf> {
+    fn effects(&self, _chain: &[artheffect_render::FxStep], _buf: &artheffect_effects::Buf, _levels: Option<f32>) -> Option<artheffect_effects::Buf> {
         None
     }
 }
@@ -138,10 +138,10 @@ fn accelerator_planes_encode_like_the_cpu_conversion() {
     assert_eq!(yuv.frame_ends.load(Ordering::SeqCst), 20, "every planes frame ends once");
     assert_eq!(rgba.frame_ends.load(Ordering::SeqCst), 20, "every RGBA frame ends once");
     assert!(a == b && b == c, "the three files differ");
-    let f = effectcraft_media::probe(&yuv_mp4).expect("probe yuv.mp4");
+    let f = artheffect_media::probe(&yuv_mp4).expect("probe yuv.mp4");
     assert_eq!((f.width, f.height), (64, 48));
     assert_eq!(f.frame_rate.frame_at(f.duration - Tick(1)) + 1, 20);
-    let pool = effectcraft_media::MediaPool::new();
+    let pool = artheffect_media::MediaPool::new();
     for k in 0..20 {
         let img = pool.frame_at(&f, f.frame_rate.tick_of(k)).expect("decode frame");
         assert_eq!((img.width, img.height), (64, 48));

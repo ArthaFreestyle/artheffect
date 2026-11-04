@@ -10,7 +10,7 @@ fn binary() -> std::ffi::OsString {
 struct ResultsDir(tempfile::TempDir);
 impl ResultsDir {
     fn new() -> Self {
-        Self(tempfile::Builder::new().prefix("effectcraft-bench-").tempdir().unwrap())
+        Self(tempfile::Builder::new().prefix("artheffect-bench-").tempdir().unwrap())
     }
     fn compare(&self, old: &str, new: &str, gate: bool) -> Output {
         let baseline = self.0.path().join("baseline.jsonl");

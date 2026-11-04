@@ -1,4 +1,4 @@
-use effectcraft_keyframe::{FeatherPoint, ShapePath};
+use artheffect_keyframe::{FeatherPoint, ShapePath};
 
 #[test]
 fn removing_first_vertex_of_closed_path_merges_closing_segment() {

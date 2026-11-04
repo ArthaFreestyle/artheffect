@@ -4,12 +4,12 @@ Status: accepted (maintainer answers, 2026-10-15). Plan: `plan/roto-sam2.md` (ma
 
 ## Context
 The Roto Brush's classical engine loses an object that is occluded or leaves and re-enters the frame
-(`effectcraft-cli bench --roto`: IoU 0.49 on the occlusion clip, 0.62 on re-entry, 0 after the object returns).
+(`artheffect-cli bench --roto`: IoU 0.49 on the occlusion clip, 0.62 on re-entry, 0 after the object returns).
 Meta's SAM 2.1 (Apache-2.0 code and checkpoints) has streaming memory built for this.
 
 ## Decisions
-- **D1** A native-only `candle` dependency may enter the workspace, in its own crate (`effectcraft-sam2`), excluded from wasm32.
-- **D2** `effectcraft-sam2` is licensed Apache-2.0 only (it derives from Apache-2.0 Hugging Face `transformers` code); `effectcraft-segment` stays MIT OR Apache-2.0.
+- **D1** A native-only `candle` dependency may enter the workspace, in its own crate (`artheffect-sam2`), excluded from wasm32.
+- **D2** `artheffect-sam2` is licensed Apache-2.0 only (it derives from Apache-2.0 Hugging Face `transformers` code); `artheffect-segment` stays MIT OR Apache-2.0.
 - **D3** Shared candle helpers are vendored with a NOTICE for now; a shared crate with LightCraft can follow.
 - **D4** Weights are never hosted or bundled by us: direct from Hugging Face, a mirror, or a user folder, with the SHA-256 pinned in the registry.
 - **D5** SAM 2 is opt-in at first; it becomes the default for tracking only after the benchmark shows it should.

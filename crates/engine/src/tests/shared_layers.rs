@@ -37,6 +37,6 @@ fn layers_save_and_load_as_a_plain_list() {
     let comp = s.project.comp(cid).unwrap();
     let text = serde_json::to_value(&comp.layers).unwrap();
     assert_eq!(text.as_array().map(Vec::len), Some(3), "a JSON array of layers, as before");
-    let back: effectcraft_project::Layers = serde_json::from_value(text).unwrap();
+    let back: artheffect_project::Layers = serde_json::from_value(text).unwrap();
     assert_eq!(&back, &comp.layers);
 }

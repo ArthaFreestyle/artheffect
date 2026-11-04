@@ -1,27 +1,27 @@
 //! Stage-by-stage comparison with the PyTorch / transformers reference (`tools/sam2_reference.py`).
 //!
 //! Needs the `facebook/sam2.1-hiera-tiny` weights (default `<repo>/sam2-tiny`, or the folder in
-//! `EFFECTCRAFT_SAM2_DIR`) and the fixture tensors (`<repo>/plan/sam2-ref/image.safetensors`, or
-//! `EFFECTCRAFT_SAM2_REF`). Without them every test here skips, so CI stays green.
+//! `ARTHEFFECT_SAM2_DIR`) and the fixture tensors (`<repo>/plan/sam2-ref/image.safetensors`, or
+//! `ARTHEFFECT_SAM2_REF`). Without them every test here skips, so CI stays green.
 #![cfg(not(target_arch = "wasm32"))]
 
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use artheffect_sam2::hiera::{Hiera, HieraConfig};
+use artheffect_sam2::weights::Weights;
 use candle_core::{Device, Tensor};
-use effectcraft_sam2::hiera::{Hiera, HieraConfig};
-use effectcraft_sam2::weights::Weights;
 
 fn repo() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
 fn weights_file() -> PathBuf {
-    std::env::var_os("EFFECTCRAFT_SAM2_DIR").map_or_else(|| repo().join("sam2-tiny"), PathBuf::from).join("model.safetensors")
+    std::env::var_os("ARTHEFFECT_SAM2_DIR").map_or_else(|| repo().join("sam2-tiny"), PathBuf::from).join("model.safetensors")
 }
 
 fn fixture_file() -> PathBuf {
-    std::env::var_os("EFFECTCRAFT_SAM2_REF").map_or_else(|| repo().join("plan/sam2-ref/image.safetensors"), PathBuf::from)
+    std::env::var_os("ARTHEFFECT_SAM2_REF").map_or_else(|| repo().join("plan/sam2-ref/image.safetensors"), PathBuf::from)
 }
 
 /// The weights and the reference tensors, or `None` (the test then skips).
@@ -52,8 +52,8 @@ fn peak(t: &Tensor) -> f32 {
 static DEEP: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 fn note_size(w: &Weights) {
-    let size = effectcraft_sam2::Size::detect(w).unwrap();
-    DEEP.store(matches!(size, effectcraft_sam2::Size::BasePlus | effectcraft_sam2::Size::Large), std::sync::atomic::Ordering::Relaxed);
+    let size = artheffect_sam2::Size::detect(w).unwrap();
+    DEEP.store(matches!(size, artheffect_sam2::Size::BasePlus | artheffect_sam2::Size::Large), std::sync::atomic::Ordering::Relaxed);
 }
 
 /// `base`, or for the deep backbones the larger of `base` and 5e-4 of the activations' peak.
@@ -73,13 +73,13 @@ const HIERA_TOL: f32 = 1e-4;
 #[test]
 fn hiera_matches_pytorch_block_by_block() {
     let Some((w, r)) = load() else { return };
-    let hiera = Hiera::load(&w, &HieraConfig::for_size(effectcraft_sam2::Size::detect(&w).unwrap())).unwrap();
+    let hiera = Hiera::load(&w, &HieraConfig::for_size(artheffect_sam2::Size::detect(&w).unwrap())).unwrap();
     let pixels = r.get("input.pixel_values").unwrap();
     let (emb, blocks) = hiera.forward_all(pixels).unwrap();
     let e = max_abs(&emb, r.get("vision_encoder.backbone.patch_embed.0").unwrap());
     eprintln!("patch_embed max abs error {e:e}");
     assert!(e < 1e-4, "patch embed error {e}");
-    assert_eq!(blocks.len(), HieraConfig::for_size(effectcraft_sam2::Size::detect(&w).unwrap()).blocks.iter().sum::<usize>());
+    assert_eq!(blocks.len(), HieraConfig::for_size(artheffect_sam2::Size::detect(&w).unwrap()).blocks.iter().sum::<usize>());
     for (i, b) in blocks.iter().enumerate() {
         let want = r.get(&format!("vision_encoder.backbone.blocks.{i}.0")).unwrap();
         let e = max_abs(b, want);
@@ -92,7 +92,7 @@ fn hiera_matches_pytorch_block_by_block() {
 #[test]
 fn hiera_is_deterministic_and_rejects_bad_sizes() {
     let Some((w, r)) = load() else { return };
-    let hiera = Hiera::load(&w, &HieraConfig::for_size(effectcraft_sam2::Size::detect(&w).unwrap())).unwrap();
+    let hiera = Hiera::load(&w, &HieraConfig::for_size(artheffect_sam2::Size::detect(&w).unwrap())).unwrap();
     let pixels = r.get("input.pixel_values").unwrap();
     let a = hiera.forward(pixels).unwrap();
     let b = hiera.forward(pixels).unwrap();
@@ -111,7 +111,7 @@ const NECK_TOL: f32 = 1e-4;
 #[test]
 fn neck_and_vision_encoder_match_pytorch() {
     let Some((w, r)) = load() else { return };
-    let enc = effectcraft_sam2::neck::VisionEncoder::load(&w).unwrap();
+    let enc = artheffect_sam2::neck::VisionEncoder::load(&w).unwrap();
     let pixels = r.get("input.pixel_values").unwrap();
     let stages = enc.hiera.forward(pixels).unwrap();
     let out = enc.neck.forward(&stages).unwrap();
@@ -140,8 +140,8 @@ const DECODER_TOL: f32 = 1e-3;
 
 #[test]
 fn prompt_encoder_and_decoder_match_pytorch() {
-    use effectcraft_sam2::model::ImageModel;
-    use effectcraft_sam2::prompt::Prompt;
+    use artheffect_sam2::model::ImageModel;
+    use artheffect_sam2::prompt::Prompt;
     let Some((w, r)) = load() else { return };
     let model = ImageModel::load(&w).unwrap();
     let pixels = r.get("input.pixel_values").unwrap();
@@ -172,7 +172,7 @@ fn prompt_encoder_and_decoder_match_pytorch() {
 }
 
 fn video_fixture_file() -> PathBuf {
-    std::env::var_os("EFFECTCRAFT_SAM2_VIDEO_REF").map_or_else(|| repo().join("plan/sam2-ref/video.safetensors"), PathBuf::from)
+    std::env::var_os("ARTHEFFECT_SAM2_VIDEO_REF").map_or_else(|| repo().join("plan/sam2-ref/video.safetensors"), PathBuf::from)
 }
 
 /// The weights and the video reference tensors (`tools/sam2_video_reference.py`), or `None`.
@@ -193,7 +193,7 @@ const MEMORY_TOL: f32 = 1e-4;
 #[test]
 fn memory_encoder_matches_pytorch() {
     let Some((w, r)) = load_video() else { return };
-    let enc = effectcraft_sam2::memory::MemoryEncoder::load(&w).unwrap();
+    let enc = artheffect_sam2::memory::MemoryEncoder::load(&w).unwrap();
     let (feat, pos) = enc.encode(r.get("mem.enc.vision_features").unwrap(), r.get("mem.enc.masks").unwrap()).unwrap();
     let e = max_abs(&feat, r.get("mem.enc.out_features").unwrap());
     eprintln!("memory features: max abs error {e:e}");
@@ -206,7 +206,7 @@ fn memory_encoder_matches_pytorch() {
 #[test]
 fn memory_attention_matches_pytorch() {
     let Some((w, r)) = load_video() else { return };
-    let att = effectcraft_sam2::memattn::MemoryAttention::load(&w).unwrap();
+    let att = artheffect_sam2::memattn::MemoryAttention::load(&w).unwrap();
     let get = |k: &str| r.get(k).unwrap().squeeze(1).unwrap();
     let pointers = r.get("mem.attn.num_pointers").unwrap().to_vec1::<f32>().unwrap()[0] as usize;
     let out = att
@@ -227,11 +227,11 @@ fn memory_attention_matches_pytorch() {
 /// Frames of the video fixture, served one at a time.
 struct Clip(Tensor);
 
-impl effectcraft_sam2::session::FrameSource for Clip {
+impl artheffect_sam2::session::FrameSource for Clip {
     fn num_frames(&self) -> usize {
         self.0.dim(0).unwrap()
     }
-    fn frame(&self, i: usize) -> effectcraft_sam2::Result<Tensor> {
+    fn frame(&self, i: usize) -> artheffect_sam2::Result<Tensor> {
         Ok(self.0.narrow(0, i, 1)?.contiguous()?)
     }
 }
@@ -252,9 +252,9 @@ fn iou(a: &[f32], b: &[f32]) -> f64 {
 const VIDEO_LOGIT_TOL: f32 = 0.02;
 const VIDEO_MIN_IOU: f64 = 0.995;
 
-fn check_video_tracking(backend: effectcraft_sam2::session::Backend) {
-    use effectcraft_sam2::prompt::Prompt;
-    use effectcraft_sam2::session::{Cancel, Direction, ObjectId, VideoModel, VideoTracker};
+fn check_video_tracking(backend: artheffect_sam2::session::Backend) {
+    use artheffect_sam2::prompt::Prompt;
+    use artheffect_sam2::session::{Cancel, Direction, ObjectId, VideoModel, VideoTracker};
     let Some((w, r)) = load_video() else { return };
     let model = std::sync::Arc::new(match VideoModel::load_with(&w, backend) {
         Ok(m) => m,
@@ -268,7 +268,7 @@ fn check_video_tracking(backend: effectcraft_sam2::session::Backend) {
     let obj = ObjectId(1);
     let first = tracker.prompt(2, obj, &Prompt { points: vec![([416.0, 512.0], true)], bbox: None }).unwrap();
 
-    let check = |tag: &str, m: &effectcraft_sam2::session::FrameMask| {
+    let check = |tag: &str, m: &artheffect_sam2::session::FrameMask| {
         let want = r.get(&format!("video.{tag}.{}.pred_masks", m.frame)).unwrap().flatten_all().unwrap().to_vec1::<f32>().unwrap();
         let want_score = r.get(&format!("video.{tag}.{}.score", m.frame)).unwrap().flatten_all().unwrap().to_vec1::<f32>().unwrap()[0];
         let err = m.logits.iter().zip(&want).map(|(a, b)| (a - b).abs()).fold(0f32, f32::max);
@@ -297,7 +297,7 @@ fn check_video_tracking(backend: effectcraft_sam2::session::Backend) {
 
 #[test]
 fn video_tracking_matches_sam2_video_model() {
-    check_video_tracking(effectcraft_sam2::session::Backend::Cpu);
+    check_video_tracking(artheffect_sam2::session::Backend::Cpu);
 }
 
 /// The same clip on the GPU: every frame's mask against `Sam2VideoModel`, forwards and backwards. The GPU path
@@ -305,14 +305,14 @@ fn video_tracking_matches_sam2_video_model() {
 /// on a few values, so the bound on logits is the video one, and the masks must agree.
 #[test]
 fn video_tracking_on_the_gpu_matches_sam2_video_model() {
-    check_video_tracking(effectcraft_sam2::session::Backend::Gpu);
+    check_video_tracking(artheffect_sam2::session::Backend::Gpu);
 }
 
 #[test]
 fn tracker_rejects_hostile_input_and_honours_cancel() {
-    use effectcraft_sam2::Error;
-    use effectcraft_sam2::prompt::Prompt;
-    use effectcraft_sam2::session::{Cancel, Direction, ObjectId, VideoModel, VideoTracker};
+    use artheffect_sam2::Error;
+    use artheffect_sam2::prompt::Prompt;
+    use artheffect_sam2::session::{Cancel, Direction, ObjectId, VideoModel, VideoTracker};
     let Some((w, r)) = load_video() else { return };
     let model = std::sync::Arc::new(VideoModel::load(&w).unwrap());
     let clip = r.get("clip.pixel_values").unwrap().narrow(0, 0, 3).unwrap();
@@ -337,11 +337,11 @@ fn tracker_rejects_hostile_input_and_honours_cancel() {
     assert_eq!(seen, vec![0, 1]);
     // a frame source that returns the wrong size is an error, not a crash
     struct Bad;
-    impl effectcraft_sam2::session::FrameSource for Bad {
+    impl artheffect_sam2::session::FrameSource for Bad {
         fn num_frames(&self) -> usize {
             2
         }
-        fn frame(&self, _i: usize) -> effectcraft_sam2::Result<Tensor> {
+        fn frame(&self, _i: usize) -> artheffect_sam2::Result<Tensor> {
             Ok(Tensor::zeros((1, 3, 64, 64), candle_core::DType::F32, &Device::Cpu)?)
         }
     }
@@ -351,7 +351,7 @@ fn tracker_rejects_hostile_input_and_honours_cancel() {
 
 #[test]
 fn sam2_works_as_a_mask_model() {
-    use effectcraft_segment::{MaskModel, Prompt};
+    use artheffect_segment::{MaskModel, Prompt};
     let Some((w, _)) = load() else { return };
     let (fw, fh) = (256usize, 192usize);
     let mut rgb = vec![[0f32; 3]; fw * fh];
@@ -362,7 +362,7 @@ fn sam2_works_as_a_mask_model() {
             rgb[y * fw + x] = if inside(x, y) { [0.85 + 0.1 * (x as f32 / 5.0).sin(), 0.4, 0.15] } else { [bg, bg * 0.8 + 0.1, bg * 0.6 + 0.3] };
         }
     }
-    let model = effectcraft_sam2::mask::Sam2Mask::new(std::sync::Arc::new(effectcraft_sam2::session::VideoModel::load(&w).unwrap()));
+    let model = artheffect_sam2::mask::Sam2Mask::new(std::sync::Arc::new(artheffect_sam2::session::VideoModel::load(&w).unwrap()));
     let prompt = Prompt { points: vec![([120.0, 96.0], true)], bbox: None, mask: None };
     let p = model.segment(&rgb, fw, fh, &prompt).unwrap();
     assert_eq!(p.len(), fw * fh);
@@ -387,7 +387,7 @@ fn sam2_works_as_a_mask_model() {
 
 #[test]
 fn sam2_tracks_a_clip_through_the_object_tracker_interface() {
-    use effectcraft_segment::{ClipFrame, MaskModel, Prompt, TrackRequest};
+    use artheffect_segment::{ClipFrame, MaskModel, Prompt, TrackRequest};
     let Some((w, _)) = load() else { return };
     let (fw, fh, n) = (128usize, 96usize, 6usize);
     let centre = |t: usize| (40.0 + 8.0 * t as f32, 48.0f32);
@@ -408,7 +408,7 @@ fn sam2_tracks_a_clip_through_the_object_tracker_interface() {
             std::sync::Arc::new(ClipFrame { rgb, w: fw, h: fh })
         })
         .collect();
-    let model = effectcraft_sam2::mask::Sam2Mask::new(std::sync::Arc::new(effectcraft_sam2::session::VideoModel::load(&w).unwrap()));
+    let model = artheffect_sam2::mask::Sam2Mask::new(std::sync::Arc::new(artheffect_sam2::session::VideoModel::load(&w).unwrap()));
     assert!(model.tracker().is_some());
     let c = centre(1);
     let req = TrackRequest::single(100, n, vec![(101, Prompt { points: vec![([c.0, c.1], true)], bbox: None, mask: None })]);
@@ -450,7 +450,7 @@ fn sam2_tracks_a_clip_through_the_object_tracker_interface() {
 /// objects may start on different frames.
 #[test]
 fn sam2_tracks_two_objects_in_one_pass() {
-    use effectcraft_segment::{ClipFrame, MaskModel, Prompt, TrackRequest};
+    use artheffect_segment::{ClipFrame, MaskModel, Prompt, TrackRequest};
     let Some((w, _)) = load() else { return };
     let (fw, fh, n) = (160usize, 120usize, 4usize);
     // A red disc moving right and a blue one moving left, never touching.
@@ -475,12 +475,12 @@ fn sam2_tracks_two_objects_in_one_pass() {
             std::sync::Arc::new(ClipFrame { rgb, w: fw, h: fh })
         })
         .collect();
-    let model = effectcraft_sam2::mask::Sam2Mask::new(std::sync::Arc::new(effectcraft_sam2::session::VideoModel::load(&w).unwrap()));
+    let model = artheffect_sam2::mask::Sam2Mask::new(std::sync::Arc::new(artheffect_sam2::session::VideoModel::load(&w).unwrap()));
     let click = |c: (f32, f32)| Prompt { points: vec![([c.0, c.1], true)], bbox: None, mask: None };
     // object 0 is prompted on frame 0, object 1 on frame 2
     let req = TrackRequest { first: 10, count: n, objects: vec![vec![(10, click(a(0)))], vec![(12, click(b(2)))]] };
     let mut get = |f: i64| frames.get((f - 10) as usize).cloned();
-    let mut seen: std::collections::BTreeMap<(usize, i64), effectcraft_segment::TrackedFrame> = Default::default();
+    let mut seen: std::collections::BTreeMap<(usize, i64), artheffect_segment::TrackedFrame> = Default::default();
     model.tracker().unwrap().track(&req, &mut get, &|| false, &mut |o, f, t| assert!(seen.insert((o, f), t).is_none(), "object {o} frame {f} twice")).unwrap();
     assert_eq!(seen.len(), 2 * n, "{:?}", seen.keys().collect::<Vec<_>>());
     for ((o, f), t) in &seen {
@@ -508,13 +508,13 @@ fn sam2_tracks_two_objects_in_one_pass() {
 /// backwards from it matches `Sam2VideoModel` given the same mask.
 #[test]
 fn mask_prompted_tracking_matches_sam2_video_model() {
-    use effectcraft_sam2::session::{Cancel, Direction, ObjectId, VideoModel, VideoTracker};
+    use artheffect_sam2::session::{Cancel, Direction, ObjectId, VideoModel, VideoTracker};
     let Some((w, r)) = load_video() else { return };
     let model = std::sync::Arc::new(VideoModel::load(&w).unwrap());
     let mut tracker = VideoTracker::new(model, Box::new(Clip(r.get("clip.pixel_values").unwrap().clone()))).unwrap();
     let obj = ObjectId(1);
     let first = tracker.prompt_mask(2, obj, r.get("maskprompt.input").unwrap()).unwrap();
-    let check = |tag: &str, m: &effectcraft_sam2::session::FrameMask| {
+    let check = |tag: &str, m: &artheffect_sam2::session::FrameMask| {
         let want = r.get(&format!("maskprompt.{tag}.{}.pred_masks", m.frame)).unwrap().flatten_all().unwrap().to_vec1::<f32>().unwrap();
         let want_score = r.get(&format!("maskprompt.{tag}.{}.score", m.frame)).unwrap().flatten_all().unwrap().to_vec1::<f32>().unwrap()[0];
         let err = m.logits.iter().zip(&want).map(|(a, b)| (a - b).abs()).fold(0f32, f32::max);
@@ -544,7 +544,7 @@ fn mask_prompted_tracking_matches_sam2_video_model() {
 /// The tracker interface takes a mask as a prompt: the disc's true mask on frame 1 tracks the disc.
 #[test]
 fn a_mask_prompt_through_the_object_tracker_interface() {
-    use effectcraft_segment::{ClipFrame, MaskModel, Prompt, TrackRequest};
+    use artheffect_segment::{ClipFrame, MaskModel, Prompt, TrackRequest};
     let Some((w, _)) = load() else { return };
     let (fw, fh, n) = (128usize, 96usize, 4usize);
     let centre = |t: usize| (40.0 + 8.0 * t as f32, 48.0f32);
@@ -561,7 +561,7 @@ fn a_mask_prompt_through_the_object_tracker_interface() {
             std::sync::Arc::new(ClipFrame { rgb, w: fw, h: fh })
         })
         .collect();
-    let model = effectcraft_sam2::mask::Sam2Mask::new(std::sync::Arc::new(effectcraft_sam2::session::VideoModel::load(&w).unwrap()));
+    let model = artheffect_sam2::mask::Sam2Mask::new(std::sync::Arc::new(artheffect_sam2::session::VideoModel::load(&w).unwrap()));
     let mask: Vec<f32> = (0..fw * fh).map(|i| f32::from(inside(1, i % fw, i / fw))).collect();
     let mut get = |f: i64| frames.get(f as usize).cloned();
     let req = TrackRequest::single(0, n, vec![(1, Prompt { points: vec![], bbox: None, mask: Some(mask) })]);
@@ -595,8 +595,8 @@ fn a_mask_prompt_through_the_object_tracker_interface() {
 /// The same prompts on the same frames give the same masks, bit for bit, run after run (CPU).
 #[test]
 fn tracking_is_deterministic() {
-    use effectcraft_sam2::prompt::Prompt;
-    use effectcraft_sam2::session::{Cancel, Direction, ObjectId, VideoModel, VideoTracker};
+    use artheffect_sam2::prompt::Prompt;
+    use artheffect_sam2::session::{Cancel, Direction, ObjectId, VideoModel, VideoTracker};
     let Some((w, r)) = load_video() else { return };
     let model = std::sync::Arc::new(VideoModel::load(&w).unwrap());
     let clip = r.get("clip.pixel_values").unwrap().narrow(0, 1, 3).unwrap();
@@ -618,9 +618,9 @@ fn tracking_is_deterministic() {
 /// Hard limits: a tracker over its memory budget or past its time budget stops with Error::Budget.
 #[test]
 fn the_tracker_stops_at_its_budget() {
-    use effectcraft_sam2::Error;
-    use effectcraft_sam2::prompt::Prompt;
-    use effectcraft_sam2::session::{Budget, Cancel, Direction, ObjectId, VideoModel, VideoTracker};
+    use artheffect_sam2::Error;
+    use artheffect_sam2::prompt::Prompt;
+    use artheffect_sam2::session::{Budget, Cancel, Direction, ObjectId, VideoModel, VideoTracker};
     let Some((w, r)) = load_video() else { return };
     let model = std::sync::Arc::new(VideoModel::load(&w).unwrap());
     let clip = r.get("clip.pixel_values").unwrap().narrow(0, 1, 3).unwrap();
@@ -647,8 +647,8 @@ const GPU_TOL: f32 = 1e-4;
 
 #[test]
 fn gpu_encoder_matches_the_cpu_path_and_pytorch() {
-    use effectcraft_sam2::gpu::{Gpu, encoder::GpuEncoder};
-    use effectcraft_sam2::model::ImageModel;
+    use artheffect_sam2::gpu::{Gpu, encoder::GpuEncoder};
+    use artheffect_sam2::model::ImageModel;
     let Some((w, r)) = load() else { return };
     let gpu = match Gpu::shared() {
         Ok(g) => g,
@@ -686,7 +686,7 @@ const GPU_ATTN_TOL: f32 = 1e-3;
 
 #[test]
 fn gpu_memory_attention_matches_pytorch() {
-    use effectcraft_sam2::gpu::{Gpu, memattn::GpuMemoryAttention};
+    use artheffect_sam2::gpu::{Gpu, memattn::GpuMemoryAttention};
     let Some((w, r)) = load_video() else { return };
     let gpu = match Gpu::shared() {
         Ok(g) => g,
@@ -710,7 +710,7 @@ fn gpu_memory_attention_matches_pytorch() {
     eprintln!("GPU memory attention vs PyTorch: max abs error {e:e}");
     assert!(e < GPU_ATTN_TOL, "GPU memory attention error {e}");
     // a full bank (7 memory frames and 16 pointers of 4 tokens): the same maths on a bigger problem, against the CPU path
-    let cpu = effectcraft_sam2::memattn::MemoryAttention::load(&w).unwrap();
+    let cpu = artheffect_sam2::memattn::MemoryAttention::load(&w).unwrap();
     let m = 7 * 4096 + 64;
     let mem = Tensor::randn(0f32, 1.0, (m, 64), &Device::Cpu).unwrap();
     let mem_pos = Tensor::randn(0f32, 1.0, (m, 64), &Device::Cpu).unwrap();
@@ -730,8 +730,8 @@ fn gpu_memory_attention_matches_pytorch() {
 /// the masks still match `Sam2VideoModel` (the memory banks built on the GPU are read by the CPU path).
 #[test]
 fn switching_the_gpu_off_mid_clip_keeps_the_tracking_right() {
-    use effectcraft_sam2::prompt::Prompt;
-    use effectcraft_sam2::session::{Backend, Cancel, Direction, ObjectId, VideoModel, VideoTracker};
+    use artheffect_sam2::prompt::Prompt;
+    use artheffect_sam2::session::{Backend, Cancel, Direction, ObjectId, VideoModel, VideoTracker};
     let Some((w, r)) = load_video() else { return };
     let Ok(model) = VideoModel::load_with(&w, Backend::Gpu) else {
         eprintln!("skipped: no GPU");
@@ -757,13 +757,13 @@ fn switching_the_gpu_off_mid_clip_keeps_the_tracking_right() {
 /// path matches PyTorch to 3.5e-6; the GPU is held to the same output.
 #[test]
 fn gpu_memory_encoder_matches_the_cpu_one() {
-    use effectcraft_sam2::gpu::{Gpu, memenc::GpuMemoryEncoder};
+    use artheffect_sam2::gpu::{Gpu, memenc::GpuMemoryEncoder};
     let Some((w, r)) = load_video() else { return };
     let Ok(gpu) = Gpu::shared() else {
         eprintln!("skipped: no GPU");
         return;
     };
-    let cpu = effectcraft_sam2::memory::MemoryEncoder::load(&w).unwrap();
+    let cpu = artheffect_sam2::memory::MemoryEncoder::load(&w).unwrap();
     let enc = GpuMemoryEncoder::load(gpu, &w).unwrap();
     let (features, mask) = (r.get("mem.enc.vision_features").unwrap(), r.get("mem.enc.masks").unwrap());
     let t = std::time::Instant::now();
@@ -786,9 +786,9 @@ fn gpu_memory_encoder_matches_the_cpu_one() {
 /// reports it for the last tracking run.
 #[test]
 fn the_tracker_reports_its_peak_memory() {
-    use effectcraft_segment::{ClipFrame, MaskModel, Prompt, TrackRequest};
+    use artheffect_segment::{ClipFrame, MaskModel, Prompt, TrackRequest};
     let Some((w, _)) = load() else { return };
-    let model = effectcraft_sam2::mask::Sam2Mask::new(std::sync::Arc::new(effectcraft_sam2::session::VideoModel::load(&w).unwrap()));
+    let model = artheffect_sam2::mask::Sam2Mask::new(std::sync::Arc::new(artheffect_sam2::session::VideoModel::load(&w).unwrap()));
     assert_eq!(model.peak_state_bytes(), Some(0));
     let (fw, fh) = (64usize, 48usize);
     let frame = std::sync::Arc::new(ClipFrame {

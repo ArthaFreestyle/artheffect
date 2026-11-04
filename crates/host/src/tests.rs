@@ -12,7 +12,7 @@ fn storage_overflow_cannot_bypass_duplicate_output_protection() {
 fn refuse_overflow_collision(same_folder: bool) {
     use std::{path::PathBuf, sync::Arc};
     struct OverflowOnly(PathBuf);
-    impl effectcraft_project::render_queue::StorageQuota for OverflowOnly {
+    impl artheffect_project::render_queue::StorageQuota for OverflowOnly {
         fn has_room(&self, path: &str, _: u64) -> bool {
             std::path::Path::new(path).starts_with(&self.0)
         }
@@ -21,7 +21,7 @@ fn refuse_overflow_collision(same_folder: bool) {
     let _ = std::fs::remove_dir_all(&dir);
     let overflow = dir.join("overflow");
     std::fs::create_dir_all(&overflow).unwrap();
-    let mut s = effectcraft_engine::Session {
+    let mut s = artheffect_engine::Session {
         exporter: Some(Arc::new(super::FileExporter::default())),
         storage_quota: Some(Arc::new(OverflowOnly(overflow.clone()))),
         ..Default::default()
@@ -52,10 +52,10 @@ fn memory_sink_cannot_overwrite_a_previous_output_even_with_skip_existing() {
     };
     let writes = Arc::new(AtomicUsize::new(0));
     let count = writes.clone();
-    let sink: Arc<effectcraft_export::Sink> = Arc::new(move |_, _| {
+    let sink: Arc<artheffect_export::Sink> = Arc::new(move |_, _| {
         count.fetch_add(1, Ordering::Relaxed);
     });
-    let mut s = effectcraft_engine::Session { exporter: Some(Arc::new(super::FileExporter { sink: Some(sink) })), ..Default::default() };
+    let mut s = artheffect_engine::Session { exporter: Some(Arc::new(super::FileExporter { sink: Some(sink) })), ..Default::default() };
     s.execute("comp.new", json!({"name": "Main", "width": 16, "height": 16, "frameRate": 10, "duration": 0.2})).unwrap();
     for _ in 0..2 {
         s.execute("renderQueue.add", json!({"format": "png", "output": "/virtual/frames_[#####].png", "skipExisting": true})).unwrap();
@@ -83,7 +83,7 @@ fn host_runs_tasks_scheduled_by_panel_handlers() {
 /// evaluate to the camera's focus on the target.
 #[test]
 fn focus_link_expressions_track_the_target() {
-    use effectcraft_engine::geom::vec3;
+    use artheffect_engine::geom::vec3;
     let mut s = super::session();
     s.execute("comp.new", json!({"name": "F", "width": 400, "height": 300, "duration": 2})).unwrap();
     let t = s.execute("layer.newSolid", json!({"color": "#ffffff", "width": 50, "height": 50})).unwrap()["layer"].as_u64().unwrap();
@@ -91,19 +91,19 @@ fn focus_link_expressions_track_the_target() {
     s.execute("layer.setTransform", json!({"layer": t, "prop": "position", "value": [260, 120, 400]})).unwrap();
     let cam = s.execute("layer.newCamera", json!({})).unwrap()["layer"].as_u64().unwrap();
     let cid = s.active_comp_id().unwrap();
-    let focus = |s: &effectcraft_engine::Session| {
+    let focus = |s: &artheffect_engine::Session| {
         let comp = s.project.comp(cid).unwrap();
-        let mut ctx = effectcraft_engine::render::EvalCtx::new(&s.project, cid, comp, s.time());
+        let mut ctx = artheffect_engine::render::EvalCtx::new(&s.project, cid, comp, s.time());
         ctx.expr = s.expr.as_deref();
-        let l = comp.layer(effectcraft_engine::project::LayerId(cam)).unwrap();
+        let l = comp.layer(artheffect_engine::project::LayerId(cam)).unwrap();
         ctx.value(l, l.props.prop("cameraOptions/focusDistance").unwrap()).as_f64()
     };
-    let depth = |s: &effectcraft_engine::Session| {
+    let depth = |s: &artheffect_engine::Session| {
         let comp = s.project.comp(cid).unwrap();
-        let ctx = effectcraft_engine::render::EvalCtx::new(&s.project, cid, comp, s.time());
-        let c = comp.layer(effectcraft_engine::project::LayerId(cam)).unwrap();
-        let tl = comp.layer(effectcraft_engine::project::LayerId(t)).unwrap();
-        let cs = effectcraft_engine::render::three_d::camera::layer_camera(&ctx, c);
+        let ctx = artheffect_engine::render::EvalCtx::new(&s.project, cid, comp, s.time());
+        let c = comp.layer(artheffect_engine::project::LayerId(cam)).unwrap();
+        let tl = comp.layer(artheffect_engine::project::LayerId(t)).unwrap();
+        let cs = artheffect_engine::render::three_d::camera::layer_camera(&ctx, c);
         cs.depth(ctx.world_matrix(tl).apply(vec3(25.0, 25.0, 0.0)))
     };
     s.execute("layer.select", json!({"layers": [cam, t]})).unwrap();
@@ -115,7 +115,7 @@ fn focus_link_expressions_track_the_target() {
     assert!((focus(&s) - depth(&s)).abs() < 1e-3, "{} vs {}", focus(&s), depth(&s));
     s.execute("camera.linkFocusToPoi", json!({"camera": cam})).unwrap();
     let poi = {
-        let l = s.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(cam)).unwrap();
+        let l = s.active_comp().unwrap().layer(artheffect_engine::project::LayerId(cam)).unwrap();
         let p = l.props.prop("transform/position").unwrap().value.as_vec3();
         let q = l.props.prop("transform/poi").unwrap().value.as_vec3();
         ((p[0] - q[0]).powi(2) + (p[1] - q[1]).powi(2) + (p[2] - q[2]).powi(2)).sqrt()
@@ -130,7 +130,7 @@ fn wired_session_renders_demo_with_expressions() {
     let cid = s.active_comp_id().unwrap();
     let lid = s.active_comp().unwrap().layers[1].id.0;
     s.execute("prop.setExpression", json!({"layer": lid, "path": "transform/rotation", "expression": "time * 90"})).unwrap();
-    let img = s.render(cid, s.time(), effectcraft_engine::render::RenderOpts { scale: 0.25, ..Default::default() });
+    let img = s.render(cid, s.time(), artheffect_engine::render::RenderOpts { scale: 0.25, ..Default::default() });
     assert!(img.data.iter().any(|p| p[3] > 0.5));
 }
 
@@ -149,7 +149,7 @@ fn imported_models_render_in_advanced_3d() {
     s.execute("prop.set", json!({"layer": cube, "path": "transform/rotationY", "value": 30})).unwrap();
     s.execute("prop.set", json!({"layer": cube, "path": "transform/rotationX", "value": 20})).unwrap();
     let cid = s.active_comp_id().unwrap();
-    let opts = effectcraft_engine::render::RenderOpts::default();
+    let opts = artheffect_engine::render::RenderOpts::default();
     let img = s.render(cid, s.time(), opts);
     let covered = img.data.iter().filter(|p| p[3] > 0.99).count();
     assert!(covered > 1000, "the cube covers part of the frame: {covered}");
@@ -198,21 +198,21 @@ fn glb_cube() -> Vec<u8> {
 /// and the software renderer (no GPU, as on the reporter's Intel HD Graphics 5500) draws it.
 #[test]
 fn imported_glb_shows_in_a_new_composition() {
-    let path = std::env::temp_dir().join(format!("effectcraft-264-cube-{}.glb", std::process::id()));
+    let path = std::env::temp_dir().join(format!("artheffect-264-cube-{}.glb", std::process::id()));
     std::fs::write(&path, glb_cube()).unwrap();
     let mut s = super::session();
     assert!(s.accel.is_none(), "renders in software");
     let r = s.execute("file.import", json!({"paths": [path.to_string_lossy()]})).unwrap();
     assert_eq!(r["errors"], json!([]), "{r}");
-    s.state.project_selection = vec![effectcraft_project::ItemId(r["items"][0].as_u64().unwrap())];
+    s.state.project_selection = vec![artheffect_project::ItemId(r["items"][0].as_u64().unwrap())];
     s.execute("file.newCompFromSelection", json!({})).unwrap();
     let comp = s.active_comp().unwrap();
-    assert_eq!(comp.renderer, effectcraft_project::Renderer::Advanced3D);
+    assert_eq!(comp.renderer, artheffect_project::Renderer::Advanced3D);
     let layer = comp.layers[0].id.0;
     s.execute("prop.set", json!({"layer": layer, "path": "transform/rotationY", "value": 30})).unwrap();
     s.execute("prop.set", json!({"layer": layer, "path": "transform/rotationX", "value": 20})).unwrap();
     let cid = s.active_comp_id().unwrap();
-    let img = s.render(cid, s.time(), effectcraft_engine::render::RenderOpts { scale: 0.25, ..Default::default() });
+    let img = s.render(cid, s.time(), artheffect_engine::render::RenderOpts { scale: 0.25, ..Default::default() });
     let red = img.data.iter().filter(|p| p[3] > 0.99 && p[0] > 0.2 && p[1] < 0.05 && p[2] < 0.05).count();
     let _ = std::fs::remove_file(&path);
     // Half the comp height wide, seen at an angle: well over 5% of the frame.
@@ -241,7 +241,7 @@ fn an_imported_animated_gif_plays() {
     s.execute("file.import", json!({"paths": [path.to_string_lossy()], "addToComp": true})).unwrap();
     let cid = s.active_comp_id().unwrap();
     let rgb = |t: f64| {
-        let img = s.render(cid, effectcraft_time::Tick::from_seconds_f64(t), effectcraft_engine::render::RenderOpts::default());
+        let img = s.render(cid, artheffect_time::Tick::from_seconds_f64(t), artheffect_engine::render::RenderOpts::default());
         let p = img.data[5];
         [p[0].round(), p[1].round(), p[2].round()]
     };
@@ -261,7 +261,7 @@ fn render_queue_exports_to_a_sink() {
     s.exporter = Some(Arc::new(super::FileExporter { sink: Some(Arc::new(move |p: &str, d: Vec<u8>| g.lock().unwrap().push((p.to_string(), d)))) }));
     s.execute("file.openDemoProject", json!({})).unwrap();
     // Rooted without a drive letter is not absolute on Windows, where the engine joins it to the home drive.
-    let dir = if cfg!(windows) { "C:/no-such-dir-effectcraft-sink-test" } else { "/no-such-dir-effectcraft-sink-test" };
+    let dir = if cfg!(windows) { "C:/no-such-dir-artheffect-sink-test" } else { "/no-such-dir-artheffect-sink-test" };
     s.execute(
         "renderQueue.add",
         json!({"format": "gif", "output": format!("{dir}/a.gif"), "resolution": 0.0625, "timeSpan": "custom", "start": 0.0, "end": 0.2}),
@@ -326,15 +326,15 @@ fn render_queue_exports_demo_comp() {
     // Rendering again needs a re-queue.
     assert!(s.execute("renderQueue.render", json!({})).is_err());
     s.execute("renderQueue.setRender", json!({"index": 1, "render": true})).unwrap();
-    assert_eq!(s.project.render_queue[0].status, effectcraft_engine::project::render_queue::RenderStatus::Queued);
+    assert_eq!(s.project.render_queue[0].status, artheffect_engine::project::render_queue::RenderStatus::Queued);
 }
 
 /// Value of a property of layer `l` at time 0 (keys + expression).
-fn value(s: &effectcraft_engine::Session, l: u64, path: &str) -> effectcraft_engine::keyframe::Value {
+fn value(s: &artheffect_engine::Session, l: u64, path: &str) -> artheffect_engine::keyframe::Value {
     let cid = s.active_comp_id().unwrap();
     let comp = s.project.comp(cid).unwrap();
-    let layer = comp.layer(effectcraft_engine::project::LayerId(l)).unwrap();
-    let ctx = effectcraft_engine::render::EvalCtx {
+    let layer = comp.layer(artheffect_engine::project::LayerId(l)).unwrap();
+    let ctx = artheffect_engine::render::EvalCtx {
         project: &s.project,
         comp_id: cid,
         comp,
@@ -359,14 +359,14 @@ fn pick_whip_expressions_evaluate() {
     s.execute("prop.set", json!({"layer": b, "path": "effects/#1/blurriness", "value": 21})).unwrap();
     s.execute("layer.addMask", json!({"layer": b})).unwrap();
     s.execute("prop.set", json!({"layer": b, "path": "masks/#1/feather", "value": [7, 7]})).unwrap();
-    let link = |s: &mut effectcraft_engine::Session, from: &str, to: &str| {
+    let link = |s: &mut artheffect_engine::Session, from: &str, to: &str| {
         s.execute("prop.pickWhip", json!({"layer": a, "path": from, "target": {"layer": b, "path": to}})).unwrap();
     };
     link(&mut s, "transform/opacity", "transform/rotation");
     assert_eq!(value(&s, a, "transform/opacity").as_f64(), 33.0);
     link(&mut s, "transform/scale", "transform/rotation");
     let cid = s.active_comp_id().unwrap();
-    let ep = effectcraft_expr::eval_property(&s.project, cid, effectcraft_engine::project::LayerId(a), "transform/scale", 0.0);
+    let ep = artheffect_expr::eval_property(&s.project, cid, artheffect_engine::project::LayerId(a), "transform/scale", 0.0);
     assert!(ep.is_ok(), "{ep:?}");
     assert_eq!(value(&s, a, "transform/scale").as_vec2(), [33.0, 33.0]);
     link(&mut s, "transform/position", "transform/position");
@@ -428,7 +428,7 @@ fn imported_data_files_drive_expressions() {
     assert_eq!(r["items"].as_array().unwrap().len(), 2, "{r}");
     assert_eq!(r["errors"].as_array().unwrap().len(), 1, "{r}");
     let csv = r["items"][0].as_u64().unwrap();
-    assert_eq!(s.project.item(effectcraft_engine::project::ItemId(csv)).unwrap().type_name(), "Data");
+    assert_eq!(s.project.item(artheffect_engine::project::ItemId(csv)).unwrap().type_name(), "Data");
     assert!(s.execute("layer.addItem", json!({"item": csv})).is_err(), "data files are not layers");
     let a = s.execute("layer.newSolid", json!({"color": "#ffffff"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("prop.setExpression", json!({"layer": a, "path": "transform/opacity", "expression": "footage(\"levels.csv\").sourceData[1].value"})).unwrap();
@@ -451,7 +451,7 @@ fn sample_image_drives_a_colour() {
     )
     .unwrap();
     let cid = s.active_comp_id().unwrap();
-    let img = s.render(cid, s.time(), effectcraft_engine::render::RenderOpts::default());
+    let img = s.render(cid, s.time(), artheffect_engine::render::RenderOpts::default());
     let px = img.get(50, 50);
     assert!(px[1] > 0.99 && px[0] < 0.01, "the box is filled with the sampled green: {px:?}");
 }
@@ -488,7 +488,7 @@ fn proxies_in_exports_and_create_proxy() {
     }
     s.execute("renderQueue.render", json!({"wait": true})).unwrap();
     s.poll_render();
-    let centre = |s: &mut effectcraft_engine::Session, path: &str| {
+    let centre = |s: &mut artheffect_engine::Session, path: &str| {
         let id = s.execute("file.import", json!({"paths": [path]})).unwrap()["items"][0].as_u64().unwrap();
         s.execute("comp.new", json!({"name": "Probe", "width": 16, "height": 16, "frameRate": 10, "duration": 1})).unwrap();
         s.execute("layer.addItem", json!({"item": id})).unwrap();
@@ -592,12 +592,12 @@ fn stereo_rig_expressions_follow_the_master_camera() {
         .unwrap();
     let r = s.execute("camera.stereoRig", json!({"sceneDepth": 4})).unwrap();
     let ctl = r["controls"].as_u64().unwrap();
-    let left = effectcraft_engine::project::ItemId(r["leftComp"].as_u64().unwrap());
+    let left = artheffect_engine::project::ItemId(r["leftComp"].as_u64().unwrap());
     // The left eye camera's evaluated value (expressions on).
-    let v3 = |s: &effectcraft_engine::Session, path: &str| {
+    let v3 = |s: &artheffect_engine::Session, path: &str| {
         let comp = s.project.comp(left).unwrap();
         let layer = &comp.layers[0];
-        let ctx = effectcraft_engine::render::EvalCtx {
+        let ctx = artheffect_engine::render::EvalCtx {
             project: &s.project,
             comp_id: left,
             comp,

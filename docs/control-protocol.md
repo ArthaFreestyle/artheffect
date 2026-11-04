@@ -3,7 +3,7 @@
 The desktop app exposes a control channel for agents, tests and the MCP bridge:
 
 ```sh
-effectcraft --control 9877        # or EFFECTCRAFT_CONTROL_PORT=9877
+artheffect --control 9877        # or ARTHEFFECT_CONTROL_PORT=9877
 ```
 
 The port must be a number from 1 to 65535, and `--control` overrides the variable. A bad port or an
@@ -35,7 +35,7 @@ printf '{"id":1,"method":"engine.execute","params":{"command":"comp.new","params
 
 | Method | Params | Result |
 |---|---|---|
-| `engine.execute` | `{command, params?}` | The command's result. Every engine command (`effectcraft-cli commands`) runs exactly as it does headless, so it never opens a dialog: `comp.new {}` creates a default comp. UI-only ids (`tool.*`, `view.*`, `window.*`, `playback.*`, `timeline.*`, `app.*`) fall through to the menu dispatcher. Unknown top-level params are rejected, and the error lists the accepted keys. |
+| `engine.execute` | `{command, params?}` | The command's result. Every engine command (`artheffect-cli commands`) runs exactly as it does headless, so it never opens a dialog: `comp.new {}` creates a default comp. UI-only ids (`tool.*`, `view.*`, `window.*`, `playback.*`, `timeline.*`, `app.*`) fall through to the menu dispatcher. Unknown top-level params are rejected, and the error lists the accepted keys. |
 | `ui.menu.invoke` | `{id, params?}` | Like a menu click: commands with empty params may open their dialog (New Composition, Solid Settings, file pickers). |
 | Copy a Media Browser source path | `ui.menu.invoke {id: "mediaBrowser.copySourcePath", params: {path}}` | Copies the exact non-empty path string to the clipboard and returns `{path}`. Supports file/folder paths and virtual source identifiers. Missing, empty or non-string paths return an error. |
 | UI commands (via either) | | `timeline.column {column, visible?}` (av, keys, label, num, comment, switches, modes, parent, in, out, duration, stretch), `timeline.sourceName {value?}`, `timeline.search {query}`, `timeline.reveal.<kind>` / `timeline.revealAdd.<kind>` (the property shortcuts and Shift+shortcut: position, scale, rotation, opacity, anchor, effects, masks, feather, levels, animated, and the double-press sets maskPath, maskOpacity, timeRemap, expressions, material, paint, selected, missingEffects, waveform), `timeline.keyAt.<anchor\|position\|scale\|rotation\|opacity>` (Alt+Shift+A/P/S/R/T), `timeline.twirlSelected` ``(Ctrl/Cmd+`)``, `timeline.collapseAll`, `flowchart.options {layers?, effects?, solids?, direction?: lr\|tb, comp?}`, `flowchart.graph {comp?}` → `{nodes, edges}`, `window.workspace {name}` (all After Effects workspaces). |
@@ -168,7 +168,7 @@ step; `ui.set {viewer: {res}}` sets the active comp's, and `ui.inspect` reports 
 shape paths by uid), `keys.setSpatialTangents` (motion-path handles) and `keys.transform` (Graph
 Editor transform box, timeline Alt-drag scaling).
 
-The MCP server's bridge mode (`effectcraft-cli mcp --bridge 9877`) is a thin client of this protocol;
+The MCP server's bridge mode (`artheffect-cli mcp --bridge 9877`) is a thin client of this protocol;
 see [agents.md](agents.md).
 
 Keyframe command times (`prop.set`, `prop.addKey`, `keys.set`, `keys.select`) default to layer
@@ -241,7 +241,7 @@ group's drag bar), `panel.tabs.more.<Panel>`, `panel.menu.<Panel>` (≡), `panel
 
 Saved workspaces (`workspaces.json`, version 2) hold craft-ui `Workspace`s: the layout, the
 closed panels with where each goes back, the lock, and each floating window's desktop place. A
-version 1 file (EffectCraft 0.10 and earlier) and the older unversioned record of
+version 1 file (Artheffect 0.10 and earlier) and the older unversioned record of
 named workspaces load with every panel in place: the current layout, the named workspaces,
 floating windows and their native window places. A column of stacked frames becomes tab groups
 split top to bottom: each open frame keeps all its tabs and its height (as a fixed size), and a

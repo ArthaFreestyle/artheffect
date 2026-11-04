@@ -15,9 +15,9 @@
 
 use std::collections::HashSet;
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
+use artheffect_engine::Session;
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::dock::PanelKind;
 use egui::accesskit::{Action, Role, Toggled};
 use egui::{Rect, pos2};
 use egui_kittest::Harness;
@@ -129,8 +129,8 @@ fn app_session() -> Session {
     s
 }
 
-fn harness() -> Harness<'static, EffectcraftApp> {
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(app_session()));
+fn harness() -> Harness<'static, ArtheffectApp> {
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(app_session()));
     // The default workspace gives Preview a short frame at the top of the right column; its
     // controls below that frame stay in the tree and would be counted against the panel under it.
     // The per-panel pass opens Preview again for its own scenario.
@@ -139,29 +139,29 @@ fn harness() -> Harness<'static, EffectcraftApp> {
     h
 }
 
-fn invoke(h: &mut Harness<'_, EffectcraftApp>, id: &str, params: serde_json::Value) {
+fn invoke(h: &mut Harness<'_, ArtheffectApp>, id: &str, params: serde_json::Value) {
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, id, params).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, id, params).unwrap();
     h.run_steps(4);
 }
 
-fn panel_rect(h: &Harness<'_, EffectcraftApp>, p: PanelKind) -> Option<Rect> {
+fn panel_rect(h: &Harness<'_, ArtheffectApp>, p: PanelKind) -> Option<Rect> {
     let e = h.state().auto.find(&format!("panel.{}", p.id()))?;
     Some(Rect::from_min_size(pos2(e.rect[0], e.rect[1]), egui::vec2(e.rect[2], e.rect[3])))
 }
 
-fn dialog_rect(h: &Harness<'_, EffectcraftApp>, title: &str) -> Option<Rect> {
+fn dialog_rect(h: &Harness<'_, ArtheffectApp>, title: &str) -> Option<Rect> {
     h.ctx.memory(|m| m.area_rect(egui::Id::unique(("modal", title))))
 }
 
 /// The ids of every node now, so a later audit can look at what appeared since (a popup).
-fn node_ids(h: &Harness<'_, EffectcraftApp>) -> HashSet<String> {
+fn node_ids(h: &Harness<'_, ArtheffectApp>) -> HashSet<String> {
     h.root().children_recursive().map(|n| format!("{:?}", n.accesskit_node().id())).collect()
 }
 
 /// Walk the tree and check every control whose centre is inside `scope` (and, when `since` is
 /// given, that was not in the tree before).
-fn audit(h: &Harness<'_, EffectcraftApp>, scenario: &str, scope: Rect, since: Option<&HashSet<String>>) -> (Vec<Finding>, usize) {
+fn audit(h: &Harness<'_, ArtheffectApp>, scenario: &str, scope: Rect, since: Option<&HashSet<String>>) -> (Vec<Finding>, usize) {
     let mut out = Vec::new();
     let mut controls = 0;
     for n in h.root().children_recursive() {
@@ -273,7 +273,7 @@ fn collect() -> Report {
     // ---- Settings: every page.
     let mut h = harness();
     let before = node_ids(&h);
-    for page in effectcraft_engine::prefs::pages() {
+    for page in artheffect_engine::prefs::pages() {
         invoke(&mut h, "app.settings", json!({"page": page.id}));
         let name = format!("Settings:{}", page.id);
         let rect = dialog_rect(&h, "Settings").expect("the Settings dialog is open");

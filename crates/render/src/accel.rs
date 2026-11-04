@@ -33,13 +33,13 @@ impl Backend {
 
 /// One effect of a GPU effect chain (see [`Accelerator::effects`]).
 pub struct FxStep<'x> {
-    pub spec: &'static effectcraft_effects::EffectSpec,
+    pub spec: &'static artheffect_effects::EffectSpec,
     pub ctx: EffectCtx<'x>,
 }
 
 /// A GPU (or other hardware) backend for the compositor. The CPU [`Renderer`] stays the
 /// reference: an accelerator renders what it supports and returns `None` for the rest, which
-/// then runs on the CPU. Implemented by `effectcraft-gpu`.
+/// then runs on the CPU. Implemented by `artheffect-gpu`.
 pub trait Accelerator: Send + Sync {
     /// Adapter / backend name for status readouts ("Apple M2 (Metal)").
     fn name(&self) -> String;
@@ -48,7 +48,7 @@ pub trait Accelerator: Send + Sync {
     fn comp_frame(&self, r: &Renderer, comp: ItemId, t: Tick) -> Option<Image>;
     /// Render a top-level comp frame like [`Self::comp_frame`], composite it over `bg` and
     /// convert it to the H.264 export's 8-bit BT.709 limited-range 4:2:0 (Y plane, then U and V
-    /// at half size; see `effectcraft_raster::yuv`). Every byte is within one level of the CPU
+    /// at half size; see `artheffect_raster::yuv`). Every byte is within one level of the CPU
     /// conversion of the same frame (a driver's arithmetic may move a value near a rounding
     /// boundary). `None` = not handled (the caller renders and converts on the CPU).
     fn comp_frame_yuv420(&self, _r: &Renderer, _comp: ItemId, _t: Tick, _bg: [f32; 3]) -> Option<Vec<u8>> {
@@ -73,17 +73,17 @@ pub trait Accelerator: Send + Sync {
     }
     /// A particle simulation backend (GPU particles) for the stepped particle effects, with
     /// the CPU simulation's semantics. `None` = they simulate on the CPU.
-    fn particles(&self) -> Option<&dyn effectcraft_effects::psim::ParticleSim> {
+    fn particles(&self) -> Option<&dyn artheffect_effects::psim::ParticleSim> {
         None
     }
     /// A hardware backend for Content-Aware Fill's stages (the GPU compositor's kernels), with
     /// the CPU fill's semantics. `None` = the fill runs on the CPU.
     ///
     /// The fill's input frames are read back to the CPU before it runs (analyses render on the
-    /// CPU by design, see `effectcraft_engine::background::offload::job_accel`), so a backend
+    /// CPU by design, see `artheffect_engine::background::offload::job_accel`), so a backend
     /// here is about the fill's own work — PatchMatch and the flow's block matching today, one
-    /// stage at a time as each pays (`effectcraft_gpu::inpaint`) — not about compositing.
-    fn inpaint(&self) -> Option<&dyn effectcraft_raster::inpaint::FillBackend> {
+    /// stage at a time as each pays (`artheffect_gpu::inpaint`) — not about compositing.
+    fn inpaint(&self) -> Option<&dyn artheffect_raster::inpaint::FillBackend> {
         None
     }
     /// Timing history [`Backend::Auto`] uses to send each comp's top-level frames to the
@@ -145,7 +145,7 @@ pub trait FxTarget {
     /// Run one CPU effect: `f` maps the buffer.
     fn cpu(&mut self, f: &mut dyn FnMut(Buf) -> Buf);
     /// Grow the buffer to cover its whole layer rectangle (`size` layer pixels from its own
-    /// corner, the `layer_size` handed to effects), as [`effectcraft_effects::Buf::cover`].
+    /// corner, the `layer_size` handed to effects), as [`artheffect_effects::Buf::cover`].
     /// Authored buffers (text, shapes) only span their painted content; this gives the stack
     /// the room a sized source's buffer already has (#659).
     fn cover(&mut self, size: [f64; 2]) {
@@ -155,7 +155,7 @@ pub trait FxTarget {
         });
     }
     /// Give the buffer the pixel-grid phase the layer rectangle's cover would
-    /// ([`effectcraft_effects::Buf::align`]): grows left/top by less than 64 pixels.
+    /// ([`artheffect_effects::Buf::align`]): grows left/top by less than 64 pixels.
     fn align(&mut self, size: [f64; 2]) {
         self.cpu(&mut |mut buf| {
             buf.align(size);
@@ -189,7 +189,7 @@ impl FxTarget for CpuFx<'_> {
     }
 }
 
-/// Hooks for accelerated compositors (`effectcraft-gpu`): the pieces of the CPU walk they reuse
+/// Hooks for accelerated compositors (`artheffect-gpu`): the pieces of the CPU walk they reuse
 /// or fall back to. The CPU compositor itself is [`Renderer::comp_frame_cpu`].
 impl<'a> Renderer<'a> {
     /// The project's colour pipeline.
@@ -204,7 +204,7 @@ impl<'a> Renderer<'a> {
 
     /// The auxiliary 3D channels of comp `comp_id` at comp time `t` (depth, layer IDs, normals,
     /// UVs, Cryptomatte; see `three_d::compose::aux_pass`), at the renderer's output scale.
-    pub fn comp_aux(&self, comp_id: ItemId, t: Tick) -> Option<effectcraft_raster::AuxChannels> {
+    pub fn comp_aux(&self, comp_id: ItemId, t: Tick) -> Option<artheffect_raster::AuxChannels> {
         let ctx = self.eval_ctx(comp_id, t)?;
         Some(three_d::compose::aux_pass(self, &ctx))
     }
@@ -212,7 +212,7 @@ impl<'a> Renderer<'a> {
     /// The auxiliary channels effects on `layer` read ([`EffectHost::aux`]): its multi-layer
     /// OpenEXR footage's at the layer's source time (Time Remap included), or a precomp's
     /// generated 3D channels at its nested time. `None` for other layers.
-    pub fn layer_aux(&self, ctx: &EvalCtx, layer: &Layer) -> Option<Arc<effectcraft_raster::AuxChannels>> {
+    pub fn layer_aux(&self, ctx: &EvalCtx, layer: &Layer) -> Option<Arc<artheffect_raster::AuxChannels>> {
         match &layer.source {
             LayerSource::Footage { item } => {
                 let item = ctx.media_item(layer, *item);

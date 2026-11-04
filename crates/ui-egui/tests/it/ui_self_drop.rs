@@ -2,30 +2,30 @@
 //! whole drop. Rendering writes a file named after the composition, so the Project panel holds
 //! both and selects both; the composition itself is not a layer it can hold.
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
+use artheffect_engine::Session;
+use artheffect_ui_egui::ArtheffectApp;
 use egui::{Event, Modifiers, Pos2, Rect, pos2, vec2};
 use egui_kittest::Harness;
 use serde_json::json;
 
 /// Compositions "Main" (active, 4 s at 30 fps, one solid) and "Clip".
-fn harness() -> (Harness<'static, EffectcraftApp>, u64, u64) {
+fn harness() -> (Harness<'static, ArtheffectApp>, u64, u64) {
     let mut s = Session::default();
     let clip = s.execute("comp.new", json!({"name": "Clip", "width": 160, "height": 90, "frameRate": 30, "duration": 1})).unwrap()["comp"].as_u64().unwrap();
     let main = s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "frameRate": 30, "duration": 4})).unwrap()["comp"].as_u64().unwrap();
     s.execute("layer.newSolid", json!({"name": "Bottom", "color": "#406080"})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     (h, main, clip)
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, ArtheffectApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).clone();
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
 /// Press on `from`, move to `to` in steps, release there.
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'_, ArtheffectApp>, from: Pos2, to: Pos2) {
     h.event(Event::PointerMoved(from));
     h.step();
     h.event(Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -38,11 +38,11 @@ fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
     h.run_steps(3);
 }
 
-fn stack(h: &Harness<'_, EffectcraftApp>) -> Vec<String> {
+fn stack(h: &Harness<'_, ArtheffectApp>) -> Vec<String> {
     h.state().session.active_comp().unwrap().layers.iter().map(|l| l.name.clone()).collect()
 }
 
-fn layer_id(h: &Harness<'_, EffectcraftApp>, name: &str) -> u64 {
+fn layer_id(h: &Harness<'_, ArtheffectApp>, name: &str) -> u64 {
     h.state().session.active_comp().unwrap().layers.iter().find(|l| l.name == name).unwrap().id.0
 }
 

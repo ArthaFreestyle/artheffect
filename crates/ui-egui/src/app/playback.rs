@@ -1,6 +1,6 @@
 use super::*;
 
-impl EffectcraftApp {
+impl ArtheffectApp {
     // ---------------------------------------------------------------- playback
 
     pub fn play(&mut self, now: f64) {
@@ -10,10 +10,10 @@ impl EffectcraftApp {
 
     /// Start the preview of a Preview panel shortcut (its range, play-from, rate, skip,
     /// resolution, loop, caching, full screen and include options).
-    pub fn play_with(&mut self, now: f64, sc: effectcraft_engine::preview::PreviewShortcut) {
+    pub fn play_with(&mut self, now: f64, sc: artheffect_engine::preview::PreviewShortcut) {
         let Some(c) = self.session.active_comp_arc() else { return };
         let preset = self.session.prefs.preview.get(sc).clone();
-        let plan = effectcraft_engine::preview::plan(&preset, &c, self.session.time());
+        let plan = artheffect_engine::preview::plan(&preset, &c, self.session.time());
         let fr = c.frame_rate;
         if plan.video {
             self.session.set_time(fr.tick_of(plan.first));
@@ -61,7 +61,7 @@ impl EffectcraftApp {
         let (Some(pl), Some(cid)) = (self.playback.plan, self.session.active_comp_id()) else { return false };
         let Some(c) = self.session.project.comp(cid) else { return false };
         // A preview at another frame rate plays slower or faster than real time: silent.
-        pl.audio && (pl.fps - c.frame_rate.as_f64()).abs() <= 0.01 && effectcraft_engine::render::audio::comp_has_audio(&self.session.project, cid)
+        pl.audio && (pl.fps - c.frame_rate.as_f64()).abs() <= 0.01 && artheffect_engine::render::audio::comp_has_audio(&self.session.project, cid)
     }
 
     /// Start audio preview from comp time `t` when [`Self::audio_plays`] and an output device
@@ -84,7 +84,7 @@ impl EffectcraftApp {
     /// Audio scrubbing: play the frame of `comp` at `t` (see [`audio::AudioScrub`]), opening the
     /// output on first use. Silent comps and missing devices do nothing.
     pub fn scrub_audio(&mut self, comp: ItemId, t: Tick, now: f64) {
-        if self.playback.playing || !effectcraft_engine::render::audio::comp_has_audio(&self.session.project, comp) {
+        if self.playback.playing || !artheffect_engine::render::audio::comp_has_audio(&self.session.project, comp) {
             return;
         }
         if self.scrub.is_none() {
@@ -136,7 +136,7 @@ impl EffectcraftApp {
     /// A preview shortcut pressed: start its preview, or stop the running one. While Cache
     /// Before Playback is still rendering, "If caching, play cached frames" plays what is
     /// cached so far instead of stopping.
-    pub fn toggle_play_with(&mut self, now: f64, sc: effectcraft_engine::preview::PreviewShortcut) {
+    pub fn toggle_play_with(&mut self, now: f64, sc: artheffect_engine::preview::PreviewShortcut) {
         if !self.playback.playing {
             self.play_with(now, sc);
             return;

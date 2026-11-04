@@ -11,8 +11,8 @@ fn round<T: Serialize + for<'de> Deserialize<'de>>(v: &T) -> String {
 /// A group with properties `a` (uid 2) and `b` (uid 3) and a sub-group (uid 4) holding `c`
 /// (uid 5).
 fn group() -> PropGroup {
-    use effectcraft_keyframe::Value as KV;
-    use effectcraft_project::{Node, Property};
+    use artheffect_keyframe::Value as KV;
+    use artheffect_project::{Node, Property};
     let mut sub = PropGroup::new(4, "sub", "Sub");
     sub.children.push(Node::Prop(Property::new(5, "c", "C", KV::Scalar(0.0))));
     let mut g = PropGroup::new(1, "fx", "Effect");
@@ -23,19 +23,19 @@ fn group() -> PropGroup {
 }
 
 fn set(g: &mut PropGroup, uid: Uid, v: f64) {
-    g.find_mut(uid).unwrap().value = effectcraft_keyframe::Value::Scalar(v);
+    g.find_mut(uid).unwrap().value = artheffect_keyframe::Value::Scalar(v);
 }
 
 fn get(g: &PropGroup, uid: Uid) -> f64 {
     match g.find(uid).unwrap().value {
-        effectcraft_keyframe::Value::Scalar(v) => v,
+        artheffect_keyframe::Value::Scalar(v) => v,
         ref v => panic!("{v:?}"),
     }
 }
 
 #[test]
 fn analysis_results_merge_with_edits_made_meanwhile() {
-    use effectcraft_project::Node;
+    use artheffect_project::Node;
     let base = group();
     // The user changes `a` and switches the effect off; the analysis writes `b` and `c`.
     let mut live = base.clone();
@@ -93,7 +93,7 @@ fn protocol_round_trips() {
             settings: TrackerSettings::default(),
             points: vec![PointValues {
                 uid: 5,
-                spec: effectcraft_track::PointSpec { center: [1.0, 2.0], feature_size: [3.0, 4.0], search_offset: [0.5, 0.0], search_size: [9.0, 9.0] },
+                spec: artheffect_track::PointSpec { center: [1.0, 2.0], feature_size: [3.0, 4.0], search_offset: [0.5, 0.0], search_size: [9.0, 9.0] },
                 attach_offset: [0.25, -1.0],
             }],
             times: vec![Tick::ZERO, Tick::from_seconds_f64(0.5)],
@@ -140,7 +140,7 @@ fn protocol_round_trips() {
         WorkerReply::Progress { done: 1, total: 2 },
         WorkerReply::WarpPlan {
             key: [1, u64::MAX],
-            summary: Box::new(effectcraft_effects::warp_stab::PlanSummary {
+            summary: Box::new(artheffect_effects::warp_stab::PlanSummary {
                 warps: vec![[[1.0, 0.0, 2.5], [0.0, 1.0, -1.0], [0.0, 0.0, 1.0]]],
                 auto_scale: 1.08,
                 crop: Some([1.0, 2.0, 300.0, 200.0]),
@@ -148,7 +148,7 @@ fn protocol_round_trips() {
             }),
         },
         WorkerReply::Group { comp, layer: LayerId(1), group: Box::new(g), message: "ok".into() },
-        WorkerReply::Segs { segs: vec![SegData::new(5, &effectcraft_track::roto::FrameSeg::empty(4, 3))] },
+        WorkerReply::Segs { segs: vec![SegData::new(5, &artheffect_track::roto::FrameSeg::empty(4, 3))] },
         WorkerReply::Fill {
             plan: Box::new(crate::commands::content_fill::FillPlan {
                 comp,
@@ -207,7 +207,7 @@ fn render_runs_through_the_offload() {
 }
 
 /// Runs jobs in a session sharing `footage` (the synthetic clip of the tracking tests).
-struct InlineWith(Arc<dyn effectcraft_render::FootageSource>);
+struct InlineWith(Arc<dyn artheffect_render::FootageSource>);
 impl Offload for InlineWith {
     fn start(&self, req: WorkerRequest, inbox: Arc<Inbox>) -> Result<(), String> {
         let req: WorkerRequest = serde_json::from_str(&serde_json::to_string(&req).unwrap()).unwrap();
@@ -300,7 +300,7 @@ fn progress_hook_is_scoped() {
     report(1, 2); // no hook: nothing happens
     let seen = Rc::new(RefCell::new(vec![]));
     let s2 = seen.clone();
-    effectcraft_render::passes::block_on(with_hook(Box::new(move |d, t| s2.borrow_mut().push((d, t))), async {
+    artheffect_render::passes::block_on(with_hook(Box::new(move |d, t| s2.borrow_mut().push((d, t))), async {
         report(1, 3);
         report(2, 3);
     }));

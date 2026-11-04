@@ -35,7 +35,7 @@ impl Coverage {
     }
 }
 
-/// Stroke, Scribble, Vegas and Write-on, shared with the GPU compositor (effectcraft-gpu
+/// Stroke, Scribble, Vegas and Write-on, shared with the GPU compositor (artheffect-gpu
 /// `fx_gen2`): the coverage and how it is painted. `style` 0–2 as `paint` (On Original
 /// Image, On Transparent, Reveal Original Image), 3 = under the layer (Vegas' Composite Under).
 #[derive(Clone, Debug)]

@@ -11,9 +11,9 @@
 //! means) run on the CPU over the read-back layer (`effects::color_link_sample`) unless a Source
 //! Layer is chosen; the colouring runs here.
 
-use effectcraft_color::BlendMode;
-use effectcraft_effects::{Buf, EffectCtx};
-use effectcraft_raster::Image;
+use artheffect_color::BlendMode;
+use artheffect_effects::{Buf, EffectCtx};
+use artheffect_raster::Image;
 
 use rayon::prelude::*;
 
@@ -250,7 +250,7 @@ fn point(e: &mut Enc, id: &str, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
         }
         "ec.channel.cccomposite" => {
             if let Some(source) = ctx.env.host.and_then(|h| h.original()) {
-                let fitted = effectcraft_effects::util::fit_buffer(source, b.img.width, b.img.height, b.offset, b.scale);
+                let fitted = artheffect_effects::util::fit_buffer(source, b.img.width, b.img.height, b.offset, b.scale);
                 original = Some(e.g.upload_image(&fitted)?);
             }
             p.u[1][0] = original.is_some() as u32;
@@ -262,14 +262,14 @@ fn point(e: &mut Enc, id: &str, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
         "ec.color.colorlink" => {
             // The sample statistics run on the CPU (the layer's own pixels are read back).
             let own = if ctx.layer_param("sourceLayer", false).is_none() { Some(e.download(&b.img)?) } else { None };
-            let (c, sa) = effectcraft_effects::color_link_sample(ctx, own.as_ref())?;
+            let (c, sa) = artheffect_effects::color_link_sample(ctx, own.as_ref())?;
             let op = (pr.f("opacity") / 100.0).clamp(0.0, 1.0) as f32;
             let stencil = pr.b("stencilOriginalAlpha") as u32;
             if pr.e("sampleSource") >= 6 {
                 p.u[0] = [4, stencil, 0, 0];
                 p.f[0] = [sa, op, 0.0, 0.0];
             } else {
-                p.u[0] = [5, stencil, mode_id(effectcraft_effects::color_link_mode(ctx)), 0];
+                p.u[0] = [5, stencil, mode_id(artheffect_effects::color_link_mode(ctx)), 0];
                 p.f[0] = [c[0] * op, c[1] * op, c[2] * op, op];
             }
         }
@@ -339,7 +339,7 @@ fn burn_film(e: &mut Enc, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
 fn bump(e: &mut Enc, id: &str, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
     let glass = id == "ec.stylize.ccglass";
     // stylize3::height_field.
-    let src = crate::fx_key::fitted(e, ctx, &b, effectcraft_effects::bump_layer_id(ctx), true, false)?.unwrap_or_else(|| b.img.clone());
+    let src = crate::fx_key::fitted(e, ctx, &b, artheffect_effects::bump_layer_id(ctx), true, false)?.unwrap_or_else(|| b.img.clone());
     let soft = ctx.params.f("softness") * b.scale * 0.5;
     let mut hf = plane(e, &src, 1, ctx.params.e("property"), soft);
     let height = ctx.params.f("height") as f32 / 100.0;
@@ -353,7 +353,7 @@ fn bump(e: &mut Enc, id: &str, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
             hf = clamp_plane(e, &hf, lo.min(hi), hi.max(lo));
         }
     }
-    let l = effectcraft_effects::BumpLight::from(ctx, &geo(&b));
+    let l = artheffect_effects::BumpLight::from(ctx, &geo(&b));
     let mut p = Params::default();
     p.u[0] = [glass as u32, l.point as u32, 0, 0];
     p.f[0] = [height * 25.0, disp, (height != 0.0) as u32 as f32, l.height];
@@ -365,8 +365,8 @@ fn bump(e: &mut Enc, id: &str, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
 }
 
 /// An empty CPU buffer with `b`'s geometry (for CPU helpers that only read positions).
-fn geo(b: &GBuf) -> effectcraft_effects::Buf {
-    effectcraft_effects::Buf { img: Image { width: b.img.width, height: b.img.height, data: vec![] }, offset: b.offset, scale: b.scale }
+fn geo(b: &GBuf) -> artheffect_effects::Buf {
+    artheffect_effects::Buf { img: Image { width: b.img.width, height: b.img.height, data: vec![] }, offset: b.offset, scale: b.scale }
 }
 
 /// Clamp a plane (x) into [lo, hi] (Plane::map with f32::clamp).
@@ -386,10 +386,8 @@ fn hextile(e: &mut Enc, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
     if count.checked_mul(8)? > e.g.device.limits().max_storage_buffer_binding_size as usize {
         return None;
     }
-    let geometry = effectcraft_effects::HexTile::new(
-        ctx,
-        &Buf { img: Image { width: b.img.width, height: b.img.height, data: vec![] }, offset: b.offset, scale: b.scale },
-    );
+    let geometry =
+        artheffect_effects::HexTile::new(ctx, &Buf { img: Image { width: b.img.width, height: b.img.height, data: vec![] }, offset: b.offset, scale: b.scale });
     let stride = (b.img.width as usize).checked_mul(2)?.max(2);
     let mut coords = vec![0.0; count.checked_mul(2)?];
     coords.par_chunks_mut(stride).enumerate().for_each(|(y, row)| {
@@ -417,7 +415,7 @@ fn smoothie(e: &mut Enc, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
 // ---------------------------------------------------------------- Inner/Outer Key (keying2)
 
 fn inner_outer(e: &mut Enc, ctx: &EffectCtx, b: GBuf) -> Option<GBuf> {
-    let Some(plan) = effectcraft_effects::inner_outer_plan(ctx, &geo(&b)) else { return Some(b) };
+    let Some(plan) = artheffect_effects::inner_outer_plan(ctx, &geo(&b)) else { return Some(b) };
     let (w, h) = (b.img.width, b.img.height);
     let mut tri = Image::new(w, h);
     for (px, &t) in tri.data.iter_mut().zip(&plan.tri.data) {

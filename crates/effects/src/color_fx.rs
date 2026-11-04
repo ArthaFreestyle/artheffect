@@ -1,8 +1,8 @@
 //! Color Correction effects.
 
-use effectcraft_color::{hsl_to_rgb, luminance, rgb_to_hsl};
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
+use artheffect_color::{hsl_to_rgb, luminance, rgb_to_hsl};
+use artheffect_keyframe::Value;
+use artheffect_project::ParamUi;
 
 use crate::{Buf, EffectCtx, EffectSpec, col, num, p, popup, slider};
 
@@ -579,7 +579,7 @@ fn leave_color(ctx: &EffectCtx, mut b: Buf) -> Buf {
 
 /// Photo Filter's Filter menu: the conventional camera filters (Wratten-style warming /
 /// cooling conversion and light-balancing filters) and plain colours, as 8-bit sRGB values
-/// chosen for EffectCraft; the last entry, Custom, uses the Color parameter.
+/// chosen for Artheffect; the last entry, Custom, uses the Color parameter.
 pub const PHOTO_FILTERS: [(&str, [u8; 3]); 21] = [
     ("Warming Filter (85)", [240, 140, 30]),
     ("Warming Filter (LBA)", [245, 155, 25]),

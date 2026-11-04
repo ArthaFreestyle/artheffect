@@ -4,9 +4,9 @@
 //! (`markers.convert`) and Layer ▸ Markers ▸ Update Markers From Source. Times in parameters are
 //! comp seconds; layer markers are stored in layer time. All commands are undoable.
 
-use effectcraft_color::Label;
-use effectcraft_project::{Comp, CuePoint, ItemId, Layer, LayerId, LayerSource, Marker, Project};
-use effectcraft_time::Tick;
+use artheffect_color::Label;
+use artheffect_project::{Comp, CuePoint, ItemId, Layer, LayerId, LayerSource, Marker, Project};
+use artheffect_time::Tick;
 use serde_json::{Value, json};
 
 use super::{CommandSpec, b_p, bad, comp_id, f_p, has_comp, has_layers, layers_p, merge_p, resolve_layer, str_p};
@@ -108,7 +108,7 @@ pub fn nested_markers<'a>(project: &'a Project, comp_id: ItemId, comp: &Comp, la
     let frames: Vec<(Tick, Tick)> = (f0..f1.min(f0.saturating_add(100_000)))
         .map(|f| {
             let t = fr.tick_of(f);
-            (t, effectcraft_render::EvalCtx::new(project, comp_id, comp, t).source_time(layer))
+            (t, artheffect_render::EvalCtx::new(project, comp_id, comp, t).source_time(layer))
         })
         .collect();
     let eps = nc.frame_duration().0 / 1000;
@@ -309,7 +309,7 @@ fn update_from_source(s: &mut Session, p: &Value) -> Result<Value> {
                 match &l.source {
                     LayerSource::Comp { item } => Some((*id, s.project.comp(*item)?.markers.clone())),
                     LayerSource::Footage { item } => match &s.project.item(*item)?.kind {
-                        effectcraft_project::ItemKind::Footage(f) => Some((*id, f.markers.clone())),
+                        artheffect_project::ItemKind::Footage(f) => Some((*id, f.markers.clone())),
                         _ => None,
                     },
                     _ => None,

@@ -21,24 +21,24 @@
 //! `essential.instance.<id>.value`, `essential.export`…).
 
 use crate::i18n::{tr, tr_args};
-use effectcraft_engine::keyframe::Value as KV;
-use effectcraft_engine::project::essential::{self, ControlType, EgControl, EgKind};
-use effectcraft_engine::project::{ItemId, ItemKind, LayerSource, ParamUi, Property};
+use artheffect_engine::keyframe::Value as KV;
+use artheffect_engine::project::essential::{self, ControlType, EgControl, EgKind};
+use artheffect_engine::project::{ItemId, ItemKind, LayerSource, ParamUi, Property};
 use egui::{Rect, RichText};
 use serde_json::{Value, json};
 
 use crate::panels::DragPayload;
-use crate::{EffectcraftApp, widgets};
+use crate::{ArtheffectApp, widgets};
 
 type Actions = Vec<(String, Value)>;
 
 /// The comp the panel edits: the Primary comp, else the active one.
-fn primary(app: &EffectcraftApp) -> Option<ItemId> {
+fn primary(app: &ArtheffectApp) -> Option<ItemId> {
     let s = &app.session;
     s.state.essential_primary.filter(|c| s.project.comp(*c).is_some()).or(s.active_comp_id())
 }
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let ctx = ui.ctx().clone();
     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(rect.shrink(8.0)).layout(egui::Layout::top_down(egui::Align::Min)));
     let mut out = None;
@@ -61,7 +61,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 /// Add Formatting / Add Selected As / Media Replacement / Export Template buttons and the selected
 /// instance's properties. Returns the `essential.*` commands to run directly and the ones that go
 /// through the menu/frontend layer; with no comp it shows a hint and returns empty lists.
-fn body(app: &mut EffectcraftApp, ui: &mut egui::Ui) -> (Actions, Actions) {
+fn body(app: &mut ArtheffectApp, ui: &mut egui::Ui) -> (Actions, Actions) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let mut actions: Actions = vec![];
@@ -185,7 +185,7 @@ fn body(app: &mut EffectcraftApp, ui: &mut egui::Ui) -> (Actions, Actions) {
 }
 
 /// One list of controls (top level or a group's children).
-fn controls(app: &mut EffectcraftApp, ui: &mut egui::Ui, cid: ItemId, list: &[EgControl], group: Option<u64>, actions: &mut Actions) {
+fn controls(app: &mut ArtheffectApp, ui: &mut egui::Ui, cid: ItemId, list: &[EgControl], group: Option<u64>, actions: &mut Actions) {
     let t = app.tokens;
     let n = list.len();
     for (i, c) in list.iter().enumerate() {
@@ -270,7 +270,7 @@ fn controls(app: &mut EffectcraftApp, ui: &mut egui::Ui, cid: ItemId, list: &[Eg
 }
 
 /// A property control's "⋯" menu: Add Mirror, Link Selected Property, Unlink.
-fn link_menu(app: &mut EffectcraftApp, ui: &mut egui::Ui, cid: ItemId, c: &EgControl, group: Option<u64>, actions: &mut Actions) {
+fn link_menu(app: &mut ArtheffectApp, ui: &mut egui::Ui, cid: ItemId, c: &EgControl, group: Option<u64>, actions: &mut Actions) {
     let links: Vec<(u64, u64, String)> = match &c.kind {
         EgKind::Property { .. } => essential::linked_props(&app.session.project, cid, c)
             .into_iter()
@@ -299,7 +299,7 @@ fn link_menu(app: &mut EffectcraftApp, ui: &mut egui::Ui, cid: ItemId, c: &EgCon
 }
 
 /// A control's name; double-click to rename (comments: edit the text).
-fn name_label(app: &mut EffectcraftApp, ui: &mut egui::Ui, cid: ItemId, c: &EgControl, text: RichText, actions: &mut Actions) {
+fn name_label(app: &mut ArtheffectApp, ui: &mut egui::Ui, cid: ItemId, c: &EgControl, text: RichText, actions: &mut Actions) {
     let edit_id = egui::Id::unique(("eg-rename", c.id));
     let editing: Option<String> = ui.ctx().data(|d| d.get_temp(edit_id));
     match editing {
@@ -327,7 +327,7 @@ fn name_label(app: &mut EffectcraftApp, ui: &mut egui::Ui, cid: ItemId, c: &EgCo
 }
 
 /// The editor for a control's value; returns the new value (JSON for `prop.set`).
-fn value_widget(app: &mut EffectcraftApp, ui: &mut egui::Ui, auto: &str, ty: Option<ControlType>, p: &Property, v: &KV) -> Option<Value> {
+fn value_widget(app: &mut ArtheffectApp, ui: &mut egui::Ui, auto: &str, ty: Option<ControlType>, p: &Property, v: &KV) -> Option<Value> {
     let ty = ty?;
     let mut out = None;
 
@@ -434,7 +434,7 @@ fn value_widget(app: &mut EffectcraftApp, ui: &mut egui::Ui, auto: &str, ty: Opt
         ControlType::Font => {
             // Family (from the installed fonts), style and size; the text stays as it is.
             let KV::Text(doc) = v else { return None };
-            let fams = effectcraft_engine::text::fonts::families();
+            let fams = artheffect_engine::text::fonts::families();
             let mut d = (**doc).clone();
             let mut changed = false;
             let r1 = craft_ui::ComboBox::from_id_salt(("eg-font", auto)).selected_text(&d.font).width(110.0).show_ui(ui, |ui| {
@@ -491,7 +491,7 @@ fn value_widget(app: &mut EffectcraftApp, ui: &mut egui::Ui, auto: &str, ty: Opt
 
 /// Essential Properties of the selected precomp layer: per-instance values, overrides marked ●,
 /// Revert and Push to Comp.
-fn instance(app: &mut EffectcraftApp, ui: &mut egui::Ui, actions: &mut Actions) {
+fn instance(app: &mut ArtheffectApp, ui: &mut egui::Ui, actions: &mut Actions) {
     let t = app.tokens;
     let Some(comp) = app.session.active_comp_arc() else { return };
     let Some(layer) = app.session.state.selected_layers.iter().filter_map(|l| comp.layer(*l)).find(|l| essential::group(l).is_some()).cloned() else { return };
@@ -501,7 +501,7 @@ fn instance(app: &mut EffectcraftApp, ui: &mut egui::Ui, actions: &mut Actions) 
     let lt = layer.layer_time(app.session.time());
     ui.separator();
     ui.label(RichText::new(tr_args("Essential Properties — {}", &[&layer.name])).strong());
-    let group = essential::group(&layer).cloned().unwrap_or_else(|| effectcraft_engine::project::PropGroup::new(0, "", ""));
+    let group = essential::group(&layer).cloned().unwrap_or_else(|| artheffect_engine::project::PropGroup::new(0, "", ""));
     for c in eg.flat() {
         let m = essential::match_id(c.id);
         let mut pr = None;

@@ -5,17 +5,17 @@
 //! the layer under the pointer instead, as in the Timeline (#2173). Agents do the same with `layer.addItem {position}`,
 //! `mediaBrowser.import {position}`, `effect.apply {layers}` and the preset commands.
 
-use effectcraft_engine::project::{ItemId, ItemKind};
-use effectcraft_engine::render::EvalCtx;
+use artheffect_engine::project::{ItemId, ItemKind};
+use artheffect_engine::render::EvalCtx;
 use egui::{Rect, Stroke, StrokeKind, vec2};
 use serde_json::{Value, json};
 
 use super::DragPayload;
 use super::viewer::{ViewerMap, layer_at, layer_at_including_locked, layer_quad};
-use crate::EffectcraftApp;
+use crate::ArtheffectApp;
 
 /// While something is dragged over the viewer, show where it goes; drop it on release.
-pub(crate) fn show(app: &mut EffectcraftApp, ui: &egui::Ui, painter: &egui::Painter, map: &ViewerMap, ectx: &EvalCtx) {
+pub(crate) fn show(app: &mut ArtheffectApp, ui: &egui::Ui, painter: &egui::Painter, map: &ViewerMap, ectx: &EvalCtx) {
     let ctx = ui.ctx().clone();
     let Some(payload) = egui::DragAndDrop::payload::<DragPayload>(&ctx) else { return };
     if matches!(*payload, DragPayload::Property { .. }) {
@@ -93,7 +93,7 @@ fn frame_size(kind: &ItemKind, comp_pixel_aspect: f64) -> Option<[f32; 2]> {
 /// The `layer.replaceSource` for an Alt/Option-drop of Project item `item` at comp point `at`: the
 /// topmost layer there, outlined, if it can take the item as its source (a locked one cannot).
 fn alt_replace(
-    app: &EffectcraftApp,
+    app: &ArtheffectApp,
     ectx: &EvalCtx,
     painter: &egui::Painter,
     map: &ViewerMap,

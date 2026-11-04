@@ -2,18 +2,18 @@
 
 use std::sync::Arc;
 
-use effectcraft_engine::Session;
-use effectcraft_engine::config::{ConfigStore, DirConfig, MemoryConfig};
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::{self, Node, PanelKind, SplitSize};
-use effectcraft_ui_egui::state::Tool;
+use artheffect_engine::Session;
+use artheffect_engine::config::{ConfigStore, DirConfig, MemoryConfig};
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::dock::{self, Node, PanelKind, SplitSize};
+use artheffect_ui_egui::state::Tool;
 use egui::{Event, Id, Key, Modifiers, vec2};
 use egui_kittest::Harness;
 use serde_json::json;
 
 /// The egui id of panel `p`'s dock tab.
 fn tab_id(p: PanelKind) -> Id {
-    craft_ui::docking::DockArea::<PanelKind>::hit_id(effectcraft_ui_egui::dock_ui::area_id(), &craft_ui::docking::Hit::Tab(p))
+    craft_ui::docking::DockArea::<PanelKind>::hit_id(artheffect_ui_egui::dock_ui::area_id(), &craft_ui::docking::Hit::Tab(p))
 }
 
 #[test]
@@ -21,7 +21,7 @@ fn workspace_commands_wait_for_migration_without_changing_named_layouts() {
     let store = Arc::new(MemoryConfig::default());
     let original = include_str!("../fixtures/workspaces-v1.json");
     store.write("workspaces.json", original).unwrap();
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = ArtheffectApp::new(Session { config: Some(store.clone()), ..Default::default() });
     assert!(!app.ui.native_outer.is_empty());
     let ctx = egui::Context::default();
     let before = (app.ui.workspace.clone(), app.ui.saved_workspaces.clone(), app.ui.dock.clone());
@@ -31,7 +31,7 @@ fn workspace_commands_wait_for_migration_without_changing_named_layouts() {
         ("window.editWorkspaces", json!({"name": "My Layout", "delete": true})),
         ("window.editWorkspaces", json!({"name": "My Layout", "rename": "Too soon"})),
     ] {
-        let error = effectcraft_ui_egui::menus::invoke(&mut app, &ctx, id, params).unwrap_err();
+        let error = artheffect_ui_egui::menus::invoke(&mut app, &ctx, id, params).unwrap_err();
         assert!(error.contains("positions"), "{id}: {error}");
         assert_eq!((app.ui.workspace.clone(), app.ui.saved_workspaces.clone(), app.ui.dock.clone()), before);
         assert_eq!(store.read("workspaces.json").as_deref(), Some(original));
@@ -42,14 +42,14 @@ fn workspace_commands_wait_for_migration_without_changing_named_layouts() {
 #[test]
 fn named_and_current_workspaces_survive_frontend_restart() {
     let store = Arc::new(MemoryConfig::default());
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = ArtheffectApp::new(Session { config: Some(store.clone()), ..Default::default() });
     app.ui.dock = dock::docked(dock::hsplit(
         SplitSize::FixedFirst(345.0),
         dock::tabs(&[PanelKind::Project], 0),
         dock::tabs(&[PanelKind::Composition, PanelKind::Layer], 1),
     ));
     let ctx = egui::Context::default();
-    effectcraft_ui_egui::menus::invoke(&mut app, &ctx, "window.saveWorkspaceAs", json!({"name": "Restart layout"})).unwrap();
+    artheffect_ui_egui::menus::invoke(&mut app, &ctx, "window.saveWorkspaceAs", json!({"name": "Restart layout"})).unwrap();
     let saved = app.ui.dock.clone();
     if let Some(Node::Split { size, .. }) = &mut app.ui.dock.layout.root {
         *size = SplitSize::FixedFirst(390.0);
@@ -58,7 +58,7 @@ fn named_and_current_workspaces_survive_frontend_restart() {
     let current = app.ui.dock.clone();
     eframe::App::on_exit(&mut app);
     assert!(store.read("workspaces.json").is_some(), "workspace data must reach the configured store");
-    let mut restarted = EffectcraftApp::new(Session { config: Some(store), ..Default::default() });
+    let mut restarted = ArtheffectApp::new(Session { config: Some(store), ..Default::default() });
     assert_eq!(restarted.ui.workspace, "Restart layout");
     assert_eq!(restarted.ui.dock, current, "restore current unsaved divider changes independently of the named snapshot");
     assert_eq!(restarted.ui.saved_workspaces.get("Restart layout"), Some(&saved));
@@ -68,7 +68,7 @@ fn named_and_current_workspaces_survive_frontend_restart() {
     assert_eq!(restarted.ui.dock, saved, "the named snapshot is separately available after restart");
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
+fn key(h: &mut Harness<'_, ArtheffectApp>, key: Key, modifiers: Modifiers) {
     h.event(Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers });
     h.step();
     h.event(Event::Key { key, physical_key: None, pressed: false, repeat: false, modifiers });
@@ -79,7 +79,7 @@ fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
 fn scratch_dir(label: &str) -> std::path::PathBuf {
     static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let id = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let path = std::env::temp_dir().join(format!("effectcraft-workspace-{label}-{}-{id}", std::process::id()));
+    let path = std::env::temp_dir().join(format!("artheffect-workspace-{label}-{}-{id}", std::process::id()));
     std::fs::create_dir(&path).unwrap();
     path
 }
@@ -107,19 +107,19 @@ fn unreadable_native_workspace_is_preserved_after_later_layout_changes() {
         let dir = scratch_dir("preserve");
         let path = dir.join("workspaces.json");
         std::fs::write(&path, &bytes).unwrap();
-        let mut app = EffectcraftApp::new(Session { config: Some(Arc::new(DirConfig::new(&dir))), ..Default::default() });
+        let mut app = ArtheffectApp::new(Session { config: Some(Arc::new(DirConfig::new(&dir))), ..Default::default() });
         let ctx = egui::Context::default();
-        assert!(effectcraft_ui_egui::control::inspect(&app, &ctx)["workspaceStorageError"].is_string());
+        assert!(artheffect_ui_egui::control::inspect(&app, &ctx)["workspaceStorageError"].is_string());
         app.set_workspace("Minimal");
         app.ui.focused = PanelKind::Project;
-        let error = effectcraft_ui_egui::menus::invoke(&mut app, &ctx, "window.saveWorkspaceAs", json!({"name":"Must not overwrite"})).unwrap_err();
+        let error = artheffect_ui_egui::menus::invoke(&mut app, &ctx, "window.saveWorkspaceAs", json!({"name":"Must not overwrite"})).unwrap_err();
         assert!(error.contains("may be lost after a restart") && error.contains("workspaces.json"), "{error}");
         assert_eq!(app.ui.status, error, "the failure is in the status bar");
         assert_eq!(app.ui.workspace, "Must not overwrite", "the layout stays usable for this session");
         assert!(app.ui.saved_workspaces.contains_key("Must not overwrite"));
         eframe::App::on_exit(&mut app);
         assert_eq!(std::fs::read(&path).unwrap(), bytes);
-        assert!(effectcraft_ui_egui::control::inspect(&app, &ctx)["workspaceStorageError"].is_string());
+        assert!(artheffect_ui_egui::control::inspect(&app, &ctx)["workspaceStorageError"].is_string());
         std::fs::remove_dir_all(dir).unwrap();
     }
 }
@@ -127,19 +127,19 @@ fn unreadable_native_workspace_is_preserved_after_later_layout_changes() {
 #[test]
 fn legacy_named_workspaces_migrate_once_and_survive_actual_app_restart() {
     let store = Arc::new(MemoryConfig::default());
-    // An unversioned record from an earlier EffectCraft: its Minimal layout saved as "Legacy".
+    // An unversioned record from an earlier Artheffect: its Minimal layout saved as "Legacy".
     let legacy = r#"{"floating":{},"workspaces":{"Legacy":{"Split":{"a":{"Tabs":{"active":0,"panels":["Composition"]}},"b":{"Tabs":{"active":0,"panels":["Timeline"]}},"size":{"Ratio":0.6000000238418579},"vertical":true}}}}"#;
     store.write("workspaces.json", legacy).unwrap();
-    let saved = effectcraft_ui_egui::dock::Workspace::new(effectcraft_ui_egui::dock::workspace("Minimal"));
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let saved = artheffect_ui_egui::dock::Workspace::new(artheffect_ui_egui::dock::workspace("Minimal"));
+    let mut app = ArtheffectApp::new(Session { config: Some(store.clone()), ..Default::default() });
     assert_eq!(app.ui.saved_workspaces.get("Legacy"), Some(&saved));
     app.set_workspace("Legacy");
     let ctx = egui::Context::default();
-    effectcraft_ui_egui::menus::invoke(&mut app, &ctx, "window.saveWorkspaceAs", json!({"name":"Migrated"})).unwrap();
+    artheffect_ui_egui::menus::invoke(&mut app, &ctx, "window.saveWorkspaceAs", json!({"name":"Migrated"})).unwrap();
     let text = store.read("workspaces.json").unwrap();
     assert_eq!(serde_json::from_str::<serde_json::Value>(&text).unwrap()["version"], 2);
     assert_eq!(store.read("workspaces.old.json").as_deref(), Some(legacy));
-    let restarted = EffectcraftApp::new(Session { config: Some(store), ..Default::default() });
+    let restarted = ArtheffectApp::new(Session { config: Some(store), ..Default::default() });
     assert_eq!(restarted.ui.saved_workspaces.get("Legacy"), Some(&saved));
     assert_eq!(restarted.ui.saved_workspaces.get("Migrated"), Some(&saved));
     assert_eq!(restarted.ui.workspace, "Migrated");
@@ -151,7 +151,7 @@ fn tab_and_shift_tab_traverse_toolbar_and_space_activates_only_focused_tool() {
     session.execute("comp.new", json!({"width": 160, "height": 90, "duration": 1})).unwrap();
     session.execute("layer.newSolid", json!({"name": "Keep unchanged", "color": "#ff0000"})).unwrap();
     let project = session.project.clone();
-    let mut app = EffectcraftApp::new(session);
+    let mut app = ArtheffectApp::new(session);
     app.ui.start_screen = false;
     app.ui.show_menu_bar = false;
     let mut h = Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(move |_| app);
@@ -181,7 +181,7 @@ fn tab_and_shift_tab_traverse_toolbar_and_space_activates_only_focused_tool() {
         }),
         "the custom-painted toolbar must visibly identify keyboard focus"
     );
-    let inspected = effectcraft_ui_egui::control::inspect(h.state(), &h.ctx);
+    let inspected = artheffect_ui_egui::control::inspect(h.state(), &h.ctx);
     assert_eq!(inspected["keyboardFocus"]["automationId"], "tools.Hand");
     assert_eq!(inspected["keyboardFocus"]["rect"], json!([response.rect.min.x, response.rect.min.y, response.rect.width(), response.rect.height()]));
 }
@@ -192,7 +192,7 @@ fn tab_traversal_activates_an_inactive_dock_tab_without_editing_the_project() {
     session.execute("comp.new", json!({"width": 160, "height": 90, "duration": 1})).unwrap();
     session.execute("layer.newSolid", json!({"name": "Keep unchanged", "color": "#ff0000"})).unwrap();
     let project = session.project.clone();
-    let mut app = EffectcraftApp::new(session);
+    let mut app = ArtheffectApp::new(session);
     app.ui.start_screen = false;
     app.ui.show_menu_bar = false;
     // Leave the inactive, layer-named tab visible instead of behind the overflow control.
@@ -218,7 +218,7 @@ fn tab_traversal_activates_an_inactive_dock_tab_without_editing_the_project() {
     assert_eq!(h.ctx.memory(|m| m.focused()), Some(target));
     println!("Tab presses from no focus to Effect Controls: {tabs}");
     assert_eq!(h.state().ui.dock, before, "traversal alone must not activate a tab");
-    // craft-ui outlines the keyboard-focused tab, inset 2 pt, in the dock's accent (EffectCraft's
+    // craft-ui outlines the keyboard-focused tab, inset 2 pt, in the dock's accent (Artheffect's
     // focus colour).
     let response = h.ctx.read_response(target).unwrap();
     assert!(
@@ -234,7 +234,7 @@ fn tab_traversal_activates_an_inactive_dock_tab_without_editing_the_project() {
     assert_eq!(h.state().ui.focused, PanelKind::EffectControls);
     assert!(!h.state().playback.playing);
     assert!(Arc::ptr_eq(&h.state().session.project, &project));
-    let inspected = effectcraft_ui_egui::control::inspect(h.state(), &h.ctx);
+    let inspected = artheffect_ui_egui::control::inspect(h.state(), &h.ctx);
     assert_eq!(inspected["keyboardFocus"]["automationId"], "panel.tab.EffectControls");
     key(&mut h, Key::Tab, Modifiers::SHIFT);
     assert_eq!(h.ctx.memory(|m| m.focused()), Some(tab_id(PanelKind::Project)));
@@ -245,14 +245,14 @@ fn tab_traversal_activates_an_inactive_dock_tab_without_editing_the_project() {
 }
 
 struct ControlDriver {
-    h: Harness<'static, EffectcraftApp>,
-    tx: std::sync::mpsc::Sender<effectcraft_ui_egui::ControlRequest>,
+    h: Harness<'static, ArtheffectApp>,
+    tx: std::sync::mpsc::Sender<artheffect_ui_egui::ControlRequest>,
 }
 
 impl ControlDriver {
     fn new() -> Self {
         let (tx, rx) = std::sync::mpsc::channel();
-        let mut app = EffectcraftApp::new(Session::default()).with_control(rx);
+        let mut app = ArtheffectApp::new(Session::default()).with_control(rx);
         app.ui.start_screen = false;
         app.ui.show_menu_bar = false;
         let mut driver = Self { h: Harness::builder().with_size(vec2(1200.0, 760.0)).build_eframe(move |_| app), tx };
@@ -280,7 +280,7 @@ impl ControlDriver {
     }
 
     fn ok(&mut self, method: &str, params: serde_json::Value, native_focused: bool) -> serde_json::Value {
-        let (request, reply) = effectcraft_ui_egui::ControlRequest::new(method, params);
+        let (request, reply) = artheffect_ui_egui::ControlRequest::new(method, params);
         self.tx.send(request).unwrap();
         for _ in 0..60 {
             self.frames(1, native_focused);
@@ -349,7 +349,7 @@ fn control_root_divider_drag_after_toolbar_and_dock_tab_keyboard_activation() {
 fn unowned_tab_keeps_the_timeline_mini_flowchart_shortcut() {
     let mut session = Session::default();
     session.execute("comp.new", json!({"width":160,"height":90,"duration":1})).unwrap();
-    let mut app = EffectcraftApp::new(session);
+    let mut app = ArtheffectApp::new(session);
     app.ui.focused = PanelKind::Timeline;
     let ctx = egui::Context::default();
     let raw = egui::RawInput {
@@ -358,10 +358,10 @@ fn unowned_tab_keeps_the_timeline_mini_flowchart_shortcut() {
     };
     let mut output = ctx.run_ui(raw, |ui| {
         let ctx = ui.ctx();
-        effectcraft_ui_egui::menus::handle_shortcuts(&mut app, ctx);
+        artheffect_ui_egui::menus::handle_shortcuts(&mut app, ctx);
         assert!(app.ui.mini_flowchart.is_none(), "application Tab waits until widgets can claim focus");
         assert!(!ctx.egui_wants_keyboard_input());
-        effectcraft_ui_egui::menus::handle_tab_shortcut(&mut app, ctx);
+        artheffect_ui_egui::menus::handle_tab_shortcut(&mut app, ctx);
     });
     output.textures_delta.clear();
     assert!(app.ui.mini_flowchart.is_some(), "an unowned Tab still invokes the application binding");
@@ -372,12 +372,12 @@ fn unowned_tab_keeps_the_timeline_mini_flowchart_shortcut() {
 #[test]
 fn deleting_the_current_workspace_saves_immediately() {
     let store = Arc::new(MemoryConfig::default());
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = ArtheffectApp::new(Session { config: Some(store.clone()), ..Default::default() });
     let ctx = egui::Context::default();
-    effectcraft_ui_egui::menus::invoke(&mut app, &ctx, "window.saveWorkspaceAs", json!({"name": "Gone"})).unwrap();
-    effectcraft_ui_egui::menus::invoke(&mut app, &ctx, "window.editWorkspaces", json!({"name": "Gone", "delete": true})).unwrap();
+    artheffect_ui_egui::menus::invoke(&mut app, &ctx, "window.saveWorkspaceAs", json!({"name": "Gone"})).unwrap();
+    artheffect_ui_egui::menus::invoke(&mut app, &ctx, "window.editWorkspaces", json!({"name": "Gone", "delete": true})).unwrap();
     assert_eq!(app.ui.workspace, "Default");
-    assert!(effectcraft_ui_egui::control::inspect(&app, &ctx)["workspaceStorageError"].is_null());
+    assert!(artheffect_ui_egui::control::inspect(&app, &ctx)["workspaceStorageError"].is_null());
     let text = store.read("workspaces.json").unwrap();
     assert!(!text.contains("Gone"), "the deleted workspace must be gone from the file: {text}");
 }
@@ -411,13 +411,13 @@ impl ConfigStore for FullDisk {
 fn failed_workspace_save_is_reported_and_retryable() {
     let store = Arc::new(FullDisk::default());
     store.full.store(true, std::sync::atomic::Ordering::Relaxed);
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = ArtheffectApp::new(Session { config: Some(store.clone()), ..Default::default() });
     let ctx = egui::Context::default();
-    let invoke = |app: &mut EffectcraftApp, id: &str, params| effectcraft_ui_egui::menus::invoke(app, &ctx, id, params);
+    let invoke = |app: &mut ArtheffectApp, id: &str, params| artheffect_ui_egui::menus::invoke(app, &ctx, id, params);
     let error = invoke(&mut app, "window.saveWorkspaceAs", json!({"name": "caption craft"})).unwrap_err();
     assert!(error.contains("synthetic full disk") && error.contains("may be lost after a restart"), "{error}");
     assert_eq!(app.ui.status, error);
-    let storage_error = effectcraft_ui_egui::control::inspect(&app, &ctx)["workspaceStorageError"].clone();
+    let storage_error = artheffect_ui_egui::control::inspect(&app, &ctx)["workspaceStorageError"].clone();
     assert!(storage_error.as_str().is_some_and(|e| e.contains("synthetic full disk")), "{storage_error}");
     assert_eq!(app.ui.workspace, "caption craft");
     assert_eq!(app.saved_workspace_names(), ["caption craft"]);
@@ -432,17 +432,17 @@ fn failed_workspace_save_is_reported_and_retryable() {
     store.full.store(false, std::sync::atomic::Ordering::Relaxed);
     invoke(&mut app, "window.workspace", json!({"name": "Captions"})).unwrap();
     invoke(&mut app, "window.saveWorkspace", json!({})).unwrap();
-    assert!(effectcraft_ui_egui::control::inspect(&app, &ctx)["workspaceStorageError"].is_null());
-    let restarted = EffectcraftApp::new(Session { config: Some(store), ..Default::default() });
+    assert!(artheffect_ui_egui::control::inspect(&app, &ctx)["workspaceStorageError"].is_null());
+    let restarted = ArtheffectApp::new(Session { config: Some(store), ..Default::default() });
     assert_eq!(restarted.saved_workspace_names(), ["Captions"]);
 }
 
 /// Without a settings folder there is nowhere to keep a workspace: saving says so.
 #[test]
 fn workspace_save_without_a_settings_folder_is_reported() {
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = ArtheffectApp::new(Session::default());
     let ctx = egui::Context::default();
-    let error = effectcraft_ui_egui::menus::invoke(&mut app, &ctx, "window.saveWorkspaceAs", json!({"name": "Mine"})).unwrap_err();
+    let error = artheffect_ui_egui::menus::invoke(&mut app, &ctx, "window.saveWorkspaceAs", json!({"name": "Mine"})).unwrap_err();
     assert!(error.contains("no settings folder"), "{error}");
     assert_eq!(app.saved_workspace_names(), ["Mine"]);
 }
@@ -452,10 +452,10 @@ fn workspace_save_without_a_settings_folder_is_reported() {
 #[test]
 fn saved_workspaces_reach_the_settings_folder_and_reload() {
     let dir = scratch_dir("disk");
-    let launch = || EffectcraftApp::new(Session { config: Some(Arc::new(DirConfig::new(&dir))), ..Default::default() });
+    let launch = || ArtheffectApp::new(Session { config: Some(Arc::new(DirConfig::new(&dir))), ..Default::default() });
     let mut app = launch();
     let ctx = egui::Context::default();
-    let invoke = |app: &mut EffectcraftApp, id: &str, params| effectcraft_ui_egui::menus::invoke(app, &ctx, id, params).unwrap();
+    let invoke = |app: &mut ArtheffectApp, id: &str, params| artheffect_ui_egui::menus::invoke(app, &ctx, id, params).unwrap();
     invoke(&mut app, "window.workspace", json!({"name": "Minimal"}));
     invoke(&mut app, "window.saveWorkspaceAs", json!({"name": "caption craft"}));
     let saved = app.ui.dock.clone();
@@ -476,9 +476,9 @@ fn saved_workspaces_reach_the_settings_folder_and_reload() {
 #[test]
 fn an_earlier_queued_frontend_failure_is_not_a_later_commands_result() {
     let store = Arc::new(MemoryConfig::default());
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = ArtheffectApp::new(Session { config: Some(store.clone()), ..Default::default() });
     let ctx = egui::Context::default();
-    let invoke = |app: &mut EffectcraftApp, id: &str, params| effectcraft_ui_egui::menus::invoke(app, &ctx, id, params);
+    let invoke = |app: &mut ArtheffectApp, id: &str, params| artheffect_ui_egui::menus::invoke(app, &ctx, id, params);
     // An earlier failure, then a success.
     app.session.execute("window.workspace", json!({"name": "missing-old"})).unwrap();
     invoke(&mut app, "window.workspace", json!({"name": "Minimal"})).unwrap();
@@ -504,9 +504,9 @@ fn an_earlier_queued_frontend_failure_is_not_a_later_commands_result() {
 #[test]
 fn failed_save_or_delete_of_a_saved_workspace_keeps_the_file() {
     let store = Arc::new(FullDisk::default());
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = ArtheffectApp::new(Session { config: Some(store.clone()), ..Default::default() });
     let ctx = egui::Context::default();
-    let invoke = |app: &mut EffectcraftApp, id: &str, params| effectcraft_ui_egui::menus::invoke(app, &ctx, id, params);
+    let invoke = |app: &mut ArtheffectApp, id: &str, params| artheffect_ui_egui::menus::invoke(app, &ctx, id, params);
     invoke(&mut app, "window.workspace", json!({"name": "Minimal"})).unwrap();
     invoke(&mut app, "window.saveWorkspaceAs", json!({"name": "Kept"})).unwrap();
     let saved = app.ui.dock.clone();
@@ -518,7 +518,7 @@ fn failed_save_or_delete_of_a_saved_workspace_keeps_the_file() {
     assert!(invoke(&mut app, "window.editWorkspaces", json!({"name": "Kept", "delete": true})).is_err());
     assert!(app.saved_workspace_names().is_empty(), "the delete applies for this session");
     assert_eq!(store.read("workspaces.json").unwrap(), before);
-    let mut restarted = EffectcraftApp::new(Session { config: Some(store), ..Default::default() });
+    let mut restarted = ArtheffectApp::new(Session { config: Some(store), ..Default::default() });
     assert_eq!(restarted.saved_workspace_names(), ["Kept"]);
     restarted.set_workspace("Kept");
     assert_eq!(restarted.ui.dock, saved);

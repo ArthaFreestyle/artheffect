@@ -79,20 +79,17 @@ pub(super) fn transform_op(s: &mut Session, p: &Value) -> Result<Value> {
     // bounds live in layer space, where a shape is centred on the origin and text sits above its
     // baseline, so (w/2, h/2) would push it off-centre (#2198). Reset and the other ops keep the
     // source size.
-    let ectx = effectcraft_render::EvalCtx {
-        expr: s.expr.as_deref(),
-        footage: Some(s.footage.as_ref()),
-        ..effectcraft_render::EvalCtx::new(&s.project, cid, &comp, t)
-    };
+    let ectx =
+        artheffect_render::EvalCtx { expr: s.expr.as_deref(), footage: Some(s.footage.as_ref()), ..artheffect_render::EvalCtx::new(&s.project, cid, &comp, t) };
     let fitting = matches!(op.as_str(), "fit" | "fitWidth" | "fitHeight");
     let sizes: Vec<(LayerId, [f64; 2], [f64; 2])> = comp
         .layers
         .iter()
         .filter(|l| ids.contains(&l.id))
         .map(|l| {
-            let (w, h) = effectcraft_render::source_size(&s.project, l);
+            let (w, h) = artheffect_render::source_size(&s.project, l);
             if fitting && (w == 0 || h == 0) {
-                match effectcraft_render::content_bounds(&ectx, l).filter(|b| b.iter().all(|v| v.is_finite()) && b[2] > b[0] && b[3] > b[1]) {
+                match artheffect_render::content_bounds(&ectx, l).filter(|b| b.iter().all(|v| v.is_finite()) && b[2] > b[0] && b[3] > b[1]) {
                     Some(b) => (l.id, [b[2] - b[0], b[3] - b[1]], [(b[0] + b[2]) / 2.0, (b[1] + b[3]) / 2.0]),
                     None => (l.id, [0.0; 2], [0.0; 2]),
                 }

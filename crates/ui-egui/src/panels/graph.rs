@@ -5,17 +5,17 @@
 //!
 //! Every edit is an engine command (`keys.set`, `keys.setEase`, `keys.select`, `keys.*`).
 
-use effectcraft_engine::KeyRef;
-use effectcraft_engine::keyframe::{Interp, Value, side_ease};
-use effectcraft_engine::project::{Comp, Layer, LayerId, Property};
-use effectcraft_engine::render::EvalCtx;
-use effectcraft_engine::time::Tick;
+use artheffect_engine::KeyRef;
+use artheffect_engine::keyframe::{Interp, Value, side_ease};
+use artheffect_engine::project::{Comp, Layer, LayerId, Property};
+use artheffect_engine::render::EvalCtx;
+use artheffect_engine::time::Tick;
 use egui::{Align2, Color32, Pos2, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
 use serde_json::json;
 
 use super::timeline::TMap;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{ArtheffectApp, widgets};
 
 type Actions = Vec<(String, serde_json::Value)>;
 
@@ -77,7 +77,7 @@ struct Curve<'a> {
 /// Properties shown: the selected ones, or every animated property of the selected layers.
 /// Whether the speed graph shows: Edit Speed Graph, or Auto-Select Graph Type with only spatial
 /// properties shown (Position, Anchor Point… move along a path: their speed is what to edit).
-fn speed_graph(app: &EffectcraftApp, comp: &Comp) -> bool {
+fn speed_graph(app: &ArtheffectApp, comp: &Comp) -> bool {
     match app.ui.timeline.graph_mode.as_str() {
         "speed" => true,
         "value" => false,
@@ -91,7 +91,7 @@ fn speed_graph(app: &EffectcraftApp, comp: &Comp) -> bool {
     }
 }
 
-fn shown_props(app: &EffectcraftApp, comp: &Comp) -> Vec<(LayerId, u64)> {
+fn shown_props(app: &ArtheffectApp, comp: &Comp) -> Vec<(LayerId, u64)> {
     let st = &app.session.state;
     let numeric = |pr: &Property| !pr.value.components().is_empty() && pr.value.interpolates();
     // A selected keyframe counts as selecting its property and layer (as clicking a key does in
@@ -124,14 +124,14 @@ fn shown_dims(l: &Layer, pr: &Property) -> usize {
 /// The speed graph's value of dimension `d` at layer time `lt` (one curve for a spatial property).
 fn speed_at(pr: &Property, spatial: bool, d: usize, lt: Tick) -> f64 {
     if spatial {
-        effectcraft_engine::keyframe::speed(&pr.keys, lt, true)
+        artheffect_engine::keyframe::speed(&pr.keys, lt, true)
     } else {
-        effectcraft_engine::keyframe::velocity(&pr.keys, lt, false).get(d).copied().unwrap_or(0.0).abs()
+        artheffect_engine::keyframe::velocity(&pr.keys, lt, false).get(d).copied().unwrap_or(0.0).abs()
     }
 }
 
 /// Build the curves for the visible time span.
-fn curves<'a>(app: &EffectcraftApp, comp: &'a Comp, ectx: &EvalCtx, tm: TMap, plot: Rect, speed: bool) -> Vec<Curve<'a>> {
+fn curves<'a>(app: &ArtheffectApp, comp: &'a Comp, ectx: &EvalCtx, tm: TMap, plot: Rect, speed: bool) -> Vec<Curve<'a>> {
     let sel = &app.session.state.selected_keys;
     let n = ((plot.width() / 2.0) as usize).max(2);
     let mut out = vec![];
@@ -210,7 +210,7 @@ impl ButtonBar {
     }
 
     /// The "»" button and its menu, when buttons did not fit.
-    fn more(&mut self, app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, bar: Rect) {
+    fn more(&mut self, app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, bar: Rect) {
         if self.hidden.is_empty() {
             return;
         }
@@ -260,7 +260,7 @@ struct BarBtn<'a> {
     tip: &'a str,
 }
 
-fn text_button(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, bar: &mut ButtonBar, y: f32, btn: BarBtn) -> bool {
+fn text_button(app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, bar: &mut ButtonBar, y: f32, btn: BarBtn) -> bool {
     let BarBtn { label, on, id, tip } = btn;
     let t = app.tokens;
     let (shown, shown_tip) = (crate::i18n::tr(label), crate::i18n::tr(tip));
@@ -299,7 +299,7 @@ pub(crate) struct GraphView<'a> {
 }
 
 /// Show Reference Graph: the other graph type, faint, scaled to the plot.
-fn reference_graph(app: &EffectcraftApp, view: GraphView, plot: Rect, speed: bool, pc: &egui::Painter) {
+fn reference_graph(app: &ArtheffectApp, view: GraphView, plot: Rect, speed: bool, pc: &egui::Painter) {
     let GraphView { comp, ectx, tm } = view;
     let other = curves(app, comp, ectx, tm, plot, !speed);
     let (mut rlo, mut rhi) = (f64::INFINITY, f64::NEG_INFINITY);
@@ -376,7 +376,7 @@ fn box_select(ui: &egui::Ui, pc: &egui::Painter, bg: &egui::Response, key_screen
 }
 
 /// Wheel over the graph with Ctrl zooms the value axis `(lo, hi)` (turns auto-zoom off).
-fn wheel_zoom(app: &mut EffectcraftApp, ui: &egui::Ui, plot: Rect, (lo, hi): (f64, f64)) {
+fn wheel_zoom(app: &mut ArtheffectApp, ui: &egui::Ui, plot: Rect, (lo, hi): (f64, f64)) {
     if ui.rect_contains_pointer(plot) {
         let (dy, zoom) = ui.input(|i| (i.smooth_scroll_delta.y, i.modifiers.ctrl || i.modifiers.command));
         if zoom && dy.abs() > 0.0 {
@@ -390,7 +390,7 @@ fn wheel_zoom(app: &mut EffectcraftApp, ui: &egui::Ui, plot: Rect, (lo, hi): (f6
 
 /// Just opened, or the graph type changed (value and speed have different units): frame the
 /// graphs (Fit Selection to View, else Fit All Graphs to View).
-fn fit_on_open(app: &mut EffectcraftApp, ctx: &egui::Context, cs: &[Curve], tm: TMap, plot: Rect, speed: bool) {
+fn fit_on_open(app: &mut ArtheffectApp, ctx: &egui::Context, cs: &[Curve], tm: TMap, plot: Rect, speed: bool) {
     let was_speed_id = egui::Id::unique("graph-was-speed");
     let type_changed = ctx.data(|d| d.get_temp::<bool>(was_speed_id)).is_some_and(|was| was != speed);
     ctx.data_mut(|d| d.insert_temp(was_speed_id, speed));
@@ -404,7 +404,7 @@ fn fit_on_open(app: &mut EffectcraftApp, ctx: &egui::Context, cs: &[Curve], tm: 
 }
 
 /// Draw the Graph Editor into `area` (the right side of the Timeline) and queue edits.
-pub(crate) fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, view: GraphView, area: Rect, actions: &mut Actions) {
+pub(crate) fn show(app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, view: GraphView, area: Rect, actions: &mut Actions) {
     let GraphView { comp, ectx, tm } = view;
     let t = app.tokens;
     let ctx = ui.ctx().clone();
@@ -608,7 +608,7 @@ pub(crate) fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painte
 
 /// The footer button bar: graph type, display toggles, fit, snap and keyframe interpolation.
 /// Returns whether Fit Selection was pressed.
-fn button_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, comp: &Comp, bar: Rect, speed: bool, actions: &mut Actions) -> bool {
+fn button_bar(app: &mut ArtheffectApp, ui: &mut egui::Ui, p: &egui::Painter, comp: &Comp, bar: Rect, speed: bool, actions: &mut Actions) -> bool {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let mut fit_sel = false;
@@ -711,7 +711,7 @@ fn button_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, co
 }
 
 /// Fit All Graphs to View: the whole comp in time, auto-zoomed values.
-fn fit_all(app: &mut EffectcraftApp) {
+fn fit_all(app: &mut ArtheffectApp) {
     app.ui.timeline.graph_auto_zoom = true;
     app.ui.timeline.pps = None;
 }
@@ -737,7 +737,7 @@ pub(crate) fn track_open(ctx: &egui::Context, on: bool) {
 }
 
 /// Zoom time and value to the selected keys (and their handles).
-fn fit_selection(app: &mut EffectcraftApp, cs: &[Curve], tm: TMap, plot: Rect, speed: bool) {
+fn fit_selection(app: &mut ArtheffectApp, cs: &[Curve], tm: TMap, plot: Rect, speed: bool) {
     let mut t0 = f64::INFINITY;
     let mut t1 = f64::NEG_INFINITY;
     let mut v0 = f64::INFINITY;

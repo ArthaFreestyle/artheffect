@@ -1,5 +1,5 @@
 use super::ov::parent_to_comp;
-use super::{CameraState, Comp, EffectcraftApp, EvalCtx, Layer, LayerId, Mat3, Pos2, VIEW_CAM, gv2, three_d, vec2};
+use super::{ArtheffectApp, CameraState, Comp, EvalCtx, Layer, LayerId, Mat3, Pos2, VIEW_CAM, gv2, three_d, vec2};
 
 /// The camera the viewer shows (view camera or the comp's active camera).
 pub(super) fn cam_state(ctx: &EvalCtx) -> CameraState {
@@ -28,7 +28,7 @@ pub(crate) fn fx2c(ctx: &EvalCtx, layer: &Layer) -> Mat3 {
 
 /// The selected, unlocked layers of `comp` other than `layer` (when `layer` is one of them): a
 /// handle or Rotation tool drag on one changes them all.
-pub(super) fn selected_others<'a>(app: &EffectcraftApp, comp: &'a Comp, layer: LayerId) -> Vec<&'a Layer> {
+pub(super) fn selected_others<'a>(app: &ArtheffectApp, comp: &'a Comp, layer: LayerId) -> Vec<&'a Layer> {
     let sel = &app.session.state.selected_layers;
     if !sel.contains(&layer) {
         return vec![];
@@ -67,12 +67,8 @@ pub(super) fn project_clipped(m: &Mat3, poly: &[[f64; 2]]) -> Vec<[f64; 2]> {
 }
 
 /// The segment a → b (world space) through the projection `pc`, clipped at the near plane.
-pub(super) fn project_segment(
-    pc: &effectcraft_engine::geom::Mat4,
-    a: effectcraft_engine::geom::Vec3,
-    b: effectcraft_engine::geom::Vec3,
-) -> Option<[[f64; 2]; 2]> {
-    let h = |p: effectcraft_engine::geom::Vec3| {
+pub(super) fn project_segment(pc: &artheffect_engine::geom::Mat4, a: artheffect_engine::geom::Vec3, b: artheffect_engine::geom::Vec3) -> Option<[[f64; 2]; 2]> {
+    let h = |p: artheffect_engine::geom::Vec3| {
         let r = |i: usize| pc.0.get(i).map_or(0.0, |row| row[0] * p.x + row[1] * p.y + row[2] * p.z + row[3]);
         [r(0), r(1), r(3)]
     };
@@ -102,7 +98,7 @@ pub(super) fn box_corners(b: [f64; 4]) -> [[f64; 2]; 4] {
 /// Layer → comp matrix and its bounds quad (in comp pixels). None for a 3D layer reaching to or
 /// behind the camera (its quad would flip; [`layer_outline`] draws the part in front).
 pub(crate) fn layer_quad(ctx: &EvalCtx, layer: &Layer) -> Option<(Mat3, [[f64; 2]; 4], [f64; 4])> {
-    let b = effectcraft_engine::render::content_bounds(ctx, layer)?;
+    let b = artheffect_engine::render::content_bounds(ctx, layer)?;
     let (m, _) = l2c(ctx, layer);
     let corners = box_corners(b);
     if corners.iter().any(|p| homogeneous(&m, *p)[2] < NEAR_W) {
@@ -117,7 +113,7 @@ pub(crate) fn layer_quad(ctx: &EvalCtx, layer: &Layer) -> Option<(Mat3, [[f64; 2
 
 /// The outline of a layer's content box in comp pixels, clipped at the camera's near plane.
 pub(crate) fn layer_outline(ctx: &EvalCtx, layer: &Layer) -> Vec<[f64; 2]> {
-    let Some(b) = effectcraft_engine::render::content_bounds(ctx, layer) else { return vec![] };
+    let Some(b) = artheffect_engine::render::content_bounds(ctx, layer) else { return vec![] };
     project_clipped(&l2c(ctx, layer).0, &box_corners(b))
 }
 

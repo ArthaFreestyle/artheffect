@@ -2,9 +2,9 @@
 //! Timeline's Parent and Track Matte menus and pick whips set every selected layer; on an
 //! unselected row, that layer alone. One undo step each; each layer keeps its own matte mode.
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::{LayerId, MatteKind};
-use effectcraft_ui_egui::EffectcraftApp;
+use artheffect_engine::Session;
+use artheffect_engine::project::{LayerId, MatteKind};
+use artheffect_ui_egui::ArtheffectApp;
 use egui::{Event, Modifiers, PointerButton, Pos2, Rect, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable as _;
@@ -12,7 +12,7 @@ use serde_json::json;
 
 /// Solids A, B, C, P (moved and scaled, a parent) and the mattes X and Y; stacked Y, X, P, C, B, A
 /// from the top. The Track Matte column is shown.
-fn harness() -> (Harness<'static, EffectcraftApp>, [u64; 6]) {
+fn harness() -> (Harness<'static, ArtheffectApp>, [u64; 6]) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Links", "width": 320, "height": 180, "duration": 4})).unwrap();
     let ids = ["A", "B", "C", "P", "X", "Y"]
@@ -20,23 +20,23 @@ fn harness() -> (Harness<'static, EffectcraftApp>, [u64; 6]) {
     s.execute("prop.set", json!({"layer": ids[3], "path": "transform/position", "value": [60, 40]})).unwrap();
     s.execute("prop.set", json!({"layer": ids[3], "path": "transform/scale", "value": [50, 50]})).unwrap();
     s.history.undo.clear();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.state_mut().ui.timeline.show_modes = true;
     h.state_mut().ui.timeline.columns_w = 900.0;
     h.run_steps(3);
     (h, ids)
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, ArtheffectApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
-fn press(h: &mut Harness<'_, EffectcraftApp>, at: Pos2, pressed: bool) {
+fn press(h: &mut Harness<'_, ArtheffectApp>, at: Pos2, pressed: bool) {
     h.event(Event::PointerButton { pos: at, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE });
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, at: Pos2) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, at: Pos2) {
     h.event(Event::PointerMoved(at));
     h.step();
     press(h, at, true);
@@ -46,7 +46,7 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, at: Pos2) {
 }
 
 /// Open the menu at automation id `dropdown` and choose `item` in it.
-fn choose(h: &mut Harness<'_, EffectcraftApp>, dropdown: &str, item: &str) {
+fn choose(h: &mut Harness<'_, ArtheffectApp>, dropdown: &str, item: &str) {
     let menu = rect(h, dropdown);
     // Other rows' menus show their choice as well ("No Track Matte"): the entry is a node the
     // opened menu added.
@@ -60,7 +60,7 @@ fn choose(h: &mut Harness<'_, EffectcraftApp>, dropdown: &str, item: &str) {
 }
 
 /// Drag the pick whip `whip` onto layer `onto`'s row.
-fn whip(h: &mut Harness<'_, EffectcraftApp>, whip: &str, onto: u64) {
+fn whip(h: &mut Harness<'_, ArtheffectApp>, whip: &str, onto: u64) {
     let (from, to) = (rect(h, whip).center(), rect(h, &format!("timeline.layer.{onto}.row")).center());
     h.event(Event::PointerMoved(from));
     h.step();
@@ -74,29 +74,29 @@ fn whip(h: &mut Harness<'_, EffectcraftApp>, whip: &str, onto: u64) {
     h.run_steps(3);
 }
 
-fn select(h: &mut Harness<'_, EffectcraftApp>, ids: &[u64]) {
+fn select(h: &mut Harness<'_, ArtheffectApp>, ids: &[u64]) {
     h.state_mut().session.execute("layer.select", json!({"layers": ids})).unwrap();
     h.run_steps(2);
 }
 
-fn parent(h: &Harness<'_, EffectcraftApp>, id: u64) -> Option<u64> {
+fn parent(h: &Harness<'_, ArtheffectApp>, id: u64) -> Option<u64> {
     h.state().session.active_comp().unwrap().layer(LayerId(id)).unwrap().parent.map(|p| p.0)
 }
 
-fn position(h: &Harness<'_, EffectcraftApp>, id: u64) -> [f64; 3] {
+fn position(h: &Harness<'_, ArtheffectApp>, id: u64) -> [f64; 3] {
     h.state().session.active_comp().unwrap().layer(LayerId(id)).unwrap().props.prop("transform/position").unwrap().value.as_vec3()
 }
 
-fn matte(h: &Harness<'_, EffectcraftApp>, id: u64) -> Option<(u64, MatteKind)> {
+fn matte(h: &Harness<'_, ArtheffectApp>, id: u64) -> Option<(u64, MatteKind)> {
     h.state().session.active_comp().unwrap().layer(LayerId(id)).unwrap().track_matte.map(|m| (m.layer.0, m.kind))
 }
 
 /// The project and its undo steps as they are now, to compare with after an undo or a refusal.
-fn mark(h: &Harness<'_, EffectcraftApp>) -> (std::sync::Arc<effectcraft_engine::project::Project>, usize) {
+fn mark(h: &Harness<'_, ArtheffectApp>) -> (std::sync::Arc<artheffect_engine::project::Project>, usize) {
     (h.state().session.project.clone(), h.state().session.history.undo.len())
 }
 
-fn unchanged(h: &Harness<'_, EffectcraftApp>, m: &(std::sync::Arc<effectcraft_engine::project::Project>, usize)) -> bool {
+fn unchanged(h: &Harness<'_, ArtheffectApp>, m: &(std::sync::Arc<artheffect_engine::project::Project>, usize)) -> bool {
     h.state().session.project.same_content(&m.0) && h.state().session.history.undo.len() == m.1
 }
 
@@ -156,7 +156,7 @@ fn track_matte_menu_and_pick_whip_set_the_selected_layers_mattes() {
     assert_eq!([matte(&h, a), matte(&h, c)], [Some((y, MatteKind::Alpha)), Some((x, MatteKind::Alpha))]);
 }
 
-fn video(h: &Harness<'_, EffectcraftApp>, id: u64) -> bool {
+fn video(h: &Harness<'_, ArtheffectApp>, id: u64) -> bool {
     h.state().session.active_comp().unwrap().layer(LayerId(id)).unwrap().switches.video
 }
 

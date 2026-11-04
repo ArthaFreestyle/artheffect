@@ -2,9 +2,7 @@ use std::ops::ControlFlow;
 
 use super::common::{Actions, effect_active, gesture_key};
 use super::rows::FxScope;
-use super::{
-    Align2, Color32, EffectcraftApp, EvalCtx, GroupKind, Layer, Mat3, Node, ParamUi, PropGroup, Property, Rect, Sense, Stroke, Tokens, fw, json, vec2,
-};
+use super::{Align2, ArtheffectApp, Color32, EvalCtx, GroupKind, Layer, Mat3, Node, ParamUi, PropGroup, Property, Rect, Sense, Stroke, Tokens, fw, json, vec2};
 
 // ---------------------------------------------------------------------------------------------
 // Viewer hook
@@ -29,7 +27,7 @@ fn visible_points<'a>(g: &'a PropGroup, scope: &FxScope<'_>, layer: &Layer, ectx
 /// An armed crosshair / eyedropper pick: the hint chip, the cursor preview, and the click that
 /// sets or samples. `Break` when the picked layer is gone; `Continue` carries the point preview.
 fn fx_pick_session(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     painter: &egui::Painter,
     map: &crate::panels::viewer::ViewerMap,
@@ -43,7 +41,7 @@ fn fx_pick_session(
     let Some(pick) = app.ui.fx_pick.clone() else {
         return ControlFlow::Continue(None);
     };
-    let Some(layer) = ectx.comp.layer(effectcraft_engine::project::LayerId(pick.layer)).cloned() else {
+    let Some(layer) = ectx.comp.layer(artheffect_engine::project::LayerId(pick.layer)).cloned() else {
         app.ui.fx_pick = None;
         return ControlFlow::Break(());
     };
@@ -51,7 +49,7 @@ fn fx_pick_session(
     let keyer = (pick.kind == "color")
         .then(|| layer.effects()?.groups().find(|g| g.find(pick.prop).is_some()))
         .flatten()
-        .filter(|g| effectcraft_engine::effects::find(&g.match_id).is_some_and(|s| s.category == "Keying"))
+        .filter(|g| artheffect_engine::effects::find(&g.match_id).is_some_and(|s| s.category == "Keying"))
         .map(|g| g.uid);
     if pick.kind == "color" && keyer.is_none() {
         // GPU frames: read the shown frame back for sampling.
@@ -120,7 +118,7 @@ fn fx_pick_session(
 }
 
 /// Shared hint chip and sampled-color swatch for text and popup eyedroppers.
-fn color_pick_preview(app: &EffectcraftApp, painter: &egui::Painter, map: &crate::panels::viewer::ViewerMap, hint: &str, pointer: Option<egui::Pos2>) {
+fn color_pick_preview(app: &ArtheffectApp, painter: &egui::Painter, map: &crate::panels::viewer::ViewerMap, hint: &str, pointer: Option<egui::Pos2>) {
     let chip = Rect::from_min_size(map.area.min + vec2(10.0, 10.0), vec2(220.0, 22.0));
     painter.rect_filled(chip, 11.0, Color32::from_black_alpha(180));
     painter.text(chip.center(), Align2::CENTER_CENTER, hint, Tokens::ui(11.5), app.tokens.text);
@@ -135,7 +133,7 @@ fn color_pick_preview(app: &EffectcraftApp, painter: &egui::Painter, map: &crate
 
 /// An armed text-colour pick: sample the shown frame on click, Esc cancels.
 fn text_color_pick(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     painter: &egui::Painter,
     map: &crate::panels::viewer::ViewerMap,
@@ -146,7 +144,7 @@ fn text_color_pick(
     let Some(pick) = app.ui.text_color_pick.clone() else {
         return;
     };
-    if ectx.comp.layer(effectcraft_engine::project::LayerId(pick.layer)).is_none() {
+    if ectx.comp.layer(artheffect_engine::project::LayerId(pick.layer)).is_none() {
         app.ui.text_color_pick = None;
         app.ui.status.clear();
     } else {
@@ -182,7 +180,7 @@ fn text_color_pick(
 /// A colour picker's eyedropper is armed (its popup stays open): the viewer shows the colour under
 /// the pointer, and the next press on it samples the frame into the picker. The press is read from
 /// the pointer, since a modal dialog over the viewer takes its clicks.
-fn popup_eyedropper(app: &mut EffectcraftApp, ui: &mut egui::Ui, painter: &egui::Painter, map: &crate::panels::viewer::ViewerMap) {
+fn popup_eyedropper(app: &mut ArtheffectApp, ui: &mut egui::Ui, painter: &egui::Painter, map: &crate::panels::viewer::ViewerMap) {
     let ctx = ui.ctx().clone();
     if !crate::color_picker::eyedropper_armed(&ctx) {
         return;
@@ -210,7 +208,7 @@ fn popup_eyedropper(app: &mut EffectcraftApp, ui: &mut egui::Ui, painter: &egui:
 ///
 /// `l2c` is the viewer's layer→comp matrix (it knows the 3D view).
 pub fn viewer_hook(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     painter: &egui::Painter,
     map: &crate::panels::viewer::ViewerMap,
@@ -222,7 +220,7 @@ pub fn viewer_hook(
     crate::color_picker::note_viewer(&ctx, map.area);
     let mut actions: Actions = vec![];
     let point_preview = if let Some(pick) = app.ui.fx_pick.clone().filter(|p| p.kind == crate::panels::crypto_pick::KIND) {
-        match ectx.comp.layer(effectcraft_engine::project::LayerId(pick.layer)) {
+        match ectx.comp.layer(artheffect_engine::project::LayerId(pick.layer)) {
             Some(l) => {
                 crate::panels::crypto_pick::viewer_hook(app, ui, painter, map, ectx, l, &crate::panels::viewer::from_effect_space(ectx, l, l2c(ectx, l)), &pick)
             }
@@ -243,7 +241,7 @@ pub fn viewer_hook(
         // ⊕ controls for the point parameters of the selected effects.
         let mut sel = app.session.state.selected_props.clone();
         if let Some(pick) = &point_pick {
-            sel.push((effectcraft_engine::project::LayerId(pick.layer), pick.prop));
+            sel.push((artheffect_engine::project::LayerId(pick.layer), pick.prop));
         }
         let selected = app.session.state.selected_layers.clone();
         for layer in ectx
@@ -260,7 +258,7 @@ pub fn viewer_hook(
             for g in fx.groups().filter(|g| g.enabled && effect_active(g, layer.id, &sel)) {
                 // Puppet owns its pin handles and hit testing. Generic crosshairs would
                 // overlap the pins and steal their selection/rotation/scale gestures.
-                if matches!(&g.kind, GroupKind::Effect { effect } if effect == effectcraft_engine::effects::puppet::ID) {
+                if matches!(&g.kind, GroupKind::Effect { effect } if effect == artheffect_engine::effects::puppet::ID) {
                     continue;
                 }
                 if !picking

@@ -1,8 +1,8 @@
 //! Scale Composition (`comp.scale`, #2208): the comp and everything in it grow or shrink by one
 //! factor, so the frame looks the same at the new size.
 
-use effectcraft_project::{Layer, LayerId};
-use effectcraft_time::Tick;
+use artheffect_project::{Layer, LayerId};
+use artheffect_time::Tick;
 use serde_json::json;
 
 use crate::{EngineError, Session};

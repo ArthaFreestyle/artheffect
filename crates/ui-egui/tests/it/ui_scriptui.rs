@@ -3,27 +3,27 @@
 //! File ▸ Scripts menus listing scripts (egui_kittest, UI logic only).
 
 use crate::gpu_test::RenderSerial;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
-use effectcraft_ui_egui::dock::WorkspaceExt as _;
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::dock::PanelKind;
+use artheffect_ui_egui::dock::WorkspaceExt as _;
 use egui::{Event, Rect, pos2, vec2};
 use egui_kittest::Harness;
 use serde_json::json;
 
-fn harness() -> Harness<'static, EffectcraftApp> {
-    let mut s = effectcraft_host::session();
+fn harness() -> Harness<'static, ArtheffectApp> {
+    let mut s = artheffect_host::session();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 4})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     h
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, ArtheffectApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, id: &str) {
     let c = rect(h, id).center();
     h.input_mut().events.push(Event::PointerMoved(c));
     for pressed in [true, false] {
@@ -32,7 +32,7 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
     h.run_steps(3);
 }
 
-fn layer_names(h: &Harness<'_, EffectcraftApp>) -> Vec<String> {
+fn layer_names(h: &Harness<'_, ArtheffectApp>) -> Vec<String> {
     h.state().session.active_comp().map(|c| c.layers.iter().map(|l| l.name.clone()).collect()).unwrap_or_default()
 }
 
@@ -80,10 +80,10 @@ fn script_windows_are_drawn_and_clickable() {
     assert!(h.state().ui.dock.is_docked(PanelKind::ScriptPanel(panel)), "the panel docks");
     assert!(h.state().auto.find(&format!("scriptui.{panel}")).is_some());
     // The menus list scripts and panels.
-    let cx = effectcraft_engine::menus::DynCtx::default();
-    let (panels, _) = effectcraft_engine::menus::dynamic(&h.state().session, "scriptPanels", &cx);
+    let cx = artheffect_engine::menus::DynCtx::default();
+    let (panels, _) = artheffect_engine::menus::dynamic(&h.state().session, "scriptPanels", &cx);
     assert!(panels.iter().any(|e| e.label == "Layer Tools.jsx" && e.command == "window.scriptPanel"));
-    let (scripts, _) = effectcraft_engine::menus::dynamic(&h.state().session, "scripts", &cx);
+    let (scripts, _) = artheffect_engine::menus::dynamic(&h.state().session, "scripts", &cx);
     assert!(scripts.iter().any(|e| e.label == "Rename Layers.jsx" && e.command == "file.runScript"));
     // Closing the panel's tab closes its script window.
     h.state_mut().close_panel(PanelKind::ScriptPanel(panel));
@@ -96,14 +96,14 @@ fn script_windows_are_drawn_and_clickable() {
 /// frontends call `window.restoreScriptPanels` before building the app).
 #[test]
 fn panels_open_at_quit_dock_again_at_launch() {
-    use effectcraft_engine::config::{ConfigStore, MemoryConfig};
+    use artheffect_engine::config::{ConfigStore, MemoryConfig};
     let store = std::sync::Arc::new(MemoryConfig::default());
     store.write("Scripts/ScriptUI Panels/Hello Panel.jsx", "this.add('button', undefined, 'Hi', { name: 'hi' });").unwrap();
-    store.write(effectcraft_engine::commands::scripts::OPEN_PANELS_FILE, r#"{"open": ["Hello Panel.jsx"]}"#).unwrap();
-    let mut s = effectcraft_host::session();
+    store.write(artheffect_engine::commands::scripts::OPEN_PANELS_FILE, r#"{"open": ["Hello Panel.jsx"]}"#).unwrap();
+    let mut s = artheffect_host::session();
     s.config = Some(store.clone());
     s.execute("window.restoreScriptPanels", json!({})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     let panel = h.state().session.script_ui.windows.iter().find(|w| w.script == "Hello Panel.jsx").expect("the panel's window").id;
     assert!(h.state().ui.dock.is_docked(PanelKind::ScriptPanel(panel)), "the panel docks");
@@ -111,7 +111,7 @@ fn panels_open_at_quit_dock_again_at_launch() {
     // Closing its tab forgets it for the next launch.
     h.state_mut().close_panel(PanelKind::ScriptPanel(panel));
     h.run_steps(2);
-    assert_eq!(store.read(effectcraft_engine::commands::scripts::OPEN_PANELS_FILE).as_deref(), Some(r#"{"open":[]}"#));
+    assert_eq!(store.read(artheffect_engine::commands::scripts::OPEN_PANELS_FILE).as_deref(), Some(r#"{"open":[]}"#));
 }
 
 /// A script copied into the Scripts folder while the app runs is listed in Edit ▸ Keyboard
@@ -119,29 +119,29 @@ fn panels_open_at_quit_dock_again_at_launch() {
 /// pressing it runs the script as its menu entry does.
 #[test]
 fn a_key_given_to_a_script_runs_it() {
-    use effectcraft_engine::config::{ConfigStore, MemoryConfig};
+    use artheffect_engine::config::{ConfigStore, MemoryConfig};
     let store = std::sync::Arc::new(MemoryConfig::default());
-    let mut s = effectcraft_host::session();
+    let mut s = artheffect_host::session();
     s.config = Some(store.clone());
-    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     assert!(h.state().session.shortcuts().find(r#"file.runScript {"name":"Rename Layers.jsx"}"#).is_some(), "the shortcut table is built");
     store.write("Scripts/Add Comp.jsx", "app.project.items.addComp('From Key', 64, 64, 1, 1, 25);").unwrap();
-    effectcraft_ui_egui::panels::shortcut_editor::open(h.state_mut());
+    artheffect_ui_egui::panels::shortcut_editor::open(h.state_mut());
     let script = json!({"name": "Add Comp.jsx"});
     let r = h.state_mut().session.execute("shortcuts.set", json!({"command": "file.runScript", "params": script, "keys": "Cmd+Alt+Shift+F7"})).unwrap();
     assert_eq!(r["command"], r#"file.runScript {"name":"Add Comp.jsx"}"#, "{r}");
     assert_eq!(r["keys"], json!(["Cmd+Alt+Shift+F7"]), "{r}");
     assert_eq!(r["conflicts"], json!([]), "{r}");
     h.state_mut().dialog = None;
-    let spec = effectcraft_ui_egui::native_menu::build(h.state());
+    let spec = artheffect_ui_egui::native_menu::build(h.state());
     let entry = spec.items().into_iter().find(|i| i.command == "file.runScript" && i.params == script).expect("the File ▸ Scripts entry");
     assert_eq!(entry.shortcut.as_deref(), Some("Cmd+Alt+Shift+F7"));
-    let (m, k, ..) = effectcraft_ui_egui::menus::bindings(&h.state().session)
+    let (m, k, ..) = artheffect_ui_egui::menus::bindings(&h.state().session)
         .into_iter()
         .find(|b| b.2 == "file.runScript" && b.3 == script)
         .expect("the key is bound to the script");
-    let made = |h: &Harness<'_, EffectcraftApp>| h.state().session.project.items.values().filter(|i| i.name == "From Key").count();
+    let made = |h: &Harness<'_, ArtheffectApp>| h.state().session.project.items.values().filter(|i| i.name == "From Key").count();
     assert_eq!(made(&h), 0);
     for pressed in [true, false] {
         h.event(Event::Key { key: k, physical_key: Some(k), pressed, repeat: false, modifiers: m });
@@ -154,7 +154,7 @@ fn a_key_given_to_a_script_runs_it() {
 /// preset in its list eases the selected keyframes in one undo step.
 #[test]
 fn ease_presets_panel_eases_the_selected_keys_from_its_list() {
-    use effectcraft_engine::keyframe::{Ease, Interp};
+    use artheffect_engine::keyframe::{Ease, Interp};
     use egui_kittest::kittest::Queryable;
     let mut h = harness();
     let s = &mut h.state_mut().session;
@@ -163,8 +163,8 @@ fn ease_presets_panel_eases_the_selected_keys_from_its_list() {
         s.execute("prop.addKey", json!({"layer": l, "path": "transform/opacity", "time": t, "value": v})).unwrap();
     }
     s.execute("prop.select", json!({"layer": l, "path": "transform/opacity"})).unwrap();
-    let cx = effectcraft_engine::menus::DynCtx::default();
-    let (panels, _) = effectcraft_engine::menus::dynamic(s, "scriptPanels", &cx);
+    let cx = artheffect_engine::menus::DynCtx::default();
+    let (panels, _) = artheffect_engine::menus::dynamic(s, "scriptPanels", &cx);
     assert!(panels.iter().any(|e| e.label == "Ease Presets.jsx"), "listed in the Window menu");
     s.execute("window.scriptPanel", json!({"name": "Ease Presets.jsx"})).unwrap();
     h.run_steps(3);
@@ -179,7 +179,7 @@ fn ease_presets_panel_eases_the_selected_keys_from_its_list() {
         h.input_mut().events.push(Event::PointerButton { pos: item, button: egui::PointerButton::Primary, pressed, modifiers: Default::default() });
     }
     h.run_steps(3);
-    let op = h.state().session.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(l)).unwrap().props.prop("transform/opacity").unwrap().clone();
+    let op = h.state().session.active_comp().unwrap().layer(artheffect_engine::project::LayerId(l)).unwrap().props.prop("transform/opacity").unwrap().clone();
     let eased = Ease { speed: 0.0, influence: 0.5 };
     assert_eq!((op.keys[0].out_interp, op.keys[0].out_ease[0]), (Interp::Bezier, eased));
     assert_eq!((op.keys[1].in_interp, op.keys[1].in_ease[0]), (Interp::Bezier, eased));
@@ -212,14 +212,14 @@ fn history_panel_jumps_between_branches() {
 #[test]
 fn on_draw_concave_fills_and_images_render() {
     let _device = crate::gpu_test::lock();
-    let dir = std::env::temp_dir().join(format!("effectcraft-scriptui-img-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("artheffect-scriptui-img-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let png = dir.join("green.png");
     image::RgbaImage::from_pixel(8, 8, image::Rgba([0, 255, 0, 255])).save(&png).unwrap();
     let png = png.to_string_lossy().replace('\\', "/");
-    let mut s = effectcraft_host::session();
+    let mut s = artheffect_host::session();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 4})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).with_pixels_per_point(1.0).wgpu().build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).with_pixels_per_point(1.0).wgpu().build_eframe(|_| ArtheffectApp::new(s));
     h.run_steps(3);
     let code = format!(
         r#"
@@ -244,7 +244,7 @@ fn on_draw_concave_fills_and_images_render() {
     h.run_steps(4);
     let win = h.state().session.script_ui.windows[0].clone();
     let g = &win.root.children[0];
-    assert!(matches!(&g.draw[1], effectcraft_engine::scriptui::DrawOp::Image { image: Some(i), .. } if i.src.as_deref() == Some(png.as_str())));
+    assert!(matches!(&g.draw[1], artheffect_engine::scriptui::DrawOp::Image { image: Some(i), .. } if i.src.as_deref() == Some(png.as_str())));
     assert_eq!(win.root.children[1].image.as_ref().and_then(|i| i.src.clone()).as_deref(), Some(png.as_str()));
     let img = h.render_serialized().expect("render");
     if let Ok(d) = std::env::var("EC_SNAPSHOT_DIR") {
@@ -290,7 +290,7 @@ fn script_windows_send_mouse_events_to_listeners() {
     assert_eq!(r["ok"], true, "{r}");
     h.run_steps(3);
     let win = h.state().session.script_ui.windows[0].id;
-    let text = |h: &Harness<'_, EffectcraftApp>, name: &str| h.state().session.script_ui.windows[0].root.lookup(&json!(name)).cloned().unwrap();
+    let text = |h: &Harness<'_, ArtheffectApp>, name: &str| h.state().session.script_ui.windows[0].root.lookup(&json!(name)).cloned().unwrap();
     let pad = rect(&h, &format!("scriptui.{win}.pad"));
     let at = pad.min + vec2(10.0, 20.0);
     click_at(&mut h, at);
@@ -375,7 +375,7 @@ fn script_windows_learn_the_size_they_are_given() {
     h.run_steps(2);
 }
 
-fn click_at(h: &mut Harness<'_, EffectcraftApp>, c: egui::Pos2) {
+fn click_at(h: &mut Harness<'_, ArtheffectApp>, c: egui::Pos2) {
     h.input_mut().events.push(Event::PointerMoved(c));
     h.run_steps(1);
     for pressed in [true, false] {
@@ -385,10 +385,10 @@ fn click_at(h: &mut Harness<'_, EffectcraftApp>, c: egui::Pos2) {
 }
 #[test]
 fn scheduled_import_reveals_its_composition_without_manual_clicks() {
-    let mut s = effectcraft_host::session();
+    let mut s = artheffect_host::session();
     let result = s.execute("script.run", json!({"code": "var w=new Window('palette','Automatic import');var b=w.add('button',undefined,'Open');b.onClick=function(){app.scheduleTask(\"var c=app.project.items.addComp('Imported',64,64,1,1,25);c.openInViewer();\",0,false);};w.show();"})).unwrap();
     assert_eq!(result["ok"], true, "{result}");
-    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.state_mut().ui.start_screen = true;
     h.run_steps(2);
     h.state_mut().session.execute("scriptui.click", json!({"window":"Automatic import","widget":"Open"})).unwrap();

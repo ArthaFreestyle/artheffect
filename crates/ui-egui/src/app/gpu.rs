@@ -1,13 +1,13 @@
-use super::{Arc, EffectcraftApp, RenderSource, gpu_failure, menus, panels};
+use super::{Arc, ArtheffectApp, RenderSource, gpu_failure, menus, panels};
 
 /// The status line while the GPU compositor's worker thread is still building its pipelines
-/// (see [`EffectcraftApp::init_gpu`]).
+/// (see [`ArtheffectApp::init_gpu`]).
 pub const GPU_PREPARING: &str = "Preparing the GPU compositor… (compositing on the CPU until it is ready)";
 /// What the compositor's worker thread hands back: the compositor, why the device can't run it,
 /// or the payload of a panic in the graphics backend.
-pub type GpuBuild = std::thread::Result<Result<effectcraft_gpu::Gpu, String>>;
+pub type GpuBuild = std::thread::Result<Result<artheffect_gpu::Gpu, String>>;
 
-impl EffectcraftApp {
+impl ArtheffectApp {
     pub fn render_source(&self) -> RenderSource {
         RenderSource {
             project: self.session.project.clone(),
@@ -27,7 +27,7 @@ impl EffectcraftApp {
     fn gpu_display(&self) -> bool {
         let v = &self.session.state.viewer;
         cfg!(target_arch = "wasm32")
-            && v.channel == effectcraft_engine::viewer::Channel::Rgb
+            && v.channel == artheffect_engine::viewer::Channel::Rgb
             && v.exposure == 0.0
             && self.session.state.region_of_interest.is_none()
             && self.ui.viewer.extended.is_none()
@@ -169,7 +169,7 @@ impl EffectcraftApp {
         let _ = ctx;
         // Backend validation can panic on shader compilation even when device creation
         // succeeded. Keep the document and the egui renderer, and use CPU compositing.
-        let built = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| effectcraft_gpu::Gpu::new(&rs.adapter, rs.device.clone(), rs.queue.clone())));
+        let built = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| artheffect_gpu::Gpu::new(&rs.adapter, rs.device.clone(), rs.queue.clone())));
         self.attach_gpu(built, Some(rs));
     }
 
@@ -189,7 +189,7 @@ impl EffectcraftApp {
                 if let Some(gate) = gate {
                     gate();
                 }
-                effectcraft_gpu::Gpu::new(&adapter, device, queue)
+                artheffect_gpu::Gpu::new(&adapter, device, queue)
             }));
             // No receiver: the window closed, or the device failed, while this was running.
             let _ = tx.send(built);
@@ -246,7 +246,7 @@ impl EffectcraftApp {
                     self.session.accel_note = Some("GPU compositor unavailable: the window has no wgpu device".into());
                     return;
                 };
-                log::info!("GPU compositor: {}", effectcraft_engine::render::Accelerator::name(&g));
+                log::info!("GPU compositor: {}", artheffect_engine::render::Accelerator::name(&g));
                 self.session.accel_note = None;
                 self.session.accel = Some(Arc::new(g.clone()));
                 self.gpu = Some(g);
@@ -284,7 +284,7 @@ impl EffectcraftApp {
 
     /// The GPU compositor's adapter, when the viewer has one.
     pub fn gpu_adapter(&self) -> Option<String> {
-        self.gpu.as_ref().map(effectcraft_engine::render::Accelerator::name)
+        self.gpu.as_ref().map(artheffect_engine::render::Accelerator::name)
     }
 }
 
@@ -302,7 +302,7 @@ mod gpu_failure_tests {
         let project = session.project.clone();
         let revision = session.revision;
         let prefs = serde_json::to_value(&session.prefs).unwrap();
-        let mut app = EffectcraftApp::new(session);
+        let mut app = ArtheffectApp::new(session);
         let ctx = egui::Context::default();
         let bridge = gpu_failure::GpuFailureBridge::new(&ctx);
         app.set_gpu_failure_bridge(bridge.clone());

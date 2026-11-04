@@ -3,31 +3,31 @@
 //! the cursor; rows are tree items with a name, a selected state, a depth and (folders) an open
 //! state; the favourite star is a named button.
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
+use artheffect_engine::Session;
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::dock::PanelKind;
 use egui::accesskit::Role;
 use egui::{Event, Key, Modifiers, Pos2, pos2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
 use serde_json::json;
 
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, ArtheffectApp> {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 4})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Red", "color": "#c04040"})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| ArtheffectApp::new(s));
     h.state_mut().show_panel(PanelKind::EffectsPresets);
     h.run_steps(4);
     h
 }
 
-fn center(h: &Harness<'_, EffectcraftApp>, id: &str) -> Pos2 {
+fn center(h: &Harness<'_, ArtheffectApp>, id: &str) -> Pos2 {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).clone();
     pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0)
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, id: &str) {
     let p = center(h, id);
     h.input_mut().events.push(Event::PointerMoved(p));
     h.step();
@@ -38,7 +38,7 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
     h.run_steps(3);
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
+fn key(h: &mut Harness<'_, ArtheffectApp>, key: Key, modifiers: Modifiers) {
     for pressed in [true, false] {
         h.input_mut().events.push(Event::Key { key, physical_key: None, pressed, repeat: false, modifiers });
         h.step();
@@ -47,11 +47,11 @@ fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
 }
 
 /// The role and name of the node that has the keyboard focus.
-fn focused(h: &Harness<'_, EffectcraftApp>) -> Option<(Role, String)> {
+fn focused(h: &Harness<'_, ArtheffectApp>) -> Option<(Role, String)> {
     h.root().children_recursive().find(|n| n.is_focused()).map(|n| (n.accesskit_node().role(), n.accesskit_node().label().unwrap_or_default()))
 }
 
-fn selected_rows(h: &Harness<'_, EffectcraftApp>) -> Vec<String> {
+fn selected_rows(h: &Harness<'_, ArtheffectApp>) -> Vec<String> {
     let panel = h.state().auto.find("panel.EffectsPresets").expect("the panel is drawn").rect;
     let panel = egui::Rect::from_min_size(pos2(panel[0], panel[1]), egui::vec2(panel[2], panel[3]));
     h.root()
@@ -64,7 +64,7 @@ fn selected_rows(h: &Harness<'_, EffectcraftApp>) -> Vec<String> {
 
 /// Put the keyboard on the first row the way Tab does: from the search field, the menu button,
 /// then the list.
-fn tab_into_list(h: &mut Harness<'_, EffectcraftApp>) {
+fn tab_into_list(h: &mut Harness<'_, ArtheffectApp>) {
     h.get_by_label("Search effects and presets").focus();
     h.run_steps(3);
     key(h, Key::Tab, Modifiers::NONE);
@@ -220,7 +220,7 @@ fn the_search_field_keeps_its_arrows_and_the_layer_does_not_nudge() {
     assert_eq!(layer_position(&h), layer_before, "the arrow keys did not nudge the selected layer");
 }
 
-fn layer_position(h: &Harness<'_, EffectcraftApp>) -> String {
+fn layer_position(h: &Harness<'_, ArtheffectApp>) -> String {
     let s = &h.state().session;
     let comp = s.active_comp().expect("a comp");
     let layer = comp.layers.first().expect("a layer");

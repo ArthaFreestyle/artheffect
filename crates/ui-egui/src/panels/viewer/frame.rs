@@ -1,8 +1,8 @@
-use super::{Align2, EffectcraftApp, Pos2, Rect, Stroke, StrokeKind, Tokens, View3D, ViewerMap, json, pos2, vec2, vt, widgets};
+use super::{Align2, ArtheffectApp, Pos2, Rect, Stroke, StrokeKind, Tokens, View3D, ViewerMap, json, pos2, vec2, vt, widgets};
 
 /// Draw the no-composition viewer with New Composition and New Composition From Footage buttons, accepting Project
 /// items dropped on it to create the first composition.
-pub(super) fn empty_state(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub(super) fn empty_state(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().clone();
     p.rect_filled(rect, 0.0, t.pasteboard);
@@ -25,13 +25,13 @@ pub(super) fn empty_state(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rec
     if let Some(crate::panels::DragPayload::Item(dragged)) = egui::DragAndDrop::payload::<crate::panels::DragPayload>(&ctx).as_deref()
         && ui.rect_contains_pointer(rect)
     {
-        let items: Vec<effectcraft_engine::project::ItemId> = crate::panels::project_drop_items(app, *dragged, None)
+        let items: Vec<artheffect_engine::project::ItemId> = crate::panels::project_drop_items(app, *dragged, None)
             .into_iter()
-            .map(effectcraft_engine::project::ItemId)
+            .map(artheffect_engine::project::ItemId)
             .filter(|id| {
                 app.session.project.item(*id).is_some_and(|item| match &item.kind {
-                    effectcraft_engine::project::ItemKind::Footage(f) => f.kind != effectcraft_engine::project::FootageKind::Data,
-                    effectcraft_engine::project::ItemKind::Solid(_) | effectcraft_engine::project::ItemKind::Comp(_) => true,
+                    artheffect_engine::project::ItemKind::Footage(f) => f.kind != artheffect_engine::project::FootageKind::Data,
+                    artheffect_engine::project::ItemKind::Solid(_) | artheffect_engine::project::ItemKind::Comp(_) => true,
                     _ => false,
                 })
             })
@@ -116,9 +116,9 @@ pub(crate) fn minify_factor(smooth: bool, pixels: f64, screen: f64) -> usize {
 ///
 /// [`ViewerState::extended`]: crate::state::ViewerState::extended
 pub(crate) fn extended_region(
-    app: &EffectcraftApp,
-    comp: &effectcraft_engine::project::Comp,
-    cid: effectcraft_engine::project::ItemId,
+    app: &ArtheffectApp,
+    comp: &artheffect_engine::project::Comp,
+    cid: artheffect_engine::project::ItemId,
     map: ViewerMap,
 ) -> Option<[f64; 4]> {
     if !app.session.prefs.three_d.extended_viewer || !comp.has_3d() || app.session.state.region_of_interest.is_some() {
@@ -130,7 +130,7 @@ pub(crate) fn extended_region(
     }
     let a = map.to_comp(map.area.min);
     let b = map.to_comp(map.area.max);
-    effectcraft_engine::render::extended_region(comp.width, comp.height, [a[0], a[1], b[0], b[1]], 1.0)
+    artheffect_engine::render::extended_region(comp.width, comp.height, [a[0], a[1], b[0], b[1]], 1.0)
 }
 
 pub(super) fn rect_of(map: &ViewerMap, r: Option<[f64; 4]>) -> Rect {
@@ -141,7 +141,7 @@ pub(super) fn rect_of(map: &ViewerMap, r: Option<[f64; 4]>) -> Rect {
 /// Put a rendered frame on screen: CPU pixels go into an egui texture, averaged down by `minify`
 /// (see [`minify_factor`]); GPU frames are drawn straight from their wgpu texture (registered with
 /// egui-wgpu, no readback).
-pub(super) fn show_frame(app: &mut EffectcraftApp, ctx: &egui::Context, key: crate::frames::FrameKey, img: crate::frames::FrameImage, minify: usize) {
+pub(super) fn show_frame(app: &mut ArtheffectApp, ctx: &egui::Context, key: crate::frames::FrameKey, img: crate::frames::FrameImage, minify: usize) {
     use crate::frames::FrameImage;
     // Settings ▸ Previews ▸ Viewer Zoom Quality.
     let smooth = app.session.prefs.viewer_zoom_smooth();

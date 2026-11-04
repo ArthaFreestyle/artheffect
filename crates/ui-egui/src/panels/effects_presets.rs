@@ -1,6 +1,6 @@
 //! Effects & Presets: search (matches highlighted), the contents menu (colour-depth / GPU
 //! filters, animation presets on/off, categories or alphabetical, refresh), Favorites (star an
-//! effect), Recently Used, "* Animation Presets" (EffectCraft's own text animation and transition
+//! effect), Recently Used, "* Animation Presets" (Artheffect's own text animation and transition
 //! presets and the user's `.ecpreset` files) and the effect categories. Double-click applies to the
 //! selected layers; dragging an effect or an animation preset onto a layer (timeline, viewer,
 //! Effect Controls) applies it there.
@@ -14,7 +14,7 @@ use crate::a11y;
 use crate::icons::{self, Icon};
 use crate::panels::{DragPayload, PresetRef};
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{ArtheffectApp, widgets};
 
 const ROW_H: f32 = 21.0;
 const RECENT_MAX: usize = 8;
@@ -27,13 +27,13 @@ pub struct PresetFile {
     pub path: String,
 }
 
-/// Where user presets live: `$EC_PRESETS_DIR`, else `~/Documents/EffectCraft/Presets`.
+/// Where user presets live: `$EC_PRESETS_DIR`, else `~/Documents/Artheffect/Presets`.
 pub fn presets_dir() -> Option<std::path::PathBuf> {
     if let Ok(d) = std::env::var("EC_PRESETS_DIR") {
         return Some(d.into());
     }
     let home = std::env::var("HOME").or_else(|_| std::env::var("USERPROFILE")).ok()?;
-    Some(std::path::Path::new(&home).join("Documents").join("EffectCraft").join("Presets"))
+    Some(std::path::Path::new(&home).join("Documents").join("Artheffect").join("Presets"))
 }
 
 /// The `.ecpreset` files in `dir`, sorted by name.
@@ -69,7 +69,7 @@ pub fn push_recent(recent: &mut Vec<String>, id: &str) {
 }
 
 /// Does the contents-menu depth filter (`all`, `32`, `gpu`) keep effect `e`?
-pub fn depth_keeps(depth: &str, e: &effectcraft_engine::effects::EffectSpec) -> bool {
+pub fn depth_keeps(depth: &str, e: &artheffect_engine::effects::EffectSpec) -> bool {
     match depth {
         "32" => e.float,
         "gpu" => e.gpu,
@@ -175,7 +175,7 @@ fn folder_name(label: &str) -> &str {
 /// A folder row; returns whether it is open.
 #[allow(clippy::too_many_arguments)]
 fn folder_row(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     lp: &egui::Painter,
     list: Rect,
@@ -232,7 +232,7 @@ fn folder_row(
 
 /// What every row does with the keyboard focus: the focus ring, the panel taking the focus, the
 /// list owning its keys, and moving the focus here when the arrow keys asked for it.
-fn row_focus(app: &mut EffectcraftApp, ui: &egui::Ui, lp: &egui::Painter, resp: &egui::Response, r: Rect, id: egui::Id) {
+fn row_focus(app: &mut ArtheffectApp, ui: &egui::Ui, lp: &egui::Painter, resp: &egui::Response, r: Rect, id: egui::Id) {
     let ctx = ui.ctx();
     if a11y::take_pending_focus(ctx, "fx", id) {
         resp.request_focus();
@@ -246,7 +246,7 @@ fn row_focus(app: &mut EffectcraftApp, ui: &egui::Ui, lp: &egui::Painter, resp: 
 }
 
 /// A click on a row moves the cursor there and gives the panel the keyboard.
-fn nav_click(ctx: &egui::Context, app: &mut EffectcraftApp, id: egui::Id) {
+fn nav_click(ctx: &egui::Context, app: &mut ArtheffectApp, id: egui::Id) {
     ctx.data_mut(|d| d.insert_temp(cursor_id(), id));
     app.ui.focused = crate::dock::PanelKind::EffectsPresets;
 }
@@ -272,13 +272,13 @@ fn rows_before_presets(favorites: usize, recent: usize, searching: bool, favorit
 /// An effect row (fx icon, highlighted name, favourite star, 32 bpc badge).
 #[allow(clippy::too_many_arguments)]
 fn effect_row(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     lp: &egui::Painter,
     list: Rect,
     y: &mut f32,
     nav: &mut Nav,
-    e: &'static effectcraft_engine::effects::EffectSpec,
+    e: &'static artheffect_engine::effects::EffectSpec,
     level: usize,
     indent: f32,
     query: &str,
@@ -352,7 +352,7 @@ fn effect_row(
 /// A preset row: double-click applies to the selected layers; drag it onto a layer to apply it there.
 #[allow(clippy::too_many_arguments)]
 fn preset_row(
-    app: &mut EffectcraftApp,
+    app: &mut ArtheffectApp,
     ui: &mut egui::Ui,
     lp: &egui::Painter,
     list: Rect,
@@ -401,7 +401,7 @@ fn preset_row(
 /// close the folder. With the mouse's last click in the panel and no widget focused, the arrows
 /// and Enter work the same, so the list is operable without a mouse either way. The focus follows
 /// the cursor, so a screen reader reads each row as it is reached. Returns what to apply.
-fn list_keys(app: &mut EffectcraftApp, ctx: &egui::Context, nav: &Nav, list: Rect) -> Option<Apply> {
+fn list_keys(app: &mut ArtheffectApp, ctx: &egui::Context, nav: &Nav, list: Rect) -> Option<Apply> {
     use egui::Key;
     // A cursor whose row is gone (a search hid it): the first row is the Tab stop again.
     if let Some(c) = nav.cursor
@@ -444,7 +444,7 @@ fn list_keys(app: &mut EffectcraftApp, ctx: &egui::Context, nav: &Nav, list: Rec
             Key::PageUp if on_row => Some(at.map_or(last, |a| a.saturating_sub(page))),
             Key::ArrowRight | Key::ArrowLeft | Key::Enter | Key::Space if at.is_some() => {
                 let row = at.and_then(|a| nav.rows.get(a))?;
-                let toggle = |app: &mut EffectcraftApp, open: bool| {
+                let toggle = |app: &mut ArtheffectApp, open: bool| {
                     if let Some((k, _, forced)) = &row.folder
                         && !forced
                     {
@@ -526,7 +526,7 @@ fn user_presets(ctx: &egui::Context, force: bool, scan: impl FnOnce() -> Vec<Pre
 
 /// The "Effects & Presets options" hamburger menu beside the search field; returns whether
 /// "Refresh List" was picked.
-fn contents_menu(app: &mut EffectcraftApp, ui: &mut egui::Ui, ctx: &egui::Context, rect: Rect, sr: Rect, t: &Tokens) -> bool {
+fn contents_menu(app: &mut ArtheffectApp, ui: &mut egui::Ui, ctx: &egui::Context, rect: Rect, sr: Rect, t: &Tokens) -> bool {
     // Contents menu.
     let mr = Rect::from_center_size(pos2(rect.max.x - 18.0, sr.center().y), vec2(22.0, 22.0));
     let mpop = egui::Id::unique("fx-contents-menu");
@@ -616,7 +616,7 @@ fn contents_menu(app: &mut EffectcraftApp, ui: &mut egui::Ui, ctx: &egui::Contex
 /// (`effect.apply` or the preset's own command); applying an effect also records it as recently
 /// used and opens Effect Controls. Without a selected layer it only reports that in
 /// `app.ui.status`.
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let p = ui.painter().clone();
@@ -644,10 +644,10 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let mut y = list.min.y - scroll.offset;
     let mut apply: Option<Apply> = None;
     let mut nav = Nav { rows: vec![], stack: vec![], cursor: ctx.data(|d| d.get_temp::<egui::Id>(cursor_id())), offset: scroll.offset, list_top: list.min.y };
-    let reg = effectcraft_engine::effects::all();
-    let keep = |e: &effectcraft_engine::effects::EffectSpec| {
+    let reg = artheffect_engine::effects::all();
+    let keep = |e: &artheffect_engine::effects::EffectSpec| {
         depth_keeps(&view.depth, e)
-            && (query.is_empty() || effectcraft_engine::effects::name_matches(e, &query) || crate::i18n::effects::matches(e.id, e.name, &query))
+            && (query.is_empty() || artheffect_engine::effects::name_matches(e, &query) || crate::i18n::effects::matches(e.id, e.name, &query))
     };
     let lookup = |id: &str| reg.iter().find(|e| e.id == id);
 
@@ -680,9 +680,9 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     // * Animation Presets: our own presets (Text, Transitions…) and the user's .ecpreset files.
     if view.presets {
         let text: Vec<(String, String)> =
-            effectcraft_engine::text_presets().into_iter().filter(|(_, n)| query.is_empty() || n.to_lowercase().contains(&query)).collect();
+            artheffect_engine::text_presets().into_iter().filter(|(_, n)| query.is_empty() || n.to_lowercase().contains(&query)).collect();
         let builtin: Vec<(String, String, String)> =
-            effectcraft_engine::animation_presets().into_iter().filter(|(_, n, _)| query.is_empty() || n.to_lowercase().contains(&query)).collect();
+            artheffect_engine::animation_presets().into_iter().filter(|(_, n, _)| query.is_empty() || n.to_lowercase().contains(&query)).collect();
         let mut categories: Vec<&str> = Vec::new();
         for (_, _, c) in &builtin {
             if !categories.contains(&c.as_str()) {
@@ -758,7 +758,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
             effect_row(app, ui, &lp, list, &mut y, &mut nav, e, 1, -16.0, &query, "effects.item", &mut apply);
         }
     } else {
-        let mut cats: Vec<&str> = effectcraft_engine::effects::categories();
+        let mut cats: Vec<&str> = artheffect_engine::effects::categories();
         cats.retain(|c| reg.iter().any(|e| e.category == *c));
         for cat in cats {
             let mut items: Vec<_> = reg.iter().filter(|e| e.category == cat && keep(e)).collect();
@@ -787,7 +787,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         apply = Some(a);
     }
     if let Some(name) = egui::DragAndDrop::payload::<DragPayload>(&ctx).and_then(|p| match p.as_ref() {
-        DragPayload::Effect(id) => Some(effectcraft_engine::effects::find(id).map(|e| crate::i18n::effects::name(e.id, e.name)).unwrap_or_default()),
+        DragPayload::Effect(id) => Some(artheffect_engine::effects::find(id).map(|e| crate::i18n::effects::name(e.id, e.name)).unwrap_or_default()),
         DragPayload::Preset { name, .. } => Some(name.clone()),
         _ => None,
     }) && let Some(pos) = ctx.pointer_hover_pos()
@@ -849,7 +849,7 @@ mod tests {
 
     #[test]
     fn depth_filter() {
-        let reg = effectcraft_engine::effects::registry();
+        let reg = artheffect_engine::effects::registry();
         let all = reg.iter().filter(|e| depth_keeps("all", e)).count();
         let f32s = reg.iter().filter(|e| depth_keeps("32", e)).count();
         assert_eq!(all, reg.len());

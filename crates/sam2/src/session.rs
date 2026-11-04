@@ -92,7 +92,7 @@ pub enum Backend {
     /// wgpu compute on the GPU (any vendor); an error if there is none.
     Gpu,
     /// The GPU when there is a real one and it loads, else the CPU. The environment variable
-    /// `EFFECTCRAFT_SAM2_DEVICE` (`cpu`, `gpu` or `auto`) overrides the choice.
+    /// `ARTHEFFECT_SAM2_DEVICE` (`cpu`, `gpu` or `auto`) overrides the choice.
     Auto,
 }
 
@@ -132,7 +132,7 @@ impl VideoModel {
     }
 
     pub fn load_with(w: &Weights, backend: Backend) -> Result<VideoModel> {
-        let backend = match (backend, std::env::var("EFFECTCRAFT_SAM2_DEVICE").ok().as_deref()) {
+        let backend = match (backend, std::env::var("ARTHEFFECT_SAM2_DEVICE").ok().as_deref()) {
             (Backend::Auto, Some("cpu")) => Backend::Cpu,
             (Backend::Auto, Some("gpu")) => Backend::Gpu,
             (b, _) => b,
@@ -432,8 +432,8 @@ impl<'a> VideoTracker<'a> {
 
     /// Run the model on one frame for one object and store the result.
     fn step(&mut self, id: ObjectId, frame: usize, prompt: Option<&Prompt>, reverse: bool, conditioning: bool) -> Result<FrameMask> {
-        // EFFECTCRAFT_SAM2_PROFILE=1 prints where a frame's time goes (stderr).
-        let profile = std::env::var_os("EFFECTCRAFT_SAM2_PROFILE").is_some();
+        // ARTHEFFECT_SAM2_PROFILE=1 prints where a frame's time goes (stderr).
+        let profile = std::env::var_os("ARTHEFFECT_SAM2_PROFILE").is_some();
         let mut lap = std::time::Instant::now();
         let mut mark = |what: &str| {
             if profile {

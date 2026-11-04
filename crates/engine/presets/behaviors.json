@@ -1,6 +1,6 @@
 {
-  "format": "effectcraft.animationPresets/1",
-  "notes": "Original EffectCraft behavior presets (MIT OR Apache-2.0), written from scratch. Each one drives a transform property or opacity with a time-based expression built on the property's own value, so the motion runs for the layer's whole duration and still follows the property's keyframes. Apply to any layer; no effects are added.",
+  "format": "artheffect.animationPresets/1",
+  "notes": "Original Artheffect behavior presets (MIT OR Apache-2.0), written from scratch. Each one drives a transform property or opacity with a time-based expression built on the property's own value, so the motion runs for the layer's whole duration and still follows the property's keyframes. Apply to any layer; no effects are added.",
   "presets": [
     {
       "id": "wiggleSoft",

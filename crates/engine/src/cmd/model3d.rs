@@ -2,10 +2,10 @@
 //! comp renderer switch, Layer ▸ Environment Layer, Geometry Options for extruded text and
 //! shapes, and Layer ▸ Material commands.
 
-use effectcraft_keyframe::Value as KV;
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{FootageKind, ItemId, ItemKind, Layer, LayerSource, Node, PrimitiveKind, PropGroup, Renderer};
-use effectcraft_time::Tick;
+use artheffect_keyframe::Value as KV;
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{FootageKind, ItemId, ItemKind, Layer, LayerSource, Node, PrimitiveKind, PropGroup, Renderer};
+use artheffect_time::Tick;
 use serde_json::{Value, json};
 
 use super::layer::{color_p, index_p, insert_layer, insert_layer_at, place, position_p};
@@ -27,7 +27,7 @@ pub(crate) fn add_geometry_options(next_id: &mut u64, l: &mut Layer) {
 }
 
 /// Advanced 3D comps: give every text and shape layer Geometry Options.
-pub(crate) fn sync_geometry_options(proj: &mut effectcraft_project::Project, cid: ItemId) {
+pub(crate) fn sync_geometry_options(proj: &mut artheffect_project::Project, cid: ItemId) {
     if proj.comp(cid).is_none_or(|c| c.renderer != Renderer::Advanced3D) {
         return;
     }
@@ -65,7 +65,7 @@ fn comp_renderer(s: &mut Session, p: &Value) -> Result<Value> {
         s.toast("Classic 3D doesn't draw 3D model layers: they show with the Advanced 3D renderer");
     }
     if r == Renderer::Classic3D {
-        let env = |l: &Layer| matches!(l.source, LayerSource::Light { kind: effectcraft_project::LightKind::Environment });
+        let env = |l: &Layer| matches!(l.source, LayerSource::Light { kind: artheffect_project::LightKind::Environment });
         if s.project.comp(cid).is_some_and(|c| c.layers.iter().any(env)) {
             s.toast("Classic 3D doesn't light Environment light layers: they light with the Advanced 3D renderer");
         }
@@ -83,7 +83,7 @@ fn renderer_id(r: Renderer) -> &'static str {
 /// Only the Advanced 3D renderer draws model and primitive layers, so adding one switches a
 /// Classic 3D comp to it, like After Effects (inside the adding edit: one undo step). Whether
 /// the renderer changed.
-pub(crate) fn use_advanced_3d(proj: &mut effectcraft_project::Project, cid: ItemId) -> Result<bool> {
+pub(crate) fn use_advanced_3d(proj: &mut artheffect_project::Project, cid: ItemId) -> Result<bool> {
     let c = proj.comp_mut(cid).ok_or(EngineError::NoComp)?;
     let switched = c.renderer != Renderer::Advanced3D;
     c.renderer = Renderer::Advanced3D;

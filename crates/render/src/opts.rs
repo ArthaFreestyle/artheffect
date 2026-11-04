@@ -21,7 +21,7 @@ pub struct RenderOpts {
     /// just this rectangle, and only its pixels are composited.
     pub roi: Option<[f64; 4]>,
     /// Which proxies stand in for footage and compositions (Render Settings ▸ Proxy Use).
-    pub proxy: effectcraft_project::render_queue::ProxyUse,
+    pub proxy: artheffect_project::render_queue::ProxyUse,
     /// Switches Affect Nested Comps (Settings ▸ General): a precomp layer's Quality and Motion
     /// Blur switches also limit the layers of the nested comp (Draft/Wireframe or motion blur off
     /// propagate down; they never raise a nested layer's own setting).
@@ -49,7 +49,7 @@ impl Default for RenderOpts {
             backend: Backend::Cpu,
             nested_switches: true,
             draft_shadows: true,
-            proxy: effectcraft_project::render_queue::ProxyUse::CurrentSettings,
+            proxy: artheffect_project::render_queue::ProxyUse::CurrentSettings,
         }
     }
 }

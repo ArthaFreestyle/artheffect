@@ -2,9 +2,9 @@
 //! text field has the keyboard, in a docked panel or a floating panel's own OS window, they edit
 //! the field and leave the project alone, and the items stay enabled.
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::{menus, native_menu};
+use artheffect_engine::Session;
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::{menus, native_menu};
 use egui::{Event, Modifiers, PointerButton, Pos2, ViewportCommand, ViewportId, ViewportInfo, pos2, vec2};
 use egui_kittest::Harness;
 use serde_json::json;
@@ -12,25 +12,25 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-fn app() -> EffectcraftApp {
+fn app() -> ArtheffectApp {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 4})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Solid", "color": "#406080"})).unwrap();
-    let mut app = EffectcraftApp::new(s);
+    let mut app = ArtheffectApp::new(s);
     app.ui.start_screen = false;
     app.hooks.clipboard_text = Some(Box::new(|| Some("pasted".into())));
     app
 }
 
 /// What the Edit commands would change in the project.
-fn project(app: &EffectcraftApp) -> (u64, usize, usize, usize) {
+fn project(app: &ArtheffectApp) -> (u64, usize, usize, usize) {
     let s = &app.session;
     (s.revision, s.state.clipboard.len(), s.history.undo.len(), s.history.redo.len())
 }
 
 /// Choose the native menu item that runs `command`, then deliver what it queued for the main
 /// window (kittest does not call `raw_input_hook`).
-fn menu(h: &mut Harness<'_, EffectcraftApp>, command: &str) {
+fn menu(h: &mut Harness<'_, ArtheffectApp>, command: &str) {
     let spec = native_menu::build(h.state());
     let id = spec.items().into_iter().find(|i| i.command == command).unwrap().id.clone();
     let ctx = h.ctx.clone();
@@ -46,18 +46,18 @@ fn menu(h: &mut Harness<'_, EffectcraftApp>, command: &str) {
 }
 
 /// Whether the menu bar shows `command`'s item enabled now, and whether the project alone would.
-fn enabled(h: &Harness<'_, EffectcraftApp>, command: &str) -> (bool, bool) {
+fn enabled(h: &Harness<'_, ArtheffectApp>, command: &str) -> (bool, bool) {
     let find = |menu: native_menu::NativeMenu| menu.items().into_iter().find(|i| i.command == command).unwrap().enabled;
     (find(native_menu::build_now(h.state(), &h.ctx)), find(native_menu::build(h.state())))
 }
 
-fn center(h: &Harness<'_, EffectcraftApp>, id: &str) -> Pos2 {
+fn center(h: &Harness<'_, ArtheffectApp>, id: &str) -> Pos2 {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).clone();
     pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0)
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, at: Pos2, window: Option<&Host>) {
-    let send = |h: &mut Harness<'_, EffectcraftApp>, event: Event| match window {
+fn click(h: &mut Harness<'_, ArtheffectApp>, at: Pos2, window: Option<&Host>) {
+    let send = |h: &mut Harness<'_, ArtheffectApp>, event: Event| match window {
         Some(host) => to_window(host, event),
         None => h.input_mut().events.push(event),
     };
@@ -85,7 +85,7 @@ fn to_window(host: &Host, event: Event) {
     host.events.entry(window).or_default().push(event);
 }
 
-fn native_windows(h: &mut Harness<'_, EffectcraftApp>) -> Host {
+fn native_windows(h: &mut Harness<'_, ArtheffectApp>) -> Host {
     let host = Host::default();
     let shared = host.clone();
     egui::Context::set_immediate_viewport_renderer(move |ctx, mut viewport| {

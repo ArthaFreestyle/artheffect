@@ -1,11 +1,11 @@
 //! Auto-orient (along path / towards camera) and camera parenting.
 
-use effectcraft_color::Label;
-use effectcraft_geom::vec3;
-use effectcraft_keyframe::{Keyframe, Value};
-use effectcraft_project::build;
-use effectcraft_project::{AutoOrient, Comp, ItemId, ItemKind, Layer, LayerSource, Project, Solid};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_geom::vec3;
+use artheffect_keyframe::{Keyframe, Value};
+use artheffect_project::build;
+use artheffect_project::{AutoOrient, Comp, ItemId, ItemKind, Layer, LayerSource, Project, Solid};
+use artheffect_time::{FrameRate, Tick};
 
 use super::active_camera;
 use super::camera::auto_orient_2d;
@@ -88,7 +88,7 @@ fn orient_along_path_keeps_the_last_heading_when_position_is_an_expression() {
     /// a slider going from 0% to 100%).
     struct LeftThenHold;
     impl crate::ExprHost for LeftThenHold {
-        fn eval(&self, ctx: &EvalCtx, _: &Layer, prop: &effectcraft_project::Property, value: &Value) -> Result<Value, String> {
+        fn eval(&self, ctx: &EvalCtx, _: &Layer, prop: &artheffect_project::Property, value: &Value) -> Result<Value, String> {
             if prop.match_id != "position" {
                 return Ok(value.clone());
             }
@@ -102,7 +102,7 @@ fn orient_along_path_keeps_the_last_heading_when_position_is_an_expression() {
         l.auto_orient = AutoOrient::AlongPath;
         let pos = l.props.prop_mut("transform/position").unwrap();
         assert!(pos.keys.is_empty(), "the fixture must have no Position keyframes");
-        pos.expr = Some(effectcraft_project::Expression { text: "left then hold".into(), enabled: true });
+        pos.expr = Some(artheffect_project::Expression { text: "left then hold".into(), enabled: true });
         p.comp_mut(cid).unwrap().layers.push(l);
         let c = p.comp(cid).unwrap();
         for secs in [0.2, 0.75, 1.0, 1.0 + 1.0 / 30.0, 1.2, 1.9] {
@@ -121,7 +121,7 @@ fn orient_along_a_curved_expression_path_keeps_the_end_heading() {
     /// Quarter circle over 0..1 s: heading 0 degrees at the start, 90 degrees (down) at the end.
     struct Arc;
     impl crate::ExprHost for Arc {
-        fn eval(&self, ctx: &EvalCtx, _: &Layer, prop: &effectcraft_project::Property, value: &Value) -> Result<Value, String> {
+        fn eval(&self, ctx: &EvalCtx, _: &Layer, prop: &artheffect_project::Property, value: &Value) -> Result<Value, String> {
             if prop.match_id != "position" {
                 return Ok(value.clone());
             }
@@ -132,7 +132,7 @@ fn orient_along_a_curved_expression_path_keeps_the_end_heading() {
     let (mut p, cid, comp) = setup();
     let mut l = solid(&mut p, &comp, false, [0.0, 0.0, 0.0]);
     l.auto_orient = AutoOrient::AlongPath;
-    l.props.prop_mut("transform/position").unwrap().expr = Some(effectcraft_project::Expression { text: "arc".into(), enabled: true });
+    l.props.prop_mut("transform/position").unwrap().expr = Some(artheffect_project::Expression { text: "arc".into(), enabled: true });
     p.comp_mut(cid).unwrap().layers.push(l);
     let c = p.comp(cid).unwrap();
     for frame in [31, 33, 37, 45, 59] {
@@ -182,7 +182,7 @@ fn layer_cache_is_independent_of_camera_lights_and_view() {
     let mut cam = build::layer(&mut p, &comp, "Camera", LayerSource::Camera, (200, 100), None);
     cam.props.prop_mut("cameraOptions/dof").unwrap().value = Value::Bool(true);
     cam.props.prop_mut("cameraOptions/aperture").unwrap().value = Value::Scalar(40.0);
-    let light = build::layer(&mut p, &comp, "Light", LayerSource::Light { kind: effectcraft_project::LightKind::Point }, (200, 100), None);
+    let light = build::layer(&mut p, &comp, "Light", LayerSource::Light { kind: artheffect_project::LightKind::Point }, (200, 100), None);
     let a = solid(&mut p, &comp, true, [80.0, 50.0, 0.0]);
     let b = solid(&mut p, &comp, true, [120.0, 50.0, 150.0]);
     let c = p.comp_mut(cid).unwrap();

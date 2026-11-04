@@ -21,8 +21,8 @@ pub trait FootageSource: Send + Sync {
     fn frame(&self, item: ItemId, footage: &Footage, t: Tick) -> Option<Arc<Image>>;
     /// [`FootageSource::frame`] for a render that shows it at `width` × `height`, at most half its
     /// size: either that frame or, when the source can make it more cheaply than the whole frame
-    /// (movies, see `effectcraft-media`), the frame already resampled to that size as
-    /// [`effectcraft_raster::resample`] would.
+    /// (movies, see `artheffect-media`), the frame already resampled to that size as
+    /// [`artheffect_raster::resample`] would.
     fn frame_at_size(&self, item: ItemId, footage: &Footage, t: Tick, _width: u32, _height: u32) -> Option<Arc<Image>> {
         self.frame(item, footage, t)
     }
@@ -45,11 +45,11 @@ pub trait FootageSource: Send + Sync {
     /// Auxiliary 3D channels of `item` at source time `t` (multi-layer OpenEXR: depth, IDs,
     /// Cryptomatte, any named channel), with `scale` relative to the file's pixels. `None` when
     /// the footage has none.
-    fn aux(&self, _item: ItemId, _footage: &Footage, _t: Tick) -> Option<Arc<effectcraft_raster::AuxChannels>> {
+    fn aux(&self, _item: ItemId, _footage: &Footage, _t: Tick) -> Option<Arc<artheffect_raster::AuxChannels>> {
         None
     }
-    /// The parsed 3D model of a [`effectcraft_project::FootageKind::Model`] item (Advanced 3D).
-    fn model(&self, _item: ItemId, _footage: &Footage) -> Option<Arc<effectcraft_model::Model>> {
+    /// The parsed 3D model of a [`artheffect_project::FootageKind::Model`] item (Advanced 3D).
+    fn model(&self, _item: ItemId, _footage: &Footage) -> Option<Arc<artheffect_model::Model>> {
         None
     }
     /// Set the decoded-frame cache budget in bytes (Settings ▸ Memory & CPU); sources without
@@ -96,7 +96,7 @@ pub trait FootageSource: Send + Sync {
     /// [`Self::problem`] of what `item` shows: its proxy's while Use Proxy shows the proxy
     /// instead (the reason then says it is the proxy's), else the footage item's own. A
     /// composition has one only through its proxy.
-    fn item_problem(&self, item: &effectcraft_project::Item) -> Option<String> {
+    fn item_problem(&self, item: &artheffect_project::Item) -> Option<String> {
         match item.proxy.as_deref().filter(|px| px.enabled && px.footage.has_video) {
             Some(px) => self.problem(&px.footage).map(|why| format!("Proxy: {why}")),
             None => match &item.kind {
@@ -137,10 +137,10 @@ impl FootageSource for CancellableFootage<'_> {
     fn audio(&self, item: ItemId, footage: &Footage, t: Tick, frames: usize, rate: u32) -> Option<Vec<f32>> {
         self.inner.audio(item, footage, t, frames, rate)
     }
-    fn aux(&self, item: ItemId, footage: &Footage, t: Tick) -> Option<Arc<effectcraft_raster::AuxChannels>> {
+    fn aux(&self, item: ItemId, footage: &Footage, t: Tick) -> Option<Arc<artheffect_raster::AuxChannels>> {
         self.inner.aux(item, footage, t)
     }
-    fn model(&self, item: ItemId, footage: &Footage) -> Option<Arc<effectcraft_model::Model>> {
+    fn model(&self, item: ItemId, footage: &Footage) -> Option<Arc<artheffect_model::Model>> {
         self.inner.model(item, footage)
     }
     fn set_cache_budget(&self, bytes: usize) {

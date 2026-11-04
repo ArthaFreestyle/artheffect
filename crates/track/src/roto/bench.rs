@@ -2,12 +2,12 @@
 //! leaving and re-entering the frame) and the metrics that compare trackers on them.
 //!
 //! Needs no weights: the classical engine always runs, and a trained [`MaskModel`] (MobileSAM,
-//! later SAM 2) is added when the caller has one. `effectcraft-cli bench --roto` prints the table.
+//! later SAM 2) is added when the caller has one. `artheffect-cli bench --roto` prints the table.
 
-use effectcraft_raster::Image;
+use artheffect_raster::Image;
 use std::sync::Arc;
 
-use effectcraft_segment::{ClipFrame, MaskModel, TrackRequest};
+use artheffect_segment::{ClipFrame, MaskModel, TrackRequest};
 use serde::Serialize;
 use web_time::Instant;
 

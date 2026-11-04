@@ -1,10 +1,10 @@
 //! Roto Brush & Refine Edge end to end through the commands, on synthetic footage: a textured
 //! disk moving over a textured background.
 
-use effectcraft_project::LayerId;
-use effectcraft_raster::Image;
-use effectcraft_render::RenderOpts;
-use effectcraft_track::roto::rle;
+use artheffect_project::LayerId;
+use artheffect_raster::Image;
+use artheffect_render::RenderOpts;
+use artheffect_track::roto::rle;
 use serde_json::{Value, json};
 
 use crate::Session;
@@ -124,7 +124,7 @@ fn painted(path: fn(u32) -> [f64; 2], name: &str) -> (Session, LayerId, u64) {
     s.edit("remove solid", None, |p, _| {
         p.comp_mut(cid).unwrap().layers.retain(|l| l.id != solid);
         for it in p.items.values_mut() {
-            if let effectcraft_project::ItemKind::Footage(f) = &mut it.kind {
+            if let artheffect_project::ItemKind::Footage(f) = &mut it.kind {
                 f.path = name.into();
             }
         }
@@ -150,8 +150,8 @@ fn forget(s: &Session, clip: LayerId, uid: u64) {
     let l = comp.layer(clip).unwrap();
     let g = l.props.find_group(uid).unwrap();
     let size = crate::roto::layer_size(&s.project, comp, l);
-    let ch = effectcraft_effects::roto::Chain::new(&crate::roto::params_static(g), size, comp.frame_rate.as_f64(), 1.0);
-    effectcraft_effects::roto::forget(ch.keys.values().copied());
+    let ch = artheffect_effects::roto::Chain::new(&crate::roto::params_static(g), size, comp.frame_rate.as_f64(), 1.0);
+    artheffect_effects::roto::forget(ch.keys.values().copied());
 }
 
 fn iou_at(s: &mut Session, clip: LayerId, f: u32, c: [f64; 2]) -> f64 {
@@ -225,9 +225,9 @@ fn roto_brush_segments_and_propagates() {
     assert!(iou_at(&mut s, clip, 24, center(24)) > 0.9);
     // Undo / redo of strokes and the span.
     let n = |s: &Session| {
-        let st = s.active_comp().unwrap().layer(clip).unwrap().props.find_group(uid).unwrap().get(effectcraft_effects::roto::STROKES).unwrap().value.clone();
+        let st = s.active_comp().unwrap().layer(clip).unwrap().props.find_group(uid).unwrap().get(artheffect_effects::roto::STROKES).unwrap().value.clone();
         match st {
-            effectcraft_keyframe::Value::Str(j) => effectcraft_track::roto::RotoData::from_json(&j),
+            artheffect_keyframe::Value::Str(j) => artheffect_track::roto::RotoData::from_json(&j),
             _ => panic!(),
         }
     };
@@ -242,7 +242,7 @@ fn roto_brush_segments_and_propagates() {
     assert_eq!(n(&s).strokes.len(), 3);
     assert_eq!(n(&s).span, [0, 24]);
     // Serde keeps the strokes; the reopened project renders the same matte.
-    let back = effectcraft_project::Project::from_json(&s.project.to_json()).unwrap();
+    let back = artheffect_project::Project::from_json(&s.project.to_json()).unwrap();
     let g = back.comp(s.active_comp_id().unwrap()).unwrap().layer(clip).unwrap().props.find_group(uid).unwrap().clone();
     assert_eq!(
         crate::roto::params_static(&g).get("strokes"),
@@ -361,7 +361,7 @@ fn propagation_is_deterministic_and_runs_in_background() {
 
 /// Runs offloaded jobs at once in a second session sharing the footage, through JSON (what the
 /// browser's Web Worker does, minus the thread).
-struct InlineWorker(std::sync::Arc<dyn effectcraft_render::FootageSource>);
+struct InlineWorker(std::sync::Arc<dyn artheffect_render::FootageSource>);
 
 impl crate::offload::Offload for InlineWorker {
     fn start(&self, req: crate::offload::WorkerRequest, inbox: std::sync::Arc<crate::offload::Inbox>) -> Result<(), String> {
@@ -418,7 +418,7 @@ fn object_matte_from_a_click() {
     s.edit("remove solid", None, |p, _| {
         p.comp_mut(cid).unwrap().layers.retain(|l| l.id != solid);
         for it in p.items.values_mut() {
-            if let effectcraft_project::ItemKind::Footage(f) = &mut it.kind {
+            if let artheffect_project::ItemKind::Footage(f) = &mut it.kind {
                 f.path = "object-matte.mov".into();
             }
         }
@@ -433,10 +433,10 @@ fn object_matte_from_a_click() {
     let uid = r["effect"].as_u64().unwrap();
     let key = |s: &Session| {
         let g = s.active_comp().unwrap().layer(clip).unwrap().props.find_group(uid).unwrap().clone();
-        crate::roto::params_static(&g).get(effectcraft_effects::roto::INPUT_KEY).cloned()
+        crate::roto::params_static(&g).get(artheffect_effects::roto::INPUT_KEY).cloned()
     };
     let k0 = key(&s);
-    assert!(matches!(&k0, Some(effectcraft_keyframe::Value::Str(k)) if !k.is_empty()), "{k0:?}");
+    assert!(matches!(&k0, Some(artheffect_keyframe::Value::Str(k)) if !k.is_empty()), "{k0:?}");
     let wrong = |s: &Session, f: u32| {
         let c = center(f);
         alpha_at(s, f)
@@ -457,7 +457,7 @@ fn object_matte_from_a_click() {
     // Other frames under the effect: a new Input Key (the mattes are recomputed).
     s.edit("swap clip", None, |p, _| {
         for it in p.items.values_mut() {
-            if let effectcraft_project::ItemKind::Footage(f) = &mut it.kind {
+            if let artheffect_project::ItemKind::Footage(f) = &mut it.kind {
                 f.path = "object-matte-2.mov".into();
             }
         }
@@ -511,13 +511,13 @@ fn object_matte_reprompt_updates_the_instance() {
     assert_eq!(count(&s), 1);
     assert_eq!(s.history.undo.len(), undo0 + 1);
     let p = ps(&s);
-    assert_eq!(p.get("objectPoint"), Some(&effectcraft_keyframe::Value::Vec2([c[0] + 4.0, c[1]])));
-    assert_eq!(p.get("useBox"), Some(&effectcraft_keyframe::Value::Bool(false)));
-    assert_eq!(effectcraft_effects::object_matte::reference_frame(&p), 2);
-    assert_eq!(effectcraft_effects::object_matte::reach(&p), [30, 6]);
+    assert_eq!(p.get("objectPoint"), Some(&artheffect_keyframe::Value::Vec2([c[0] + 4.0, c[1]])));
+    assert_eq!(p.get("useBox"), Some(&artheffect_keyframe::Value::Bool(false)));
+    assert_eq!(artheffect_effects::object_matte::reference_frame(&p), 2);
+    assert_eq!(artheffect_effects::object_matte::reach(&p), [30, 6]);
     // Undo restores the first prompt.
     s.execute("edit.undo", json!({})).unwrap();
-    assert_eq!(ps(&s).get("useBox"), Some(&effectcraft_keyframe::Value::Bool(true)));
+    assert_eq!(ps(&s).get("useBox"), Some(&artheffect_keyframe::Value::Bool(true)));
     // An unknown or non-Object Matte effect is refused.
     assert!(s.execute_checked("objectMatte.apply", json!({"layer": clip.0, "effect": 999_999, "point": c})).is_err());
 }
@@ -534,7 +534,7 @@ fn object_matte_background_job_cancel_and_freeze() {
     s.edit("remove solid", None, |p, _| {
         p.comp_mut(cid).unwrap().layers.retain(|l| l.id != solid);
         for it in p.items.values_mut() {
-            if let effectcraft_project::ItemKind::Footage(f) = &mut it.kind {
+            if let artheffect_project::ItemKind::Footage(f) = &mut it.kind {
                 f.path = "object-matte-job.mov".into();
             }
         }
@@ -587,7 +587,7 @@ fn object_matte_background_job_cancel_and_freeze() {
     assert_eq!(r["frozen"], true, "{r}");
     let keys: Vec<u64> = s.roto_keys(cid, clip, uid).unwrap().into_iter().map(|(_, k)| k).collect();
     assert_eq!(keys.len(), 25);
-    effectcraft_effects::roto::forget(keys.iter().copied());
+    artheffect_effects::roto::forget(keys.iter().copied());
     let frozen = alpha_at(&s, 4);
     let diff = before.iter().zip(&frozen).filter(|(a, b)| (**a - **b).abs() > 0.02).count();
     assert!(diff < 30, "{diff} pixels differ from the computed matte");
@@ -608,10 +608,10 @@ fn object_matte_background_job_cancel_and_freeze() {
 /// here), and another prompt (other keys) finds nothing.
 #[test]
 fn object_matte_mattes_persist_in_the_disk_cache() {
-    use effectcraft_effects::object_matte as om;
-    use effectcraft_render::disk_cache::Kind;
+    use artheffect_effects::object_matte as om;
+    use artheffect_render::disk_cache::Kind;
     hold_roto_cache_test_lock();
-    let dir = std::env::temp_dir().join(format!("effectcraft-om-disk-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("artheffect-om-disk-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     let enable = |s: &mut Session| {
         s.execute_checked("prefs.set", json!({"values": {"disk.diskCacheFolder": dir.to_string_lossy(), "disk.diskCacheEnabled": true}})).unwrap();
@@ -622,7 +622,7 @@ fn object_matte_mattes_persist_in_the_disk_cache() {
     s.edit("remove solid", None, |p, _| {
         p.comp_mut(cid).unwrap().layers.retain(|l| l.id != solid);
         for it in p.items.values_mut() {
-            if let effectcraft_project::ItemKind::Footage(f) = &mut it.kind {
+            if let artheffect_project::ItemKind::Footage(f) = &mut it.kind {
                 f.path = "object-matte-disk.mov".into();
             }
         }
@@ -642,7 +642,7 @@ fn object_matte_mattes_persist_in_the_disk_cache() {
     let saved = s.project.clone();
     drop(dc);
     drop(s);
-    effectcraft_effects::roto::forget(keys.iter().map(|(_, k)| *k));
+    artheffect_effects::roto::forget(keys.iter().map(|(_, k)| *k));
 
     // "Reopen": a new session on the same folder and project.
     let (mut s2, _, _) = setup(|f| draw(center(f)));
@@ -664,18 +664,18 @@ fn object_matte_mattes_persist_in_the_disk_cache() {
     assert_eq!(again, before, "the disk-cached matte renders the same");
     // Another prompt: other keys, nothing on disk.
     let mut moved = ps.clone();
-    moved.values.insert("objectPoint".into(), effectcraft_keyframe::Value::Vec2([c[0] + 3.0, c[1]]));
+    moved.values.insert("objectPoint".into(), artheffect_keyframe::Value::Vec2([c[0] + 3.0, c[1]]));
     assert!(om::ensure(&moved, size, 25.0, 0, None, &mut |_| None, &|| false).is_none());
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-/// SAM 2 tracks the clip end to end (needs the real weights: `EFFECTCRAFT_SAM2=path/to/model.safetensors`).
+/// SAM 2 tracks the clip end to end (needs the real weights: `ARTHEFFECT_SAM2=path/to/model.safetensors`).
 /// Every frame comes from the tracker with a confidence, the mattes are right, and nothing changes
 /// once the model is deselected.
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn sam2_tracks_the_clip_through_roto_propagate() {
-    let Ok(weights) = std::env::var("EFFECTCRAFT_SAM2") else { return };
+    let Ok(weights) = std::env::var("ARTHEFFECT_SAM2") else { return };
     let dir = std::env::temp_dir().join(format!("ec-roto-sam2-{}", std::process::id()));
     hold_roto_cache_test_lock();
     let (mut s, clip, _) = painted(center, "disk-sam2.mov");
@@ -683,7 +683,7 @@ fn sam2_tracks_the_clip_through_roto_propagate() {
     std::fs::create_dir_all(dir.join("models")).unwrap();
     s.execute_checked("roto.model.install", json!({"path": weights})).unwrap();
     s.execute_checked("roto.model.select", json!({"id": "sam2.1-hiera-tiny", "wait": true})).unwrap();
-    assert_eq!(s.models.status(effectcraft_segment::Task::Mask).active.as_deref(), Some("sam2.1-hiera-tiny"));
+    assert_eq!(s.models.status(artheffect_segment::Task::Mask).active.as_deref(), Some("sam2.1-hiera-tiny"));
     let r = s.execute_checked("roto.propagate", json!({"layer": clip.0, "direction": "both", "wait": true})).unwrap();
     assert_eq!(r["frames"], 21, "{r}");
     let mut worst: f64 = 1.0;
@@ -736,11 +736,11 @@ fn a_selected_model_that_is_not_installed_refuses_to_propagate() {
 }
 
 /// Selecting SAM 2 without `wait` and propagating at once: propagate loads the model first, so the
-/// tracker (not the classic engine) does the work. Needs EFFECTCRAFT_SAM2 like the test above.
+/// tracker (not the classic engine) does the work. Needs ARTHEFFECT_SAM2 like the test above.
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn sam2_selected_without_wait_is_loaded_before_propagate() {
-    let Ok(weights) = std::env::var("EFFECTCRAFT_SAM2") else { return };
+    let Ok(weights) = std::env::var("ARTHEFFECT_SAM2") else { return };
     hold_roto_cache_test_lock();
     let dir = std::env::temp_dir().join(format!("ec-roto-sam2-wait-{}", std::process::id()));
     let (mut s, clip, _) = painted(center, "disk-sam2-wait.mov");
@@ -761,33 +761,33 @@ fn sam2_selected_without_wait_is_loaded_before_propagate() {
 /// for SAM 2, so the saved tracking can be tested without the weights.
 struct Exact;
 
-impl effectcraft_segment::MaskModel for Exact {
-    fn info(&self) -> &'static effectcraft_segment::ModelInfo {
-        &effectcraft_segment::SAM2_TINY
+impl artheffect_segment::MaskModel for Exact {
+    fn info(&self) -> &'static artheffect_segment::ModelInfo {
+        &artheffect_segment::SAM2_TINY
     }
-    fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &effectcraft_segment::Prompt) -> effectcraft_segment::Result<Vec<f32>> {
+    fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &artheffect_segment::Prompt) -> artheffect_segment::Result<Vec<f32>> {
         Err("no weights".into())
     }
-    fn tracker(&self) -> Option<&dyn effectcraft_segment::ObjectTracker> {
+    fn tracker(&self) -> Option<&dyn artheffect_segment::ObjectTracker> {
         Some(self)
     }
 }
 
-impl effectcraft_segment::ObjectTracker for Exact {
+impl artheffect_segment::ObjectTracker for Exact {
     fn track(
         &self,
-        req: &effectcraft_segment::TrackRequest,
-        frame: &mut dyn FnMut(i64) -> Option<std::sync::Arc<effectcraft_segment::ClipFrame>>,
+        req: &artheffect_segment::TrackRequest,
+        frame: &mut dyn FnMut(i64) -> Option<std::sync::Arc<artheffect_segment::ClipFrame>>,
         _: &dyn Fn() -> bool,
-        out: &mut dyn FnMut(usize, i64, effectcraft_segment::TrackedFrame),
-    ) -> effectcraft_segment::Result<()> {
+        out: &mut dyn FnMut(usize, i64, artheffect_segment::TrackedFrame),
+    ) -> artheffect_segment::Result<()> {
         for g in req.first..req.first + req.count as i64 {
             let Some(img) = frame(g) else { return Err(format!("no frame {g}")) };
             let c = center(g as u32);
             let prob = (0..img.w * img.h)
                 .map(|i| ((((i % img.w) as f64 + 0.5 - c[0]).hypot((i / img.w) as f64 + 0.5 - c[1])) <= R) as u8 as f32)
                 .collect::<Vec<f32>>();
-            out(0, g, effectcraft_segment::TrackedFrame { prob, w: img.w, h: img.h, confidence: 0.99, occluded: false });
+            out(0, g, artheffect_segment::TrackedFrame { prob, w: img.w, h: img.h, confidence: 0.99, occluded: false });
         }
         Ok(())
     }
@@ -818,7 +818,7 @@ fn saved_tracking_is_kept_in_the_project_and_applies_when_it_reopens() {
     let l = comp.layer(clip).unwrap();
     let g = l.props.find_group(uid).unwrap();
     let size = crate::roto::layer_size(&s2.project, comp, l);
-    let ch = effectcraft_effects::roto::Chain::new(&crate::roto::params_static(g), size, comp.frame_rate.as_f64(), 1.0);
+    let ch = artheffect_effects::roto::Chain::new(&crate::roto::params_static(g), size, comp.frame_rate.as_f64(), 1.0);
     let seg = ch.ensure(12, &mut |_| None, &|| false).expect("the render path reads the saved frame");
     let truth = rle::decode(&gt(center(12))).unwrap();
     let inter = seg.matte.iter().zip(&truth).filter(|(a, b)| **a != 0 && **b != 0).count();
@@ -849,9 +849,9 @@ fn propagating_with_nothing_new_keeps_the_saved_tracking() {
     let mut s2 = Session::default();
     s2.execute_checked("file.open", json!({"path": path})).unwrap();
     s2.footage = s.footage.clone();
-    effectcraft_effects::roto::set_model(Some(std::sync::Arc::new(Exact)));
+    artheffect_effects::roto::set_model(Some(std::sync::Arc::new(Exact)));
     let result = s2.execute_checked("roto.propagate", json!({"layer": clip.0, "direction": "both", "wait": true}));
-    effectcraft_effects::roto::set_model(None);
+    artheffect_effects::roto::set_model(None);
     result.unwrap();
     let st = s2.execute("roto.status", json!({"layer": clip.0, "frame": 12})).unwrap();
     assert_eq!(st["tracker"]["saved"], "sam2.1-hiera-tiny", "{st}");
@@ -883,21 +883,21 @@ fn freeze_uses_complete_saved_tracking_without_the_model() {
 #[test]
 fn propagating_saved_tracking_uses_the_new_model() {
     struct OtherModel;
-    impl effectcraft_segment::MaskModel for OtherModel {
-        fn info(&self) -> &'static effectcraft_segment::ModelInfo {
-            &effectcraft_segment::SAM2_SMALL
+    impl artheffect_segment::MaskModel for OtherModel {
+        fn info(&self) -> &'static artheffect_segment::ModelInfo {
+            &artheffect_segment::SAM2_SMALL
         }
-        fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &effectcraft_segment::Prompt) -> effectcraft_segment::Result<Vec<f32>> {
+        fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &artheffect_segment::Prompt) -> artheffect_segment::Result<Vec<f32>> {
             Err("no weights".into())
         }
-        fn tracker(&self) -> Option<&dyn effectcraft_segment::ObjectTracker> {
+        fn tracker(&self) -> Option<&dyn artheffect_segment::ObjectTracker> {
             Some(&Exact)
         }
     }
     let (mut s, clip, _uid, path) = saved_project("model-switch");
-    effectcraft_effects::roto::set_model(Some(std::sync::Arc::new(OtherModel)));
+    artheffect_effects::roto::set_model(Some(std::sync::Arc::new(OtherModel)));
     let result = s.execute_checked("roto.propagate", json!({"layer": clip.0, "direction": "both", "wait": true}));
-    effectcraft_effects::roto::set_model(None);
+    artheffect_effects::roto::set_model(None);
     result.unwrap();
     let status = s.execute("roto.status", json!({"layer": clip.0, "frame": 12})).unwrap();
     assert_eq!(status["tracker"]["saved"], "sam2.1-hiera-small", "{status}");
@@ -909,9 +909,9 @@ fn propagating_saved_tracking_uses_the_new_model() {
 /// file.
 fn saved_project(name: &str) -> (Session, LayerId, u64, String) {
     let (mut s, clip, uid) = painted(center, &format!("disk-{name}.mov"));
-    effectcraft_effects::roto::set_model(Some(std::sync::Arc::new(Exact)));
+    artheffect_effects::roto::set_model(Some(std::sync::Arc::new(Exact)));
     let r = s.execute_checked("roto.propagate", json!({"layer": clip.0, "direction": "both", "wait": true}));
-    effectcraft_effects::roto::set_model(None);
+    artheffect_effects::roto::set_model(None);
     assert_eq!(r.unwrap()["frames"], 21);
     let dir = std::env::temp_dir().join(format!("ec-roto-{name}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
@@ -940,14 +940,14 @@ fn a_stroke_change_makes_the_saved_tracking_stale() {
 /// A tracker that emits a completed frame before failing must leave only classic results behind.
 #[test]
 fn a_partially_failing_tracker_falls_back_to_the_classic_engine() {
-    use effectcraft_segment::{ClipFrame, MaskModel, ModelInfo, ObjectTracker, Prompt, TrackRequest, TrackedFrame};
+    use artheffect_segment::{ClipFrame, MaskModel, ModelInfo, ObjectTracker, Prompt, TrackRequest, TrackedFrame};
     use std::sync::Arc;
     struct Broken;
     impl MaskModel for Broken {
         fn info(&self) -> &'static ModelInfo {
-            &effectcraft_segment::SAM2_TINY
+            &artheffect_segment::SAM2_TINY
         }
-        fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &Prompt) -> effectcraft_segment::Result<Vec<f32>> {
+        fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &Prompt) -> artheffect_segment::Result<Vec<f32>> {
             Err("no weights".into())
         }
         fn tracker(&self) -> Option<&dyn ObjectTracker> {
@@ -961,7 +961,7 @@ fn a_partially_failing_tracker_falls_back_to_the_classic_engine() {
             frame: &mut dyn FnMut(i64) -> Option<Arc<ClipFrame>>,
             _: &dyn Fn() -> bool,
             out: &mut dyn FnMut(usize, i64, TrackedFrame),
-        ) -> effectcraft_segment::Result<()> {
+        ) -> artheffect_segment::Result<()> {
             let img = frame(req.first).ok_or("missing test frame")?;
             for object in 0..req.objects.len() {
                 out(object, req.first, TrackedFrame { prob: vec![1.0; img.w * img.h], w: img.w, h: img.h, confidence: 0.9, occluded: false });
@@ -972,14 +972,14 @@ fn a_partially_failing_tracker_falls_back_to_the_classic_engine() {
     hold_roto_cache_test_lock();
     let (mut s, clip, uid) = painted(center, "disk-partially-broken-tracker.mov");
     s.execute_checked("roto.stroke", json!({"layer": clip.0, "object": 1, "points": [center(0)], "radius": 4})).unwrap();
-    effectcraft_effects::roto::set_model(Some(Arc::new(Broken)));
+    artheffect_effects::roto::set_model(Some(Arc::new(Broken)));
     let r = s.execute_checked("roto.propagate", json!({"layer": clip.0, "direction": "both", "wait": true}));
     let st = s.execute("roto.status", json!({"layer": clip.0, "frame": 0}));
     let comp = s.active_comp().unwrap();
     let layer = comp.layer(clip).unwrap();
     let params = crate::roto::params_static(layer.props.find_group(uid).unwrap());
     let size = crate::roto::layer_size(&s.project, comp, layer);
-    let mut chain = effectcraft_effects::roto::Chain::new(&params, size, comp.frame_rate.as_f64(), 1.0);
+    let mut chain = artheffect_effects::roto::Chain::new(&params, size, comp.frame_rate.as_f64(), 1.0);
     let index = layer.effects().unwrap().groups().position(|g| g.uid == uid).unwrap();
     let mut source =
         crate::roto::FrameSource::new(&s.project, s.footage.as_ref(), s.expr.as_deref(), &s.layer_cache, s.active_comp_id().unwrap(), comp, layer, index, size);
@@ -988,10 +988,10 @@ fn a_partially_failing_tracker_falls_back_to_the_classic_engine() {
     let retained_object = chain.object_seg(0, 0).is_some() || chain.object_seg(0, 1).is_some();
     let retained_trust = chain.trust_at(0);
     // Build the reference only after capturing the fallback, with no model or cached union.
-    effectcraft_effects::roto::forget(chain.keys.values().copied());
+    artheffect_effects::roto::forget(chain.keys.values().copied());
     chain.model = None;
     let expected: Option<Vec<_>> = (0..=20).map(|f| chain.ensure(f, &mut get, &|| false)).collect();
-    effectcraft_effects::roto::set_model(None);
+    artheffect_effects::roto::set_model(None);
     let r = r.unwrap();
     assert_eq!(r["frames"], 21, "{r}");
     let st = st.unwrap();
@@ -1008,7 +1008,7 @@ fn a_partially_failing_tracker_falls_back_to_the_classic_engine() {
 /// equals a direct call of `segment_with` / `propagate_with` (no model), bit for bit.
 #[test]
 fn without_a_tracker_the_chain_is_exactly_the_classic_engine() {
-    use effectcraft_track::roto as rb;
+    use artheffect_track::roto as rb;
     use std::sync::Arc;
     let (s, clip, uid) = painted(center, "disk-bitexact.mov");
     forget(&s, clip, uid);
@@ -1016,7 +1016,7 @@ fn without_a_tracker_the_chain_is_exactly_the_classic_engine() {
     let l = comp.layer(clip).unwrap();
     let g = l.props.find_group(uid).unwrap();
     let size = crate::roto::layer_size(&s.project, comp, l);
-    let chain = effectcraft_effects::roto::Chain::new(&crate::roto::params_static(g), size, comp.frame_rate.as_f64(), 1.0);
+    let chain = artheffect_effects::roto::Chain::new(&crate::roto::params_static(g), size, comp.frame_rate.as_f64(), 1.0);
     assert!(!chain.has_tracker());
     let img = |f: i64| Arc::new(draw(center(f as u32)));
     let mut prev: Option<(Arc<Image>, rb::FrameSeg)> = None;
@@ -1040,29 +1040,29 @@ struct Recorder {
     requests: std::sync::Mutex<Vec<(i64, usize, Vec<i64>)>>,
 }
 
-impl effectcraft_segment::MaskModel for Recorder {
-    fn info(&self) -> &'static effectcraft_segment::ModelInfo {
-        &effectcraft_segment::SAM2_TINY
+impl artheffect_segment::MaskModel for Recorder {
+    fn info(&self) -> &'static artheffect_segment::ModelInfo {
+        &artheffect_segment::SAM2_TINY
     }
-    fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &effectcraft_segment::Prompt) -> effectcraft_segment::Result<Vec<f32>> {
+    fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &artheffect_segment::Prompt) -> artheffect_segment::Result<Vec<f32>> {
         Err("no weights".into())
     }
-    fn tracker(&self) -> Option<&dyn effectcraft_segment::ObjectTracker> {
+    fn tracker(&self) -> Option<&dyn artheffect_segment::ObjectTracker> {
         Some(self)
     }
 }
 
-impl effectcraft_segment::ObjectTracker for Recorder {
+impl artheffect_segment::ObjectTracker for Recorder {
     fn track(
         &self,
-        req: &effectcraft_segment::TrackRequest,
-        frame: &mut dyn FnMut(i64) -> Option<std::sync::Arc<effectcraft_segment::ClipFrame>>,
+        req: &artheffect_segment::TrackRequest,
+        frame: &mut dyn FnMut(i64) -> Option<std::sync::Arc<artheffect_segment::ClipFrame>>,
         cancel: &dyn Fn() -> bool,
-        out: &mut dyn FnMut(usize, i64, effectcraft_segment::TrackedFrame),
-    ) -> effectcraft_segment::Result<()> {
+        out: &mut dyn FnMut(usize, i64, artheffect_segment::TrackedFrame),
+    ) -> artheffect_segment::Result<()> {
         let prompted = req.objects.iter().flatten().map(|(f, _)| *f).collect();
         self.requests.lock().unwrap().push((req.first, req.count, prompted));
-        effectcraft_segment::ObjectTracker::track(&Exact, req, frame, cancel, out)
+        artheffect_segment::ObjectTracker::track(&Exact, req, frame, cancel, out)
     }
 }
 
@@ -1074,7 +1074,7 @@ fn a_correction_re_tracks_only_the_frames_it_changes() {
     let cid = s.active_comp_id().unwrap();
     assert!(s.roto_trust(cid, clip, uid).is_empty(), "no tracker data before tracking");
     let rec = std::sync::Arc::new(Recorder::default());
-    effectcraft_effects::roto::set_model(Some(rec.clone()));
+    artheffect_effects::roto::set_model(Some(rec.clone()));
     let run = |s: &mut Session| s.execute_checked("roto.propagate", json!({"layer": clip.0, "direction": "forward", "wait": true}));
     let first = run(&mut s);
     assert_eq!(rec.requests.lock().unwrap().as_slice(), [(0, 21, vec![0])], "the first pass tracks the whole span");
@@ -1087,7 +1087,7 @@ fn a_correction_re_tracks_only_the_frames_it_changes() {
     s.execute_checked("roto.stroke", json!({"layer": clip.0, "frame": 8, "points": line([c[0] - 20.0, c[1]], [c[0] + 20.0, c[1]]), "radius": 6})).unwrap();
     let again = run(&mut s);
     let reqs = rec.requests.lock().unwrap().clone();
-    effectcraft_effects::roto::set_model(None);
+    artheffect_effects::roto::set_model(None);
     again.unwrap();
     assert_eq!(reqs.len(), 2);
     assert_eq!(reqs[1], (8, 13, vec![8]), "the window runs from the corrected frame to the end of the span");

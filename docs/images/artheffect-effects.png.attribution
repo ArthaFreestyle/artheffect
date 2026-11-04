@@ -1,0 +1,8 @@
+asset:        artheffect-effects.png
+title:        Artheffect effects
+author:       EffectCraft contributors
+source:       original work (headless render of the Artheffect UI via crates/ui-egui/examples/snapshot.rs)
+license:      MIT OR Apache-2.0
+license-file:
+added:        2026-10-01 by Claude (agent) for Brandon Thomas
+notes:        Screenshot of Artheffect only, showing procedurally generated demo content from crates/engine/src/demo.rs and built-in effects. Artheffect effects: a CC Particle World particle burst with Glow on a black solid, with the Effect Controls panel listing its parameters.

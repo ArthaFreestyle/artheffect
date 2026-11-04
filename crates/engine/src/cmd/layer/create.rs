@@ -5,7 +5,7 @@ use super::{
 
 pub(crate) fn color_p(p: &Value, k: &str) -> Option<[f32; 3]> {
     match p.get(k)? {
-        Value::String(s) => effectcraft_color::Rgba::from_hex(s).map(|c| [c.r, c.g, c.b]),
+        Value::String(s) => artheffect_color::Rgba::from_hex(s).map(|c| [c.r, c.g, c.b]),
         Value::Array(a) => {
             let g = |i: usize| a.get(i).and_then(Value::as_f64).unwrap_or(0.0) as f32;
             Some([g(0), g(1), g(2)])
@@ -59,7 +59,7 @@ pub(crate) fn place(l: &mut Layer, pos: Option<[f64; 2]>) {
 /// [`insert_layer`] at stack position `at` (0 = top) instead of above the selected layer.
 pub(crate) fn insert_layer_at(proj: &mut Project, st: &mut crate::EditorState, cid: ItemId, mut layer: Layer, at: Option<usize>) -> Result<LayerId> {
     // Text and shape layers in Advanced 3D comps get Geometry Options (extrusion, bevels).
-    if proj.comp(cid).is_some_and(|c| c.renderer == effectcraft_project::Renderer::Advanced3D) {
+    if proj.comp(cid).is_some_and(|c| c.renderer == artheffect_project::Renderer::Advanced3D) {
         crate::cmd::model3d::add_geometry_options(&mut proj.next_id, &mut layer);
     }
     let comp = proj.comp_mut(cid).ok_or(EngineError::NoComp)?;
@@ -321,7 +321,7 @@ pub(super) fn add_item(s: &mut Session, p: &Value) -> Result<Value> {
     let anchor = anchor_param(p, "layer.addItem")?;
     let (src, size, dur) = match &it.kind {
         ItemKind::Comp(c) => (LayerSource::Comp { item }, (c.width, c.height), Some(c.duration)),
-        ItemKind::Footage(f) if f.kind == effectcraft_project::FootageKind::Still => {
+        ItemKind::Footage(f) if f.kind == artheffect_project::FootageKind::Still => {
             // `duration`, else Settings ▸ Import ▸ Still Footage: length of the composition or a
             // duration.
             let d = f_p(p, "duration")
@@ -330,10 +330,10 @@ pub(super) fn add_item(s: &mut Session, p: &Value) -> Result<Value> {
                 .map(Tick::from_seconds_f64);
             (LayerSource::Footage { item }, (f.width, f.height), d)
         }
-        ItemKind::Footage(f) if f.kind == effectcraft_project::FootageKind::Data => {
+        ItemKind::Footage(f) if f.kind == artheffect_project::FootageKind::Data => {
             return Err(bad("layer.addItem", "data files can't be layers; read them in expressions with footage(\"name\").sourceData"));
         }
-        ItemKind::Footage(f) if f.kind == effectcraft_project::FootageKind::Model => {
+        ItemKind::Footage(f) if f.kind == artheffect_project::FootageKind::Model => {
             if in_p.is_some() || out_p.is_some() || anchor.is_some() {
                 return Err(bad("layer.addItem", "in, out and anchor aren't supported for 3D models"));
             }

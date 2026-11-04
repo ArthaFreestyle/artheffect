@@ -7,11 +7,11 @@
 //! are being read and with clicks waiting, across Open / Revert / New, and after Esc.
 
 use crate::ui_crypto_pick::{Held, ReadLog, at, chip, crypto_exr, settle, wait_held_id_read, wait_probe};
-use effectcraft_engine::Session;
-use effectcraft_engine::project::{LayerId, Resolution};
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::{self, PanelKind, SplitSize};
-use effectcraft_ui_egui::panels::viewer::comp_to_screen;
+use artheffect_engine::Session;
+use artheffect_engine::project::{LayerId, Resolution};
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::dock::{self, PanelKind, SplitSize};
+use artheffect_ui_egui::panels::viewer::comp_to_screen;
 use egui::{Event, Key, Modifiers, PointerButton, Pos2, vec2};
 use egui_kittest::Harness;
 use serde_json::{Value, json};
@@ -49,7 +49,7 @@ fn session(tag: &str, w: usize, h: usize, blur: bool, precomp: bool) -> (Session
     let dir = std::env::temp_dir().join(format!("ec-ui-crypick-undo-{tag}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let path = crypto_exr(&dir, "plate.exr", w, h, 1);
-    let mut s = effectcraft_host::session();
+    let mut s = artheffect_host::session();
     let f = populate(&mut s, &path, w, h, blur, precomp, dir);
     (s, f)
 }
@@ -86,8 +86,8 @@ fn populate(s: &mut Session, path: &str, w: usize, h: usize, blur: bool, precomp
 }
 
 /// Composition viewer and Effect Controls side by side, the Timeline and the History panel below.
-fn harness(s: Session, size: egui::Vec2) -> Harness<'static, EffectcraftApp> {
-    let mut app = EffectcraftApp::new(s);
+fn harness(s: Session, size: egui::Vec2) -> Harness<'static, ArtheffectApp> {
+    let mut app = ArtheffectApp::new(s);
     app.ui.viewer.show_layer_controls = false;
     app.ui.dock = dock::docked(dock::vsplit(
         SplitSize::FixedSecond(200.0),
@@ -99,12 +99,12 @@ fn harness(s: Session, size: egui::Vec2) -> Harness<'static, EffectcraftApp> {
     h
 }
 
-fn highlight(h: &Harness<'_, EffectcraftApp>) -> bool {
+fn highlight(h: &Harness<'_, ArtheffectApp>) -> bool {
     h.state().auto.find("viewer.cryptoPick.highlight").is_some()
 }
 
 /// Like `ui_crypto_pick::hover`, plus an extra step so the chip label is current after the probe.
-fn hover(h: &mut Harness<'_, EffectcraftApp>, pos: Pos2) -> String {
+fn hover(h: &mut Harness<'_, ArtheffectApp>, pos: Pos2) -> String {
     h.event(Event::PointerMoved(pos));
     h.step();
     wait_probe(h);
@@ -113,7 +113,7 @@ fn hover(h: &mut Harness<'_, EffectcraftApp>, pos: Pos2) -> String {
 }
 
 /// Press and release at `pos` with `modifiers`, without waiting for the probe.
-fn press(h: &mut Harness<'_, EffectcraftApp>, pos: Pos2, modifiers: Modifiers) {
+fn press(h: &mut Harness<'_, ArtheffectApp>, pos: Pos2, modifiers: Modifiers) {
     h.event(Event::PointerMoved(pos));
     h.event(Event::ModifiersChanged(modifiers));
     h.step();
@@ -125,13 +125,13 @@ fn press(h: &mut Harness<'_, EffectcraftApp>, pos: Pos2, modifiers: Modifiers) {
     h.step();
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, pos: Pos2, modifiers: Modifiers) {
+fn click(h: &mut Harness<'_, ArtheffectApp>, pos: Pos2, modifiers: Modifiers) {
     press(h, pos, modifiers);
     wait_probe(h);
     h.run_steps(2);
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
+fn key(h: &mut Harness<'_, ArtheffectApp>, key: Key, modifiers: Modifiers) {
     h.event(Event::ModifiersChanged(modifiers));
     h.event(Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers });
     h.event(Event::Key { key, physical_key: None, pressed: false, repeat: false, modifiers });
@@ -141,12 +141,12 @@ fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
 
 /// The Selection property uid of the layer's (first) Cryptomatte effect.
 fn sel_uid(s: &Session, comp: u64, layer: u64) -> Option<u64> {
-    let l = s.project.comp(effectcraft_engine::project::ItemId(comp))?.layer(LayerId(layer))?;
+    let l = s.project.comp(artheffect_engine::project::ItemId(comp))?.layer(LayerId(layer))?;
     l.effects()?.groups().find(|g| g.match_id == CRYPTO)?.get("selection").map(|p| p.uid)
 }
 
 /// Select `layer` (Effect Controls shows it) and arm its Cryptomatte eyedropper.
-fn arm(h: &mut Harness<'_, EffectcraftApp>, f: &Fix, layer: u64) -> u64 {
+fn arm(h: &mut Harness<'_, ArtheffectApp>, f: &Fix, layer: u64) -> u64 {
     h.state_mut().session.state.selected_layers = vec![LayerId(layer)];
     h.run_steps(3);
     let uid = sel_uid(&h.state().session, f.comp, layer).expect("a Cryptomatte effect");
@@ -157,7 +157,7 @@ fn arm(h: &mut Harness<'_, EffectcraftApp>, f: &Fix, layer: u64) -> u64 {
 }
 
 /// Type `text` into the Selection field of `layer` (shown in Effect Controls), committed with Enter.
-fn type_selection(h: &mut Harness<'_, EffectcraftApp>, f: &Fix, layer: u64, text: &str, commit: bool) {
+fn type_selection(h: &mut Harness<'_, ArtheffectApp>, f: &Fix, layer: u64, text: &str, commit: bool) {
     h.state_mut().session.state.selected_layers = vec![LayerId(layer)];
     h.run_steps(3);
     let uid = sel_uid(&h.state().session, f.comp, layer).unwrap();
@@ -198,7 +198,7 @@ impl LayerObs {
 type Obs = Vec<LayerObs>;
 
 fn observe(s: &Session, comp: u64) -> Obs {
-    let c = s.project.comp(effectcraft_engine::project::ItemId(comp)).unwrap();
+    let c = s.project.comp(artheffect_engine::project::ItemId(comp)).unwrap();
     c.layers
         .iter()
         .map(|l| {
@@ -282,13 +282,13 @@ struct Model {
 }
 
 impl Model {
-    fn new(h: &Harness<'_, EffectcraftApp>, comp: u64) -> Model {
+    fn new(h: &Harness<'_, ArtheffectApp>, comp: u64) -> Model {
         let s = &h.state().session;
         Model {
             comp,
             line: vec![("Original".into(), observe(s, comp))],
             cur: 0,
-            time: s.time_of(effectcraft_engine::project::ItemId(comp)).seconds(),
+            time: s.time_of(artheffect_engine::project::ItemId(comp)).seconds(),
             armed: None,
             branches: 0,
             branch_states: vec![],
@@ -343,14 +343,14 @@ fn probe_point(f: &Fix, layer: u64) -> ([f64; 2], &'static str) {
 }
 
 /// Every check after a step: state, Edit menu, History panel, time, armed state, chip, highlight.
-fn verify(h: &mut Harness<'_, EffectcraftApp>, f: &Fix, m: &mut Model, size: [f64; 2], what: &str) {
+fn verify(h: &mut Harness<'_, ArtheffectApp>, f: &Fix, m: &mut Model, size: [f64; 2], what: &str) {
     m.checks += 1;
     // (Two passes: the panels draw what the last edit left, and their rows are current.)
     h.run_steps(2);
     let got = observe(&h.state().session, m.comp);
     assert_eq!(got, *m.state(), "{what}: project state");
     // Edit ▸ Undo / Redo: labels and availability.
-    let items = effectcraft_ui_egui::menus::menu_items(h.state());
+    let items = artheffect_ui_egui::menus::menu_items(h.state());
     let item = |id: &str| items.iter().find(|i| i.id == id).map(|i| (i.label.clone(), i.enabled)).unwrap();
     let want_undo = if m.cur > 0 { (format!("Undo {}", m.line[m.cur].0), true) } else { ("Can't Undo".to_string(), false) };
     let want_redo = if m.cur + 1 < m.line.len() { (format!("Redo {}", m.line[m.cur + 1].0), true) } else { ("Can't Redo".to_string(), false) };
@@ -368,7 +368,7 @@ fn verify(h: &mut Harness<'_, EffectcraftApp>, f: &Fix, m: &mut Model, size: [f6
     let row = h.state().auto.find(&format!("history.state.{}", cur.index)).map(|e| e.label.clone());
     assert_eq!(row.as_deref(), Some(m.line[m.cur].0.as_str()), "{what}: History panel row of the current state");
     // The time is not part of the history.
-    let t = s.time_of(effectcraft_engine::project::ItemId(m.comp)).seconds();
+    let t = s.time_of(artheffect_engine::project::ItemId(m.comp)).seconds();
     assert!((t - m.time).abs() < 1e-9, "{what}: time {t} != {}", m.time);
     // The eyedropper: armed where the model says, the chip names what is under the pointer
     // (selected or not as the Selection says), and the hovered ID is highlighted.
@@ -395,7 +395,7 @@ fn verify(h: &mut Harness<'_, EffectcraftApp>, f: &Fix, m: &mut Model, size: [f6
 
 /// Undo (`redo` false) or redo with the keyboard, then check against the model. Counts whether
 /// the probe was built again for the step.
-fn step_history(h: &mut Harness<'_, EffectcraftApp>, f: &Fix, m: &mut Model, size: [f64; 2], redo: bool, what: &str) {
+fn step_history(h: &mut Harness<'_, ArtheffectApp>, f: &Fix, m: &mut Model, size: [f64; 2], redo: bool, what: &str) {
     let can = if redo { m.cur + 1 < m.line.len() } else { m.cur > 0 };
     let builds = h.state().session.crypto_probe_stats().1;
     // A step that changed only Selections (a pick or a typed Selection).
@@ -452,7 +452,7 @@ enum Step {
     Blur(u64, f64),
 }
 
-fn run_step(h: &mut Harness<'_, EffectcraftApp>, f: &Fix, m: &mut Model, size: [f64; 2], step: &Step, n: usize) {
+fn run_step(h: &mut Harness<'_, ArtheffectApp>, f: &Fix, m: &mut Model, size: [f64; 2], step: &Step, n: usize) {
     let mut o = m.state().clone();
     let before = h.state().session.history.undo.len();
     let (what, records): (String, bool) = match step {
@@ -522,7 +522,7 @@ fn run_step(h: &mut Harness<'_, EffectcraftApp>, f: &Fix, m: &mut Model, size: [
             (format!("#{n} opacity key {layer} {t}s {v}"), true)
         }
         Step::Time(t) => {
-            h.state_mut().session.set_time(effectcraft_engine::time::Tick::from_seconds_f64(*t));
+            h.state_mut().session.set_time(artheffect_engine::time::Tick::from_seconds_f64(*t));
             m.time = *t;
             settle(h);
             (format!("#{n} time {t}"), false)
@@ -579,7 +579,7 @@ fn long_sequence(tag: &str, size: egui::Vec2, res: Resolution) {
     let (w, hh) = (320usize, 180usize);
     let dims = [w as f64, hh as f64];
     let (mut s, f) = session(tag, w, hh, false, true);
-    let cid = effectcraft_engine::project::ItemId(f.comp);
+    let cid = artheffect_engine::project::ItemId(f.comp);
     s.set_resolution(cid, res).unwrap();
     let mut h = harness(s, size);
     let mut m = Model::new(&h, f.comp);
@@ -796,7 +796,7 @@ fn clicks_queued_while_reading_are_one_step_each_and_undo_in_order() {
     run_step(&mut h, &f, &mut m, dims, &Step::Arm(pl), 0);
     run_step(&mut h, &f, &mut m, dims, &Step::Blur(pl, 41.0), 1);
     let (a, b) = ([1017.5, 594.5], [1868.5, 1174.5]);
-    let sp = |h: &Harness<'_, EffectcraftApp>, m: &Model, p: [f64; 2]| comp_to_screen(&h.ctx, comp_point(m.state(), pl, p, dims)).unwrap();
+    let sp = |h: &Harness<'_, ArtheffectApp>, m: &Model, p: [f64; 2]| comp_to_screen(&h.ctx, comp_point(m.state(), pl, p, dims)).unwrap();
     // The verify above built the probe; drop it again.
     run_step(&mut h, &f, &mut m, dims, &Step::Blur(pl, 42.0), 2);
     let pa = sp(&h, &m, a);
@@ -850,7 +850,7 @@ fn clicks_queued_while_reading_are_one_step_each_and_undo_in_order() {
 // Scenario 3: undo / redo while armed, while reading, and with clicks waiting.
 
 /// Ctrl+Z or Ctrl+Shift+Z without waiting for anything; the model follows.
-fn undo_now(h: &mut Harness<'_, EffectcraftApp>, m: &mut Model, redo: bool) {
+fn undo_now(h: &mut Harness<'_, ArtheffectApp>, m: &mut Model, redo: bool) {
     if redo {
         key(h, Key::Z, CTRL_SHIFT);
         m.cur += 1;
@@ -861,9 +861,9 @@ fn undo_now(h: &mut Harness<'_, EffectcraftApp>, m: &mut Model, redo: bool) {
     m.moved();
 }
 
-fn blur_value(h: &Harness<'_, EffectcraftApp>, f: &Fix) -> Value {
+fn blur_value(h: &Harness<'_, ArtheffectApp>, f: &Fix) -> Value {
     let s = &h.state().session;
-    let l = s.project.comp(effectcraft_engine::project::ItemId(f.comp)).unwrap().layer(LayerId(f.plate)).unwrap();
+    let l = s.project.comp(artheffect_engine::project::ItemId(f.comp)).unwrap().layer(LayerId(f.plate)).unwrap();
     l.effects().unwrap().groups().next().unwrap().get("blurriness").unwrap().value.to_json()
 }
 
@@ -878,12 +878,12 @@ fn undo_and_redo_while_reading_and_with_clicks_waiting() {
     let mut m = Model::new(&h, f.comp);
     let pl = f.plate;
     let (a, b) = ([1017.5, 594.5], [1868.5, 1174.5]);
-    let sp = |h: &Harness<'_, EffectcraftApp>, m: &Model, p: [f64; 2]| comp_to_screen(&h.ctx, comp_point(m.state(), pl, p, dims)).unwrap();
+    let sp = |h: &Harness<'_, ArtheffectApp>, m: &Model, p: [f64; 2]| comp_to_screen(&h.ctx, comp_point(m.state(), pl, p, dims)).unwrap();
     use Step::*;
     for (n, st) in [Arm(pl), Pick(a, Modifiers::NONE, "c27_20"), Pick(b, Modifiers::SHIFT, "c50_40")].iter().enumerate() {
         run_step(&mut h, &f, &mut m, dims, st, n);
     }
-    let blur = |h: &mut Harness<'_, EffectcraftApp>, m: &mut Model, v: f64| {
+    let blur = |h: &mut Harness<'_, ArtheffectApp>, m: &mut Model, v: f64| {
         h.state_mut().session.execute_checked("prop.set", json!({"comp": f.comp, "layer": pl, "path": "effects/#1/blurriness", "value": v})).unwrap();
         let label = h.state().session.history.undo.last().unwrap().0.clone();
         let o = m.state().clone();
@@ -1073,7 +1073,7 @@ fn esc_mid_sequence_and_undo_across_revert_open_and_new() {
     h.run_steps(3);
     eprintln!("after New Project: armed {:?}, chip {:?}, status {:?}", h.state().ui.fx_pick, chip(&h), h.state().ui.status);
     assert!(chip(&h).is_none(), "no viewer, no chip");
-    let items = effectcraft_ui_egui::menus::menu_items(h.state());
+    let items = artheffect_ui_egui::menus::menu_items(h.state());
     let undo = items.iter().find(|i| i.id == "edit.undo").unwrap();
     assert_eq!((undo.label.as_str(), undo.enabled), ("Can't Undo", false));
     // Open the saved project: its state, no history; arm and pick as usual.
@@ -1087,7 +1087,7 @@ fn esc_mid_sequence_and_undo_across_revert_open_and_new() {
         m.armed = Some((p.layer, p.prop));
     }
     m.branch_states.clear();
-    m.time = h.state().session.time_of(effectcraft_engine::project::ItemId(f.comp)).seconds();
+    m.time = h.state().session.time_of(artheffect_engine::project::ItemId(f.comp)).seconds();
     verify(&mut h, &f, &mut m, dims, "after Open");
     if m.armed.is_none() {
         run_step(&mut h, &f, &mut m, dims, &Arm(pl), 20);
@@ -1164,7 +1164,7 @@ fn a_click_while_the_selection_field_is_being_edited() {
     let steps: Vec<String> = h.state().session.history.undo[n..].iter().map(|u| u.0.clone()).collect();
     // The state between the two steps (what one Ctrl+Z goes back to).
     let mid = h.state().session.history.undo.last().map(|u| {
-        let c = u.1.comp(effectcraft_engine::project::ItemId(f.comp)).unwrap().layer(LayerId(pl)).unwrap();
+        let c = u.1.comp(artheffect_engine::project::ItemId(f.comp)).unwrap().layer(LayerId(pl)).unwrap();
         c.effects().unwrap().groups().next().unwrap().get("selection").unwrap().value.to_json()
     });
     eprintln!("the state one Ctrl+Z goes back to: Selection {mid:?}");
@@ -1185,13 +1185,13 @@ fn a_pick_on_an_animated_selection_is_one_step() {
     let mut h = harness(s, vec2(1400.0, 860.0));
     let pl = f.plate;
     let uid = arm(&mut h, &f, pl);
-    let keys = |h: &Harness<'_, EffectcraftApp>| {
+    let keys = |h: &Harness<'_, ArtheffectApp>| {
         let s = &h.state().session;
-        let l = s.project.comp(effectcraft_engine::project::ItemId(f.comp)).unwrap().layer(LayerId(pl)).unwrap();
+        let l = s.project.comp(artheffect_engine::project::ItemId(f.comp)).unwrap().layer(LayerId(pl)).unwrap();
         l.props.find(uid).unwrap().keys.iter().map(|k| (k.time.seconds(), k.value.to_json())).collect::<Vec<_>>()
     };
     h.state_mut().session.execute_checked("prop.toggleAnimation", json!({"comp": f.comp, "layer": pl, "prop": uid, "value": true})).unwrap();
-    h.state_mut().session.set_time(effectcraft_engine::time::Tick::from_seconds_f64(1.0));
+    h.state_mut().session.set_time(artheffect_engine::time::Tick::from_seconds_f64(1.0));
     settle(&mut h);
     let n = h.state().session.history.undo.len();
     let before = keys(&h);
@@ -1276,7 +1276,7 @@ fn a_pick_is_labelled_as_a_pick() {
     arm(&mut h, &f, f.plate);
     let a = comp_to_screen(&h.ctx, [55.5, 43.5]).unwrap();
     click(&mut h, a, Modifiers::NONE);
-    let items = effectcraft_ui_egui::menus::menu_items(h.state());
+    let items = artheffect_ui_egui::menus::menu_items(h.state());
     let undo = items.iter().find(|i| i.id == "edit.undo").unwrap();
     assert_eq!(undo.label, "Undo Pick Cryptomatte");
     let _ = std::fs::remove_dir_all(&f.dir);
@@ -1289,7 +1289,7 @@ fn a_middle_drag_pans_while_armed() {
     let (s, f) = session("pan", 320, 180, false, false);
     let mut h = harness(s, vec2(1400.0, 860.0));
     let a = comp_to_screen(&h.ctx, [160.0, 90.0]).unwrap();
-    let drag = |h: &mut Harness<'_, EffectcraftApp>| {
+    let drag = |h: &mut Harness<'_, ArtheffectApp>| {
         let before = h.state().ui.viewer.pan;
         h.event(Event::PointerMoved(a));
         h.step();

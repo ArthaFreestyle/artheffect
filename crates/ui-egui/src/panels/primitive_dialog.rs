@@ -5,13 +5,13 @@
 use std::collections::BTreeMap;
 
 use crate::i18n::tr;
-use effectcraft_engine::project::build::{Ids, primitive_geometry_options};
-use effectcraft_engine::project::{ItemId, ParamUi, PrimitiveKind, Property};
+use artheffect_engine::project::build::{Ids, primitive_geometry_options};
+use artheffect_engine::project::{ItemId, ParamUi, PrimitiveKind, Property};
 use egui::{Color32, vec2};
 use serde_json::{Value, json};
 
 use crate::theme::Tokens;
-use crate::{Dialog, EffectcraftApp};
+use crate::{ArtheffectApp, Dialog};
 
 #[derive(Clone, Debug, Default)]
 pub struct PrimitiveDraft {
@@ -26,7 +26,7 @@ pub struct PrimitiveDraft {
     pub target: Option<(u64, ItemId)>,
 }
 
-fn target(app: &EffectcraftApp) -> Option<(u64, ItemId)> {
+fn target(app: &ArtheffectApp) -> Option<(u64, ItemId)> {
     Some((app.session.script_ui.project_epoch, app.session.active_comp_id()?))
 }
 
@@ -37,7 +37,7 @@ fn dimensions(kind: PrimitiveKind) -> Vec<Property> {
 }
 
 /// Open the dialog for a new primitive in the active comp.
-pub fn open(app: &mut EffectcraftApp) -> Result<(), String> {
+pub fn open(app: &mut ArtheffectApp) -> Result<(), String> {
     let target = Some(target(app).ok_or("no composition is open")?);
     let kind = PrimitiveKind::Cube;
     app.dialog_state.primitive = PrimitiveDraft { kind, name: kind.label().to_string(), named: false, dims: BTreeMap::new(), target };
@@ -45,7 +45,7 @@ pub fn open(app: &mut EffectcraftApp) -> Result<(), String> {
     Ok(())
 }
 
-pub fn dialog(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn dialog(app: &mut ArtheffectApp, ctx: &egui::Context, t: &Tokens) {
     let mut d = app.dialog_state.primitive.clone();
     // A project opened or another comp made active since (by a script or the control channel):
     // the primitive would land somewhere the dialog was not opened for.
@@ -117,7 +117,7 @@ pub fn dialog(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
 }
 
 /// Menu routing: New 3D Primitive without parameters opens the dialog. Returns true when it did.
-pub fn route(app: &mut EffectcraftApp, id: &str, params: &Value) -> Result<bool, String> {
+pub fn route(app: &mut ArtheffectApp, id: &str, params: &Value) -> Result<bool, String> {
     if id != "layer.newPrimitive" || !params.as_object().is_none_or(|m| m.is_empty()) {
         return Ok(false);
     }

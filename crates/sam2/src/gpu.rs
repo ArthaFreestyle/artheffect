@@ -1,4 +1,4 @@
-// Original work for EffectCraft (wgpu compute kernels); the maths follows the Hugging Face
+// Original work for Artheffect (wgpu compute kernels); the maths follows the Hugging Face
 // `transformers` SAM 2 implementation (Apache-2.0, see NOTICE).
 //! An optional GPU path for the heavy parts of SAM 2 (the Hiera backbone, the neck and the memory
 //! attention), as wgpu compute kernels: it runs on AMD, NVIDIA and Intel alike, where candle has
@@ -91,9 +91,9 @@ fn u32_of(v: usize, what: &str) -> Result<u32> {
     u32::try_from(v).map_err(|_| Error::Compute(format!("{what} {v} does not fit a GPU index")))
 }
 
-/// Whether weight matrices are kept on the GPU in half precision (`EFFECTCRAFT_SAM2_F16=1`).
+/// Whether weight matrices are kept on the GPU in half precision (`ARTHEFFECT_SAM2_F16=1`).
 pub fn half_weights() -> bool {
-    std::env::var("EFFECTCRAFT_SAM2_F16").is_ok_and(|v| matches!(v.trim(), "1" | "on" | "true"))
+    std::env::var("ARTHEFFECT_SAM2_F16").is_ok_and(|v| matches!(v.trim(), "1" | "on" | "true"))
 }
 
 /// The process's one GPU device, once something has asked for it.
@@ -152,7 +152,7 @@ impl Gpu {
             return Err(Error::Compute(why));
         }
         let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
-            label: Some("effectcraft sam2"),
+            label: Some("artheffect sam2"),
             required_limits: adapter.limits(),
             ..Default::default()
         }))
@@ -203,7 +203,7 @@ impl Gpu {
         Buf { buffer, len: data.len(), f16: false }
     }
 
-    /// A weight matrix: stored as half precision (half the memory) when `EFFECTCRAFT_SAM2_F16` asks for it and every
+    /// A weight matrix: stored as half precision (half the memory) when `ARTHEFFECT_SAM2_F16` asks for it and every
     /// value fits, as f32 otherwise.
     pub fn upload_weights(&self, data: &[f32]) -> Buf {
         if !half_weights() || data.is_empty() || data.iter().any(|v| v.abs() > 60_000.0) {

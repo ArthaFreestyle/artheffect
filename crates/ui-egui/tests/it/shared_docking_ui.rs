@@ -1,21 +1,21 @@
-//! EffectCraft's workspaces in craft-ui's shared docking: transactions, the command path, pointer
+//! Artheffect's workspaces in craft-ui's shared docking: transactions, the command path, pointer
 //! gestures and persistence.
-use craft_ui::docking::{Action, Node, Placement, StackEntry, Zone};
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::{
-    EffectcraftApp,
+use artheffect_engine::Session;
+use artheffect_ui_egui::{
+    ArtheffectApp,
     dock::{self, Layout, PanelKind, SplitSize, Workspace, WorkspaceExt as _},
 };
+use craft_ui::docking::{Action, Node, Placement, StackEntry, Zone};
 use egui::{Event, Modifiers, PointerButton, Rect, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
 use serde_json::json;
 
-fn invoke(app: &mut EffectcraftApp, id: &str, params: serde_json::Value) -> Result<serde_json::Value, String> {
-    effectcraft_ui_egui::menus::invoke(app, &egui::Context::default(), id, params)
+fn invoke(app: &mut ArtheffectApp, id: &str, params: serde_json::Value) -> Result<serde_json::Value, String> {
+    artheffect_ui_egui::menus::invoke(app, &egui::Context::default(), id, params)
 }
 
-fn floating(app: &EffectcraftApp) -> &[dock::Floating<PanelKind>] {
+fn floating(app: &ArtheffectApp) -> &[dock::Floating<PanelKind>] {
     &app.ui.dock.layout.floating
 }
 
@@ -76,12 +76,12 @@ fn every_builtin_workspace_validates_and_roundtrips_with_dynamic_identities() {
     assert!(workspace.is_visible(PanelKind::ScriptPanel(77)));
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, ArtheffectApp>, id: &str) -> Rect {
     let element = h.state().auto.find(id).unwrap_or_else(|| panic!("missing {id}"));
     Rect::from_min_size(pos2(element.rect[0], element.rect[1]), vec2(element.rect[2], element.rect[3]))
 }
 
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: egui::Pos2, to: egui::Pos2, modifiers: Modifiers) {
+fn drag(h: &mut Harness<'_, ArtheffectApp>, from: egui::Pos2, to: egui::Pos2, modifiers: Modifiers) {
     h.event(Event::ModifiersChanged(modifiers));
     h.event(Event::PointerMoved(from));
     h.step();
@@ -102,7 +102,7 @@ fn pointer_drop_merges_floats_and_redocks_without_project_changes() {
     let mut session = Session::default();
     session.execute("comp.new", json!({"name": "Docking composition", "width": 320, "height": 180, "duration": 4})).unwrap();
     session.execute("layer.newSolid", json!({"name": "Teal plate", "width": 320, "height": 180, "color": "#245b68"})).unwrap();
-    let mut app = EffectcraftApp::new(session);
+    let mut app = ArtheffectApp::new(session);
     app.ui.start_screen = false;
     app.ui.dock = dock::docked(dock::vsplit(
         SplitSize::Ratio(0.62),
@@ -152,17 +152,17 @@ fn pointer_drop_merges_floats_and_redocks_without_project_changes() {
 
 #[test]
 fn current_and_named_floating_layouts_survive_restart() {
-    use effectcraft_engine::config::MemoryConfig;
+    use artheffect_engine::config::MemoryConfig;
     use std::sync::Arc;
     let store = Arc::new(MemoryConfig::default());
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = ArtheffectApp::new(Session { config: Some(store.clone()), ..Default::default() });
     app.apply_dock(Action::Float { panel: PanelKind::Project, rect: [45.0, 65.0, 430.0, 310.0] }).unwrap();
     invoke(&mut app, "window.saveWorkspaceAs", json!({"name": "Shared float"})).unwrap();
     let saved = app.ui.dock.clone();
     app.apply_dock(Action::MoveFloating { panel: PanelKind::Project, rect: [75.0, 95.0, 480.0, 360.0] }).unwrap();
     let current = app.ui.dock.clone();
     eframe::App::on_exit(&mut app);
-    let mut restarted = EffectcraftApp::new(Session { config: Some(store), ..Default::default() });
+    let mut restarted = ArtheffectApp::new(Session { config: Some(store), ..Default::default() });
     assert_eq!(restarted.ui.dock, current);
     restarted.set_workspace("Default");
     restarted.set_workspace("Shared float");
@@ -171,7 +171,7 @@ fn current_and_named_floating_layouts_survive_restart() {
 
 #[test]
 fn float_command_rejects_malformed_rectangles_and_keeps_one_docked_panel() {
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = ArtheffectApp::new(Session::default());
     let before = app.ui.dock.clone();
     for rect in [json!([1, 2, 300]), json!([1, 2, 300, 200, 7]), json!([1, 2, 1e100, 200]), json!("rectangle")] {
         assert!(invoke(&mut app, "window.floatPanel", json!({"panel": "Project", "rect": rect})).is_err());
@@ -193,13 +193,13 @@ fn float_command_rejects_malformed_rectangles_and_keeps_one_docked_panel() {
 #[test]
 fn floating_panel_dragged_towards_the_window_edge_keeps_moving() {
     let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| {
-        let mut app = EffectcraftApp::new(Session::default());
+        let mut app = ArtheffectApp::new(Session::default());
         app.ui.start_screen = false;
         app
     });
     h.run_steps(3);
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "window.floatPanel", json!({"panel": "Preview", "rect": [600.0, 400.0, 360.0, 300.0]})).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, "window.floatPanel", json!({"panel": "Preview", "rect": [600.0, 400.0, 360.0, 300.0]})).unwrap();
     h.run_steps(3);
     let bar = rect(&h, "panel.float.0.move");
     drag(&mut h, bar.center(), bar.center() + vec2(40.0, 420.0), Modifiers::NONE);
@@ -213,7 +213,7 @@ fn floating_panel_dragged_towards_the_window_edge_keeps_moving() {
 
 #[test]
 fn catalog_docking_action_supports_resize_reorder_and_floating_geometry() {
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = ArtheffectApp::new(Session::default());
     app.ui.dock = dock::docked(dock::hsplit(
         SplitSize::FixedFirst(300.0),
         dock::tabs(&[PanelKind::Project, PanelKind::Info], 1),
@@ -238,7 +238,7 @@ fn catalog_docking_action_supports_resize_reorder_and_floating_geometry() {
 
 #[test]
 fn ui_dock_and_window_panel_commands_parse_craft_ui_commands() {
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = ArtheffectApp::new(Session::default());
     app.ui.dock = dock::docked(dock::hsplit(
         SplitSize::FixedFirst(300.0),
         dock::tabs(&[PanelKind::Project, PanelKind::Info], 0),
@@ -252,7 +252,7 @@ fn ui_dock_and_window_panel_commands_parse_craft_ui_commands() {
     assert!(app.ui.dock.is_visible(PanelKind::Layer));
     invoke(&mut app, "ui.dock", json!({"operation": "float", "panel": "Info", "rect": [100, 100, 300, 200]})).unwrap();
     assert_eq!(floating(&app)[0].rect, [100.0, 100.0, 300.0, 200.0]);
-    // `window.panel.*` takes EffectCraft's panel names too.
+    // `window.panel.*` takes Artheffect's panel names too.
     invoke(&mut app, "window.panel.dock", json!({"panel": "Info", "anchor": "Project", "zone": "right"})).unwrap();
     assert!(floating(&app).is_empty() && app.ui.dock.is_docked(PanelKind::Info));
     invoke(&mut app, "window.panel.close", json!({"panel": "Info"})).unwrap();
@@ -280,7 +280,7 @@ fn ui_dock_and_window_panel_commands_parse_craft_ui_commands() {
 
 #[test]
 fn raw_open_actions_are_rejected_through_every_docking_route() {
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = ArtheffectApp::new(Session::default());
     let before = app.ui.dock.clone();
     for panel in [PanelKind::ScriptPanel(77), PanelKind::Viewer(42)] {
         for action in [
@@ -305,7 +305,7 @@ fn raw_open_actions_are_rejected_through_every_docking_route() {
 
 #[test]
 fn catalog_close_keeps_dynamic_panel_identity_and_releases_viewers() {
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = ArtheffectApp::new(Session::default());
     app.ui.dock = dock::docked(dock::tabs(&[PanelKind::Composition, PanelKind::Viewer(42), PanelKind::ScriptPanel(77)], 1));
     app.ui.viewers.insert(42, Some(7));
     app.ui.maximized = Some(PanelKind::Viewer(42));
@@ -323,7 +323,7 @@ fn catalog_close_keeps_dynamic_panel_identity_and_releases_viewers() {
 fn stacked_panels_resize_by_pointer_without_changing_closed_entries() {
     let mut session = Session::default();
     session.execute("comp.new", json!({"width": 160, "height": 90, "duration": 1})).unwrap();
-    let mut app = EffectcraftApp::new(session);
+    let mut app = ArtheffectApp::new(session);
     app.ui.start_screen = false;
     let mut h = Harness::builder().with_size(vec2(1000.0, 720.0)).build_eframe(move |_| app);
     h.run_steps(4);
@@ -344,7 +344,7 @@ fn stacked_panels_resize_by_pointer_without_changing_closed_entries() {
 
 #[test]
 fn failed_close_preserves_viewer_lifecycle_and_maximize_state() {
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = ArtheffectApp::new(Session::default());
     // A locked workspace refuses the close.
     app.ui.dock = dock::docked(dock::tabs(&[PanelKind::Composition, PanelKind::Viewer(42)], 1));
     app.ui.dock.locked = true;
@@ -361,12 +361,12 @@ fn failed_close_preserves_viewer_lifecycle_and_maximize_state() {
     assert_eq!(app.ui.locked_tabs, before.locked_tabs);
 }
 
-/// A panel never laid out opens at EffectCraft's default place for it (History beside the
+/// A panel never laid out opens at Artheffect's default place for it (History beside the
 /// Project panel, Render Queue with the Timeline), not where craft-ui's fallback puts it; a panel
 /// the user closed comes back where it was.
 #[test]
 fn never_placed_panels_open_at_their_default_place() {
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = ArtheffectApp::new(Session::default());
     assert!(!app.ui.dock.is_open(PanelKind::History));
     invoke(&mut app, "window.panel", json!({"panel": "History"})).unwrap();
     assert!(app.ui.dock.group_of(PanelKind::History).contains(&PanelKind::Project), "{:?}", app.ui.dock.group_of(PanelKind::History));

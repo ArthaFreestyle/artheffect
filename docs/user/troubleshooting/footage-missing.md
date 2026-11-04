@@ -1,6 +1,6 @@
 ---
 title: Footage is missing or offline
-description: Find missing footage in an EffectCraft project, relink it to a folder or replace it with another file.
+description: Find missing footage in an Artheffect project, relink it to a folder or replace it with another file.
 order: 20
 verified: 0.9.2
 ---
@@ -12,12 +12,12 @@ Shortcuts on this page use Ctrl. On macOS, use Cmd instead of Ctrl and Option in
 ## Symptoms
 
 - A footage item in the Project panel is flagged as missing after you open a project.
-- EffectCraft shows a message that footage items are missing.
+- Artheffect shows a message that footage items are missing.
 
 ## Fix
 
-1. Choose **File ▸ Dependencies ▸ Find Missing Footage**. EffectCraft selects every missing item in the Project panel and shows how many it found.
-2. Choose **File ▸ Dependencies ▸ Relink Missing Footage...** and pick the folder that holds your files. EffectCraft searches that folder and its subfolders.
+1. Choose **File ▸ Dependencies ▸ Find Missing Footage**. Artheffect selects every missing item in the Project panel and shows how many it found.
+2. Choose **File ▸ Dependencies ▸ Relink Missing Footage...** and pick the folder that holds your files. Artheffect searches that folder and its subfolders.
 3. It relinks files whose names are unique and whose type, dimensions and codec match what the project saved. The whole relink is one undo step.
 4. For anything left over, select the item and choose **File ▸ Replace Footage ▸ File...** (Ctrl+H), then pick the file yourself. This also covers files with duplicate names in the folder, which Relink leaves alone.
 5. After you copy or render files into a folder, choose **File ▸ Reload Footage** (Ctrl+Alt+L) to read them again.
@@ -32,4 +32,4 @@ Projects built with the command-line tool or an agent can use relative paths suc
 
 ## Still stuck?
 
-Ask in [Discord](https://discord.gg/artcraft) or open an issue in the [issue tracker](https://github.com/storytold/effectcraft/issues). Say which system you use, whether the project came from another computer or from the command-line tool, and where the footage is stored.
+Open an issue in the [issue tracker](https://github.com/ArthaFreestyle/artheffect/issues). Say which system you use, whether the project came from another computer or from the command-line tool, and where the footage is stored.

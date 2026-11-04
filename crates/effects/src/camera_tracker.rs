@@ -1,8 +1,8 @@
 //! 3D Camera Tracker (Effect ▸ Perspective ▸ 3D Camera Tracker; Animation ▸ Track Camera).
 //!
 //! The analysis runs as a background job in the engine (`camera.analyze`): step 1 tracks
-//! features through the clip ([`effectcraft_track::camtrack::TrackAnalyzer`]), step 2 solves
-//! the camera ([`effectcraft_track::camtrack::solve`]). Both results are stored as JSON in the
+//! features through the clip ([`artheffect_track::camtrack::TrackAnalyzer`]), step 2 solves
+//! the camera ([`artheffect_track::camtrack::solve`]). Both results are stored as JSON in the
 //! instance's hidden parameters — **Tracks** (with **Tracks Key**: what the frames were made
 //! from, so source / In-Out / time edits invalidate them) and **Solve** (with **Solve Key**: the
 //! Shot Type, Angle of View, Solve Method and deleted points it was solved with, so changing
@@ -20,10 +20,10 @@ use std::sync::Arc;
 
 use crate::analysis_cache::AnalysisCache;
 
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
-use effectcraft_raster::{Image, Px};
-use effectcraft_track::camtrack::{CameraSolve, CameraTracks, ShotType, SolveMethod, SolveSettings, linalg, point_color};
+use artheffect_keyframe::Value;
+use artheffect_project::ParamUi;
+use artheffect_raster::{Image, Px};
+use artheffect_track::camtrack::{CameraSolve, CameraTracks, ShotType, SolveMethod, SolveSettings, linalg, point_color};
 use rayon::prelude::*;
 
 use crate::warp_stab::param;
@@ -278,7 +278,7 @@ pub fn target_circle(center: linalg::V3, normal: linalg::V3, radius: f64, n: usi
 mod tests {
     use super::*;
     use crate::EffectEnv;
-    use effectcraft_track::camtrack::{SolvedFrame, SolvedPoint};
+    use artheffect_track::camtrack::{SolvedFrame, SolvedPoint};
 
     fn params_with(solve: &CameraSolve, render: bool) -> Params {
         let mut p = Params::default();
@@ -336,7 +336,7 @@ mod tests {
 
     #[test]
     fn undistort_footage_remaps_through_the_solved_lens() {
-        use effectcraft_track::camtrack::Distortion;
+        use artheffect_track::camtrack::Distortion;
         let sol = CameraSolve {
             version: 1,
             size: [64.0, 48.0],

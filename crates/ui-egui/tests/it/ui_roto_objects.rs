@@ -4,10 +4,10 @@
 
 use std::sync::Arc;
 
-use effectcraft_engine::Session;
-use effectcraft_segment::{ClipFrame, MaskModel, ModelInfo, ObjectTracker, Prompt, TrackRequest, TrackedFrame};
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
+use artheffect_engine::Session;
+use artheffect_segment::{ClipFrame, MaskModel, ModelInfo, ObjectTracker, Prompt, TrackRequest, TrackedFrame};
+use artheffect_ui_egui::ArtheffectApp;
+use artheffect_ui_egui::dock::PanelKind;
 use egui_kittest::Harness;
 use serde_json::json;
 
@@ -16,9 +16,9 @@ struct TwoRegions;
 
 impl MaskModel for TwoRegions {
     fn info(&self) -> &'static ModelInfo {
-        &effectcraft_segment::SAM2_TINY
+        &artheffect_segment::SAM2_TINY
     }
-    fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &Prompt) -> effectcraft_segment::Result<Vec<f32>> {
+    fn segment(&self, _: &[[f32; 3]], _: usize, _: usize, _: &Prompt) -> artheffect_segment::Result<Vec<f32>> {
         Err("no weights".into())
     }
     fn tracker(&self) -> Option<&dyn ObjectTracker> {
@@ -33,7 +33,7 @@ impl ObjectTracker for TwoRegions {
         frame: &mut dyn FnMut(i64) -> Option<Arc<ClipFrame>>,
         _: &dyn Fn() -> bool,
         out: &mut dyn FnMut(usize, i64, TrackedFrame),
-    ) -> effectcraft_segment::Result<()> {
+    ) -> artheffect_segment::Result<()> {
         for g in req.first..req.first + req.count as i64 {
             let img = frame(g).ok_or("no frame")?;
             for o in 0..req.objects.len() {
@@ -74,11 +74,11 @@ fn the_boundary_view_outlines_each_object_and_show_object_picks_one() {
 
     // object 0 keeps the boundary colour (pink by default), object 1 is the first palette colour (blue-green)
     let (pink, cyan) = ([255, 64, 191], [60, 200, 255]);
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| ArtheffectApp::new(s));
     h.run_steps(3);
     h.state_mut().session.execute("layer.select", json!({"layers": [id]})).unwrap();
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "layer.openLayer", json!({"layer": id})).unwrap();
+    artheffect_ui_egui::menus::invoke(h.state_mut(), &ctx, "layer.openLayer", json!({"layer": id})).unwrap();
     h.run_steps(4);
     assert_eq!(h.state().ui.focused, PanelKind::Layer);
     let both = h.render().expect("the panel renders");

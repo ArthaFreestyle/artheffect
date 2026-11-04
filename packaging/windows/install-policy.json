@@ -1,41 +1,41 @@
 {
-  "id": "effectcraft",
-  "name": "EffectCraft",
-  "upgradeCode": "AACA8593-C6ED-40A8-BA6C-CB325D8529F9",
+  "id": "artheffect",
+  "name": "Artheffect",
+  "upgradeCode": "862DF5F5-13AD-4946-AF73-80714749D708",
   "sources": [
-    "effectcraft.wxs",
+    "artheffect.wxs",
     "installer-ui.wxs"
   ],
-  "icon": "assets/app-icon/effectcraft.ico",
+  "icon": "assets/app-icon/artheffect.ico",
   "localization": [],
   "extensions": [],
   "payloads": [
     "NOTICE",
-    "effectcraft-cli.exe",
-    "effectcraft.exe"
+    "artheffect-cli.exe",
+    "artheffect.exe"
   ],
   "registry": [
     [
       "-1",
-      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\effectcraft.exe",
+      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\artheffect.exe",
       "",
-      "[#EffectcraftExe]"
+      "[#ArtheffectExe]"
     ],
     [
       "-1",
-      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\effectcraft.exe",
+      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\artheffect.exe",
       "Path",
       "[INSTALLFOLDER]"
     ],
     [
       "-1",
-      "Software\\EffectCraft",
+      "Software\\Artheffect",
       "DesktopShortcut",
       "[DESKTOPSHORTCUT]"
     ],
     [
       "-1",
-      "Software\\EffectCraft",
+      "Software\\Artheffect",
       "DesktopShortcut",
       "1"
     ]

@@ -8,14 +8,14 @@
 //! [`Inbox`] that the session drains every frame ([`Session::poll_render`],
 //! [`Session::poll_offload`]). The worker side is [`run_request_async`]: a plain session fed the
 //! project runs the job and reports through a callback. With a WebGPU device of the worker's
-//! own (deferred readbacks, `effectcraft_render::passes`) the job's frames render on the GPU in
+//! own (deferred readbacks, `artheffect_render::passes`) the job's frames render on the GPU in
 //! passes, the job awaiting the device between them; [`run_request`] runs it blocking.
 //!
 //! | Job | Worker runs | Reply applied on the UI thread |
 //! |---|---|---|
 //! | Render Queue | the export of every queued item | item status, progress; files arrive through the host |
 //! | Warp Stabilizer analysis | [`Session::start_warp`], then the stabilization plan | the effect's property group (one undo step); the plan's summary ([`WorkerReply::WarpPlan`]) |
-//! | Warp Stabilizer stabilization (settings changed after the analysis) | the plan ([`effectcraft_effects::warp_stab::summary_at`]) | its summary, for `warp.status` |
+//! | Warp Stabilizer stabilization (settings changed after the analysis) | the plan ([`artheffect_effects::warp_stab::summary_at`]) | its summary, for `warp.status` |
 //! | Track Motion / Stabilize Motion | the tracker analysis | the tracker group |
 //! | Mask tracking | the mask track | the mask group |
 //! | Roto Brush Freeze | the freeze | the effect group |
@@ -36,12 +36,12 @@ use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
-use effectcraft_keyframe::ShapePath;
-use effectcraft_project::render_queue::{RenderQueueItem, RenderStatus};
-use effectcraft_project::tracking::TrackerSettings;
-use effectcraft_project::{ItemId, ItemKind, LayerId, Project, PropGroup, Uid};
-use effectcraft_render::{Accelerator, Backend, RenderOpts};
-use effectcraft_time::Tick;
+use artheffect_keyframe::ShapePath;
+use artheffect_project::render_queue::{RenderQueueItem, RenderStatus};
+use artheffect_project::tracking::TrackerSettings;
+use artheffect_project::{ItemId, ItemKind, LayerId, Project, PropGroup, Uid};
+use artheffect_render::{Accelerator, Backend, RenderOpts};
+use artheffect_time::Tick;
 use serde::{Deserialize, Serialize};
 
 use crate::mask_track::MaskMethod;
@@ -225,11 +225,11 @@ pub enum WorkerReply {
         group: Box<PropGroup>,
         message: String,
     },
-    /// A Warp Stabilizer plan's summary ([`effectcraft_effects::warp_stab::summary_key`]): the
+    /// A Warp Stabilizer plan's summary ([`artheffect_effects::warp_stab::summary_key`]): the
     /// page keeps it for `warp.status` instead of solving the plan itself.
     WarpPlan {
         key: [u64; 2],
-        summary: Box<effectcraft_effects::warp_stab::PlanSummary>,
+        summary: Box<artheffect_effects::warp_stab::PlanSummary>,
     },
     /// Roto Brush segmentations computed so far (propagation), not sent before.
     Segs {
@@ -249,7 +249,7 @@ pub enum WorkerReply {
 }
 
 /// One full-resolution Roto Brush segmentation: its chain key and the base64 of
-/// [`effectcraft_track::roto::FrameSeg::to_bytes`].
+/// [`artheffect_track::roto::FrameSeg::to_bytes`].
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SegData {
     pub key: u64,
@@ -257,24 +257,24 @@ pub struct SegData {
 }
 
 impl SegData {
-    pub fn new(key: u64, seg: &effectcraft_track::roto::FrameSeg) -> SegData {
-        SegData { key, data: effectcraft_track::roto::rle::base64_encode(&seg.to_bytes()) }
+    pub fn new(key: u64, seg: &artheffect_track::roto::FrameSeg) -> SegData {
+        SegData { key, data: artheffect_track::roto::rle::base64_encode(&seg.to_bytes()) }
     }
 
     /// Put the segmentation into this instance's cache (what the Roto Brush effect renders from).
     pub fn store(&self) -> bool {
-        let Some(seg) = effectcraft_track::roto::rle::base64_decode(&self.data).and_then(|b| effectcraft_track::roto::FrameSeg::from_bytes(&b)) else {
+        let Some(seg) = artheffect_track::roto::rle::base64_decode(&self.data).and_then(|b| artheffect_track::roto::FrameSeg::from_bytes(&b)) else {
             return false;
         };
-        effectcraft_effects::roto::store(self.key, 1.0, Arc::new(seg));
+        artheffect_effects::roto::store(self.key, 1.0, Arc::new(seg));
         true
     }
 }
 
 /// The full-resolution segmentations of `keys` that are cached here and not in `sent` yet.
 pub fn segs_to_send(keys: &[u64], sent: &mut std::collections::HashSet<u64>) -> Vec<SegData> {
-    let new: Vec<(u64, Arc<effectcraft_track::roto::FrameSeg>)> =
-        keys.iter().filter(|k| !sent.contains(k)).filter_map(|k| effectcraft_effects::roto::cached(*k, 1.0).map(|s| (*k, s))).collect();
+    let new: Vec<(u64, Arc<artheffect_track::roto::FrameSeg>)> =
+        keys.iter().filter(|k| !sent.contains(k)).filter_map(|k| artheffect_effects::roto::cached(*k, 1.0).map(|s| (*k, s))).collect();
     new.into_iter()
         .map(|(k, s)| {
             sent.insert(k);
@@ -380,9 +380,9 @@ pub(crate) fn analysis_opts(accel: Option<&dyn Accelerator>) -> RenderOpts {
     RenderOpts { scale: 1.0, backend: if accel.is_some() { Backend::Auto } else { Backend::Cpu }, ..Default::default() }
 }
 
-/// A render in passes ([`effectcraft_render::passes::in_passes`]): its value.
+/// A render in passes ([`artheffect_render::passes::in_passes`]): its value.
 pub(crate) async fn in_passes<'a, T>(accel: Option<&'a dyn Accelerator>, render: impl FnMut(Option<&'a dyn Accelerator>) -> T) -> T {
-    effectcraft_render::passes::in_passes(accel, render).await.value
+    artheffect_render::passes::in_passes(accel, render).await.value
 }
 
 /// `work()` while the next frame renders (`fetch`): side by side on the thread pool, or — with
@@ -396,7 +396,7 @@ pub(crate) async fn join_fetch<R: Send, F: Send, Fut: Future<Output = F>>(
         let r = work();
         return (r, fetch().await);
     }
-    rayon::join(work, || effectcraft_render::passes::block_on(fetch()))
+    rayon::join(work, || artheffect_render::passes::block_on(fetch()))
 }
 
 /// Run an analysis started with `wait`: inside [`run_request_async`] it is queued and awaited
@@ -411,7 +411,7 @@ pub(crate) fn run_or_queue(f: impl Future<Output = ()> + 'static) {
         None => Some(f),
     });
     if let Some(f) = now {
-        effectcraft_render::passes::block_on(f);
+        artheffect_render::passes::block_on(f);
     }
 }
 
@@ -439,7 +439,7 @@ pub type Post = Rc<dyn Fn(WorkerReply)>;
 /// Run `req` on `s` (a session with footage, expressions and an exporter, but no project yet),
 /// blocking, reporting through `post`. Always ends with [`WorkerReply::Done`].
 pub fn run_request(s: &mut Session, req: WorkerRequest, post: &Post) {
-    effectcraft_render::passes::block_on(run_request_async(s, req, post));
+    artheffect_render::passes::block_on(run_request_async(s, req, post));
 }
 
 /// [`run_request`] as a future: with an accelerator whose readbacks are deferred
@@ -674,9 +674,9 @@ fn warp_plan(s: &Session, comp: ItemId, layer: LayerId, effect: Uid, t: Tick) ->
     let c = s.project.comp(comp)?;
     let l = c.layer(layer)?;
     let g = l.props.find_group(effect)?;
-    let ctx = effectcraft_render::EvalCtx::new(&s.project, comp, c, t);
-    let params = effectcraft_effects::flatten_params(g, &mut |pr| ctx.value(l, pr));
-    let (key, summary) = effectcraft_effects::warp_stab::summary(&params)?;
+    let ctx = artheffect_render::EvalCtx::new(&s.project, comp, c, t);
+    let params = artheffect_effects::flatten_params(g, &mut |pr| ctx.value(l, pr));
+    let (key, summary) = artheffect_effects::warp_stab::summary(&params)?;
     Some(WorkerReply::WarpPlan { key, summary: Box::new((*summary).clone()) })
 }
 
@@ -804,7 +804,7 @@ impl Session {
                     }
                     WorkerReply::Group { comp, layer, group, message } => results.push((j.id, j.kind, comp, layer, group, message, j.base.clone())),
                     WorkerReply::Fill { plan, files } => fills.push((plan, files)),
-                    WorkerReply::WarpPlan { key, summary } => effectcraft_effects::warp_stab::store_summary(key, *summary),
+                    WorkerReply::WarpPlan { key, summary } => artheffect_effects::warp_stab::store_summary(key, *summary),
                     WorkerReply::Segs { segs } => {
                         for sd in &segs {
                             sd.store();
@@ -935,10 +935,10 @@ fn pick<T: PartialEq + Clone>(base: &T, live: &T, result: &T) -> Option<T> {
     }
 }
 
-fn node_uid(n: &effectcraft_project::Node) -> Uid {
+fn node_uid(n: &artheffect_project::Node) -> Uid {
     match n {
-        effectcraft_project::Node::Prop(p) => p.uid,
-        effectcraft_project::Node::Group(g) => g.uid,
+        artheffect_project::Node::Prop(p) => p.uid,
+        artheffect_project::Node::Group(g) => g.uid,
     }
 }
 
@@ -949,7 +949,7 @@ fn node_uid(n: &effectcraft_project::Node) -> Uid {
 /// differently, one side removed a child the other changed, or both reordered or added and
 /// removed children differently: a conflict.
 pub(crate) fn merge_group(base: &PropGroup, live: &PropGroup, result: &PropGroup) -> Option<PropGroup> {
-    use effectcraft_project::Node;
+    use artheffect_project::Node;
     if live == base {
         return Some(result.clone());
     }
@@ -968,7 +968,7 @@ pub(crate) fn merge_group(base: &PropGroup, live: &PropGroup, result: &PropGroup
     } else {
         return None;
     };
-    fn find(g: &PropGroup, u: Uid) -> Option<&effectcraft_project::Node> {
+    fn find(g: &PropGroup, u: Uid) -> Option<&artheffect_project::Node> {
         g.children.iter().find(|n| node_uid(n) == u)
     }
     // A child one side removed must be unchanged on the other, or that side's edit would be lost.

@@ -1,10 +1,10 @@
 //! Time remapping and separated Position dimensions.
 
-use effectcraft_color::Label;
-use effectcraft_keyframe::{Keyframe, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{Comp, ItemKind, LayerSource, Node, Project, Solid};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_keyframe::{Keyframe, Value};
+use artheffect_project::build::{self, Ids};
+use artheffect_project::{Comp, ItemKind, LayerSource, Node, Project, Solid};
+use artheffect_time::{FrameRate, Tick};
 
 use crate::render_frame;
 

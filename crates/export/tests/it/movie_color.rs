@@ -6,12 +6,12 @@
 use std::path::Path;
 use std::process::Command;
 
-use effectcraft_color::Label;
-use effectcraft_export::render_queue::{OutputFormat, OutputModule, RenderSettings, TimeSpan};
-use effectcraft_export::{Job, export};
-use effectcraft_project::{ColorSpace, Comp, ItemKind, LayerSource, Project, Solid, build};
-use effectcraft_render::NoFootage;
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_export::render_queue::{OutputFormat, OutputModule, RenderSettings, TimeSpan};
+use artheffect_export::{Job, export};
+use artheffect_project::{ColorSpace, Comp, ItemKind, LayerSource, Project, Solid, build};
+use artheffect_render::NoFootage;
+use artheffect_time::{FrameRate, Tick};
 use filmcraft_isobmff::{ColorInfo, TrackKind};
 
 /// (name, Output color space, H.273 primaries / transfer / matrix, the same as ffprobe names them)

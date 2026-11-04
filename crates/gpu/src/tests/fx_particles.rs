@@ -2,10 +2,10 @@
 //! plan is shared, the raster runs on each side. Direct on a buffer (full and half resolution)
 //! and composited at 8 and 32 bpc (`tests_fx_sim`'s harness).
 
-use effectcraft_keyframe::Value;
-use effectcraft_project::{BitDepth, LayerSource, build};
-use effectcraft_render::RenderOpts;
-use effectcraft_time::Tick;
+use artheffect_keyframe::Value;
+use artheffect_project::{BitDepth, LayerSource, build};
+use artheffect_render::RenderOpts;
+use artheffect_time::Tick;
 
 use crate::tests::fx_sim::{case, composited, e, off, on};
 use crate::tests::{Scene, check, compare_at, n, opts, set};

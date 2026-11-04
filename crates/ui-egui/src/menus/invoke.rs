@@ -8,7 +8,7 @@ pub fn panel_command_id(p: PanelKind) -> String {
 
 /// The reveal shortcuts (P, S, R, T, A, E, M, F, L…). `add` (Shift+key) adds the property to
 /// (or removes it from) those already revealed instead of replacing them.
-pub fn reveal(app: &mut EffectcraftApp, kind: &str, now: f64, add: bool) {
+pub fn reveal(app: &mut ArtheffectApp, kind: &str, now: f64, add: bool) {
     // The double-press shortcuts: the same key again within 0.6 s reveals its second set (LL
     // Waveform, TT Mask Opacity, MM all mask properties, EE Expressions, RR Time Remap, AA
     // Material Options, PP paint / Roto Brush / Puppet, SS selected properties, FF missing
@@ -63,7 +63,7 @@ pub fn reveal(app: &mut EffectcraftApp, kind: &str, now: f64, add: bool) {
 
 /// Show Time Remap on the layers of a `layer.enableTimeRemap` (`layers` by id, else the
 /// selected ones) that have it now.
-fn reveal_time_remap(app: &mut EffectcraftApp, params: &Value) {
+fn reveal_time_remap(app: &mut ArtheffectApp, params: &Value) {
     let asked: Vec<u64> = match params.get("layers").and_then(Value::as_array) {
         Some(a) => a.iter().filter_map(Value::as_u64).collect(),
         None => app.session.state.selected_layers.iter().map(|l| l.0).collect(),
@@ -78,7 +78,7 @@ fn reveal_time_remap(app: &mut EffectcraftApp, params: &Value) {
 /// After Alt+Shift+P (A, S, R, T) the Timeline shows the property on each layer it keyed, as in
 /// After Effects: added to what a reveal shortcut shows, else with the layer's Transform twirled
 /// open, else alone like P.
-fn reveal_keyed(app: &mut EffectcraftApp, keyed: &Value, kind: &str) {
+fn reveal_keyed(app: &mut ArtheffectApp, keyed: &Value, kind: &str) {
     let layers: std::collections::BTreeSet<u64> = keyed.as_array().into_iter().flatten().filter_map(|k| k.get("layer").and_then(Value::as_u64)).collect();
     let Some(comp) = app.session.active_comp() else { return };
     let tl = &mut app.ui.timeline;
@@ -92,7 +92,7 @@ fn reveal_keyed(app: &mut EffectcraftApp, keyed: &Value, kind: &str) {
                 }
             }
             None if tl.open_layers.contains(&id) => {
-                if let Some(tr) = comp.layer(effectcraft_engine::project::LayerId(id)).and_then(|l| l.transform()) {
+                if let Some(tr) = comp.layer(artheffect_engine::project::LayerId(id)).and_then(|l| l.transform()) {
                     tl.open_groups.insert(tr.uid);
                 }
             }
@@ -105,7 +105,7 @@ fn reveal_keyed(app: &mut EffectcraftApp, keyed: &Value, kind: &str) {
 }
 
 /// The layers a reveal shortcut acts on: the selected ones, else every layer of the active comp.
-fn reveal_targets(app: &EffectcraftApp) -> Vec<u64> {
+fn reveal_targets(app: &ArtheffectApp) -> Vec<u64> {
     if app.session.state.selected_layers.is_empty() {
         app.session.active_comp().map(|c| c.layers.iter().map(|l| l.id.0).collect()).unwrap_or_default()
     } else {
@@ -118,7 +118,7 @@ fn reveal_targets(app: &EffectcraftApp) -> Vec<u64> {
 /// they move by fractions of a comp pixel. From any panel except Project, Effects & Presets and Render Queue (which own the
 /// arrow keys for its own keyboard navigation, #961); not while typing, with a dialog or
 /// menu open. With mask points selected the arrows move the points instead (#1288).
-fn nudge(app: &mut EffectcraftApp, ctx: &egui::Context, dir: &str) -> Result<Value, String> {
+fn nudge(app: &mut ArtheffectApp, ctx: &egui::Context, dir: &str) -> Result<Value, String> {
     let (side, n) = match dir.strip_suffix("10") {
         Some(side) => (side, 10.0),
         None => (dir, 1.0),
@@ -149,12 +149,12 @@ fn nudge(app: &mut EffectcraftApp, ctx: &egui::Context, dir: &str) -> Result<Val
 
 /// A comp-space step `d` in the layer space of `layer`, where mask points live. Like a drag of
 /// the points in the viewer, every selected point takes the first one's layer space.
-fn vertex_delta(app: &EffectcraftApp, layer: effectcraft_engine::project::LayerId, d: [f64; 2]) -> [f64; 2] {
-    use effectcraft_engine::geom::vec2;
+fn vertex_delta(app: &ArtheffectApp, layer: artheffect_engine::project::LayerId, d: [f64; 2]) -> [f64; 2] {
+    use artheffect_engine::geom::vec2;
     let s = &app.session;
     let (Some(cid), Some(comp)) = (s.active_comp_id(), s.active_comp()) else { return d };
     let Some(l) = comp.layer(layer) else { return d };
-    let ectx = effectcraft_engine::render::EvalCtx {
+    let ectx = artheffect_engine::render::EvalCtx {
         project: &s.project,
         comp_id: cid,
         comp,
@@ -177,13 +177,13 @@ pub(super) fn no_params(p: &Value) -> bool {
 
 /// `{"comp": id}` and nothing else: Composition Settings opens on that comp instead of
 /// applying no settings to it.
-fn only_comp(p: &Value) -> Option<effectcraft_engine::project::ItemId> {
+fn only_comp(p: &Value) -> Option<artheffect_engine::project::ItemId> {
     let m = p.as_object().filter(|m| m.len() == 1)?;
-    m.get("comp")?.as_u64().map(effectcraft_engine::project::ItemId)
+    m.get("comp")?.as_u64().map(artheffect_engine::project::ItemId)
 }
 
 /// Execute a UI or engine command by id.
-pub fn invoke(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, params: Value) -> Result<Value, String> {
+pub fn invoke(app: &mut ArtheffectApp, ctx: &egui::Context, id: &str, params: Value) -> Result<Value, String> {
     if matches!(id, "effects.copyPresetsFolderPath" | "mediaBrowser.copySourcePath") {
         return frontend(app, ctx, id, params);
     }
@@ -246,7 +246,7 @@ pub fn invoke(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, params: V
     // was copied, so SVG there was copied after anything copied in the app.
     if id == "edit.paste" && no_params(&params) && app.session.state.text_edit.is_none() {
         let text = ctx.data_mut(|d| d.remove_temp::<String>(system_paste_id())).or_else(|| app.hooks.clipboard_text.as_ref().and_then(|f| f()));
-        if let Some(svg) = text.filter(|t| effectcraft_engine::vector::is_svg_text(t)) {
+        if let Some(svg) = text.filter(|t| artheffect_engine::vector::is_svg_text(t)) {
             return run_engine(app, ctx, "edit.pasteSvg", json!({"svg": svg}));
         }
     }
@@ -477,14 +477,14 @@ pub fn invoke(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, params: V
         app.set_theme(ctx, k);
         return Ok(Value::Null);
     }
-    let timing = |app: &mut EffectcraftApp, op: &str| app.session.execute("layer.timing", json!({"op": op})).map_err(|e| e.to_string());
+    let timing = |app: &mut ArtheffectApp, op: &str| app.session.execute("layer.timing", json!({"op": op})).map_err(|e| e.to_string());
     match id {
         "playback.ramPreview" => {
-            app.toggle_play_with(now, effectcraft_engine::preview::PreviewShortcut::Numpad0);
+            app.toggle_play_with(now, artheffect_engine::preview::PreviewShortcut::Numpad0);
             return Ok(json!({"playing": app.playback.playing}));
         }
         "playback.preview.shiftSpacebar" | "playback.preview.shiftNumpad0" | "playback.preview.altNumpad0" => {
-            let sc = effectcraft_engine::preview::PreviewShortcut::parse(id.trim_start_matches("playback.preview.")).ok_or("unknown preview shortcut")?;
+            let sc = artheffect_engine::preview::PreviewShortcut::parse(id.trim_start_matches("playback.preview.")).ok_or("unknown preview shortcut")?;
             app.toggle_play_with(now, sc);
             return Ok(json!({"playing": app.playback.playing}));
         }

@@ -1,6 +1,6 @@
 use super::*;
 use crate::{EffectEnv, EffectHost, LayerPixels, run_fx};
-use effectcraft_raster::channels3d::crypto_float;
+use artheffect_raster::channels3d::crypto_float;
 
 /// A 20×10 layer: left half object 1 at depth 100, right half object 2 at depth 500; the
 /// top-right corner is background. Cryptomatte: "left" / "right".
@@ -110,7 +110,7 @@ fn crypto_aux_image_matches_the_per_pixel_reduction() {
     let (w, h) = (7u32, 5u32);
     let n = (w * h) as usize;
     let mut a = AuxChannels::new(w, h, 1.0);
-    let ids = [crypto_hash("cube"), crypto_hash("sphere"), crypto_hash("ring")].map(effectcraft_raster::channels3d::crypto_float);
+    let ids = [crypto_hash("cube"), crypto_hash("sphere"), crypto_hash("ring")].map(artheffect_raster::channels3d::crypto_float);
     for (k, ch) in ["00.R", "00.G", "00.B", "00.A", "01.R", "01.G", "01.B", "01.A"].iter().enumerate() {
         let v: Vec<f32> = (0..n).map(|i| if k % 2 == 0 { ids[(i + k) % 3] } else { ((i * 7 + k * 3) % 11) as f32 / 10.0 }).collect();
         a.channels.push((format!("CryptoObject{ch}"), v));

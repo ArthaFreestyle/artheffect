@@ -4,12 +4,12 @@
 //! intersection line of two planes may sort differently (f32 vs f64 depths), so intersecting
 //! scenes allow 0.5 % of pixels over.
 
-use effectcraft_color::{BlendMode, Label};
-use effectcraft_keyframe::{Keyframe, Value};
-use effectcraft_project::build;
-use effectcraft_project::{BitDepth, Comp, ItemKind, Layer, LayerSource, LightKind, MatteKind, TrackMatte};
-use effectcraft_render::{Backend, RenderOpts, Renderer};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::{BlendMode, Label};
+use artheffect_keyframe::{Keyframe, Value};
+use artheffect_project::build;
+use artheffect_project::{BitDepth, Comp, ItemKind, Layer, LayerSource, LightKind, MatteKind, TrackMatte};
+use artheffect_render::{Backend, RenderOpts, Renderer};
+use artheffect_time::{FrameRate, Tick};
 
 use crate::tests::{Pattern, Scene, check, compare_at, diff, gpu, n, opts, set, tolerance};
 
@@ -231,7 +231,7 @@ fn the_gpu_draws_classic_3d_runs_itself() {
     }
     let out = crate::classic3d::draw_run(&mut e, &prep, &canvas).expect("the kernel draws the run");
     let img = e.download(&out).unwrap();
-    let mut cpu = effectcraft_raster::Image::new(W, H);
+    let mut cpu = artheffect_raster::Image::new(W, H);
     r.draw_3d_run(&ctx, &run, &mut cpu);
     let covered = cpu.data.iter().filter(|p| p[3] > 0.5).count();
     assert!(covered > (W * H / 3) as usize, "the planes cover the frame ({covered} px)");
@@ -305,7 +305,7 @@ fn two_d_layer_with_a_three_d_track_matte() {
             check(&format!("3d matte {kind:?} {depth:?}"), compare_at(&s, opts(), Tick::ZERO), 0.005);
             // The same with the Advanced 3D renderer (its CPU path draws 3D mattes through the
             // camera with composite_iso_with).
-            s.p.comp_mut(s.cid).unwrap().renderer = effectcraft_project::Renderer::Advanced3D;
+            s.p.comp_mut(s.cid).unwrap().renderer = artheffect_project::Renderer::Advanced3D;
             check(&format!("3d matte {kind:?} {depth:?} (Advanced 3D)"), compare_at(&s, opts(), Tick::ZERO), 0.005);
         }
     }

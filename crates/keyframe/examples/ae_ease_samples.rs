@@ -1,6 +1,6 @@
 //! Original scalar keyframe cases for comparison with AE through AEsync.
-use effectcraft_keyframe::{Ease, Interp, Keyframe, Value, evaluate};
-use effectcraft_time::Tick;
+use artheffect_keyframe::{Ease, Interp, Keyframe, Value, evaluate};
+use artheffect_time::Tick;
 use serde_json::json;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

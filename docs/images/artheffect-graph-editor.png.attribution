@@ -1,0 +1,8 @@
+asset:        artheffect-graph-editor.png
+title:        Artheffect Graph Editor
+author:       EffectCraft contributors
+source:       original work (headless render of the Artheffect UI via crates/ui-egui/examples/snapshot.rs)
+license:      MIT OR Apache-2.0
+license-file:
+added:        2026-10-01 by Claude (agent) for Brandon Thomas
+notes:        Screenshot of Artheffect only, showing procedurally generated demo content from crates/engine/src/demo.rs and built-in effects. Artheffect Graph Editor: the value graph of the ARTHEFFECT text animator Range Start keyframes with easing, and the graph editor button bar.

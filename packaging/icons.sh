@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerate every app icon file from assets/app-icon/effectcraft.svg (the canonical vector).
+# Regenerate every app icon file from assets/app-icon/artheffect.svg (the canonical vector).
 #
 # Needs: resvg (brew install resvg / cargo install resvg). On macOS, iconutil also writes the
 # .icns. The outputs are committed, so builds and packaging never need these tools.
@@ -8,8 +8,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIR="$ROOT/assets/app-icon"
-SVG="$DIR/effectcraft.svg"
-ID="ai.storyteller.effectcraft"
+SVG="$DIR/artheffect.svg"
+ID="ai.storyteller.artheffect"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -27,9 +27,9 @@ sed -e 's|<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">|<svg xm
   -e 's|</svg>[[:space:]]*$|</g></svg>|' "$SVG" >"$MAC"
 grep -q 'viewBox="0 0 1024 1024"' "$MAC" || { echo "error: unexpected <svg> header in $SVG" >&2; exit 1; }
 
-render "$SVG" 1024 "$DIR/effectcraft-1024.png"
-# Runtime window/Dock icon on macOS (apps/effectcraft/src/main.rs embeds it).
-render "$MAC" 512 "$DIR/effectcraft-macos-512.png"
+render "$SVG" 1024 "$DIR/artheffect-1024.png"
+# Runtime window/Dock icon on macOS (apps/artheffect/src/main.rs embeds it).
+render "$MAC" 512 "$DIR/artheffect-macos-512.png"
 
 # Linux hicolor theme (the 256 px one is also the runtime icon on Windows and Linux).
 for s in 16 24 32 48 64 128 256 512; do
@@ -37,7 +37,7 @@ for s in 16 24 32 48 64 128 256 512; do
   render "$SVG" "$s" "$DIR/hicolor/${s}x${s}/apps/$ID.png"
 done
 mkdir -p "$DIR/hicolor/scalable/apps"
-cp "$DIR/effectcraft-small.svg" "$DIR/hicolor/scalable/apps/$ID.svg"
+cp "$DIR/artheffect-small.svg" "$DIR/hicolor/scalable/apps/$ID.svg"
 
 # Windows .ico.
 ICO_PNGS=()
@@ -45,18 +45,18 @@ for s in 16 20 24 32 40 48 64 128 256; do
   render "$SVG" "$s" "$TMP/ico-$s.png"
   ICO_PNGS+=("$TMP/ico-$s.png")
 done
-(cd "$ROOT" && cargo run -q -p xtask -- ico "$DIR/effectcraft.ico" "${ICO_PNGS[@]}")
+(cd "$ROOT" && cargo run -q -p xtask -- ico "$DIR/artheffect.ico" "${ICO_PNGS[@]}")
 
 # macOS .icns.
 if command -v iconutil >/dev/null; then
-  SET="$TMP/effectcraft.iconset"
+  SET="$TMP/artheffect.iconset"
   mkdir -p "$SET"
   for s in 16 32 128 256 512; do
     render "$MAC" "$s" "$SET/icon_${s}x${s}.png"
     render "$MAC" $((s * 2)) "$SET/icon_${s}x${s}@2x.png"
   done
-  iconutil -c icns -o "$DIR/effectcraft.icns" "$SET"
+  iconutil -c icns -o "$DIR/artheffect.icns" "$SET"
 else
-  echo "warning: iconutil not found (macOS only); effectcraft.icns not regenerated" >&2
+  echo "warning: iconutil not found (macOS only); artheffect.icns not regenerated" >&2
 fi
 echo "icons written to $DIR"

@@ -7,7 +7,7 @@ use super::{
 pub(super) fn add_mask(s: &mut Session, p: &Value) -> Result<Value> {
     let (cid, lid) = layer_p(s, p, "layer.addMask")?;
     let layer = s.project.comp(cid).and_then(|c| c.layer(lid)).ok_or(EngineError::NoComp)?.clone();
-    let (w, h) = effectcraft_render::source_size(&s.project, &layer);
+    let (w, h) = artheffect_render::source_size(&s.project, &layer);
     let (w, h) = if w == 0 { (400.0, 300.0) } else { (w as f64, h as f64) };
     let shape = str_p(p, "shape").unwrap_or("rect");
     let r = p.get("rect").and_then(Value::as_array).map(|a| [0, 1, 2, 3].map(|i| a.get(i).and_then(Value::as_f64).unwrap_or(0.0)));
@@ -174,7 +174,7 @@ pub(super) fn set_text(s: &mut Session, p: &Value) -> Result<Value> {
         let mut st = e.pending.clone().unwrap_or_else(|| doc.insertion_style(r.start));
         let mut any = false;
         for (k, v) in obj {
-            any |= effectcraft_keyframe::text_doc::apply_char_attr(&mut st, k, v).map_err(|m| bad("layer.setText", m))?;
+            any |= artheffect_keyframe::text_doc::apply_char_attr(&mut st, k, v).map_err(|m| bad("layer.setText", m))?;
         }
         if any {
             e.pending = Some(st);

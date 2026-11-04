@@ -1,5 +1,5 @@
 //! Trained models (Settings ▸ Roto Brush and Settings ▸ Face Tracking; `roto.model*` and
-//! `face.model*` commands): which models the registry offers (`effectcraft_segment::MODELS`, all
+//! `face.model*` commands): which models the registry offers (`artheffect_segment::MODELS`, all
 //! open source), which are installed (in the `models` folder), installing one from a file or
 //! downloading the official weights (verified against the registry's SHA-256 either way, and kept
 //! with a notice naming their authors and licence), choosing one per task, and loading it in the
@@ -8,7 +8,7 @@
 //!
 //! Weights are never bundled: the install stays small and nothing is fetched unless asked for.
 //! Downloads use the system's `curl` (shipped with Windows 10+, macOS and most Linux systems),
-//! so no networking code is linked into EffectCraft; without it, the file can be downloaded in a
+//! so no networking code is linked into Artheffect; without it, the file can be downloaded in a
 //! browser and installed with Install from File. The browser build uses the built-in engines
 //! only, for now.
 
@@ -16,8 +16,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use effectcraft_segment::face::FaceModel;
-use effectcraft_segment::{self as seg, Loaded, ModelInfo, Task};
+use artheffect_segment::face::FaceModel;
+use artheffect_segment::{self as seg, Loaded, ModelInfo, Task};
 use serde_json::{Value, json};
 use web_time::Instant;
 
@@ -441,8 +441,8 @@ fn load_file(path: &Path, id: &str) -> std::result::Result<Loaded, String> {
     let bytes = std::fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
     // SAM 2 runs on candle and is native only; every other model loads through the registry.
     #[cfg(not(target_arch = "wasm32"))]
-    if effectcraft_sam2::mask::SIZES.iter().any(|m| m.id == id) {
-        return effectcraft_sam2::mask::load(&bytes).map(|m| Loaded::Mask(m));
+    if artheffect_sam2::mask::SIZES.iter().any(|m| m.id == id) {
+        return artheffect_sam2::mask::load(&bytes).map(|m| Loaded::Mask(m));
     }
     seg::load(id, &bytes)
 }
@@ -561,7 +561,7 @@ fn list(s: &mut Session, task: Task) -> Result<Value> {
     })];
     for m in target_models(task) {
         #[cfg(not(target_arch = "wasm32"))]
-        let (recommended, hint) = (effectcraft_sam2::mask::recommended().id == m.id, effectcraft_sam2::mask::hint(m.id));
+        let (recommended, hint) = (artheffect_sam2::mask::recommended().id == m.id, artheffect_sam2::mask::hint(m.id));
         #[cfg(target_arch = "wasm32")]
         let (recommended, hint) = (false, None::<String>);
         v.push(json!({

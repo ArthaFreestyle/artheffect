@@ -1,7 +1,7 @@
-use super::{EffectcraftApp, FrameKey, FrameWindow, ItemId, PlaybackPass, audio, frames};
+use super::{ArtheffectApp, FrameKey, FrameWindow, ItemId, PlaybackPass, audio, frames};
 
 /// Seconds without a project change before paused prefetch resumes (see
-/// [`EffectcraftApp::editing`]).
+/// [`ArtheffectApp::editing`]).
 const EDIT_QUIET: f64 = 0.3;
 
 /// Longest a preview with sound holds its first frame, once that frame is cached, waiting for the
@@ -27,7 +27,7 @@ fn startup_frames(ahead: i64, window: i64, budget: usize, frame_bytes: usize) ->
     ahead.min(window).min(fit).max(1)
 }
 
-impl EffectcraftApp {
+impl ArtheffectApp {
     /// RAM preview: advance at the preview's frame rate when frames are cached; otherwise hold
     /// and keep rendering ahead (the green cache bar fills, then playback runs in real time).
     pub(super) fn advance_playback(&mut self, ctx: &egui::Context, scale: f64, now: f64, input_active: bool, cid: ItemId) {
@@ -381,7 +381,7 @@ impl EffectcraftApp {
     fn cache_when_idle(
         &mut self,
         ctx: &egui::Context,
-        comp: &effectcraft_engine::project::Comp,
+        comp: &artheffect_engine::project::Comp,
         series: &FrameKey,
         now: f64,
         input_active: bool,
@@ -433,17 +433,17 @@ impl EffectcraftApp {
     /// at least one).
     /// The frames of `plan` from `cur` to its end, or as many as fit in the RAM preview, are
     /// cached: sound can play from `cur` in real time.
-    fn cached_ahead(&self, plan: &effectcraft_engine::preview::PreviewPlan, series: &FrameKey, cur: i64, fit: i64) -> bool {
+    fn cached_ahead(&self, plan: &artheffect_engine::preview::PreviewPlan, series: &FrameKey, cur: i64, fit: i64) -> bool {
         let cached = self.frames.cached_frames(series);
         (0..fit).map_while(|k| plan.frame_after(cur, k)).take_while(|f| *f >= cur).all(|f| cached.binary_search(&f).is_ok())
     }
 
-    fn frames_that_fit(&self, comp: &effectcraft_engine::project::Comp, scale: f64) -> i64 {
+    fn frames_that_fit(&self, comp: &artheffect_engine::project::Comp, scale: f64) -> i64 {
         ((self.frames.budget() as f64 * 0.9 / self.frame_bytes(comp, scale)) as i64).max(1)
     }
 
     /// Bytes of one comp-sized viewer frame at `scale` (Extended Viewer frames are larger).
-    fn frame_bytes(&self, comp: &effectcraft_engine::project::Comp, scale: f64) -> f64 {
+    fn frame_bytes(&self, comp: &artheffect_engine::project::Comp, scale: f64) -> f64 {
         let side = |n: u32| (n as f64 * scale).ceil().max(1.0);
         side(comp.width) * side(comp.height) * 4.0
     }

@@ -19,8 +19,8 @@ pub use gpu::{GPU_PREPARING, GpuBuild};
 #[cfg(test)]
 pub(crate) use screenshot::{MAX_PENDING_SHOTS, SCREENSHOT_SETTLE_PASSES, SCREENSHOT_SETTLE_S, SCREENSHOT_TIMEOUT_S};
 
-impl EffectcraftApp {
-    /// The window title as of the last tick (`EffectCraft - <project>`, ` *` while modified). The
+impl ArtheffectApp {
+    /// The window title as of the last tick (`Artheffect - <project>`, ` *` while modified). The
     /// app sends it as `ViewportCommand::Title`, which eframe on the web ignores: that host writes
     /// it to `document.title`.
     pub fn window_title(&self) -> &str {
@@ -34,7 +34,7 @@ impl EffectcraftApp {
     pub fn new(session: Session) -> Self {
         let mut ui = UiState::default();
         let workspace_store = workspace_state::WorkspaceStore::load(session.config.as_deref(), &mut ui);
-        EffectcraftApp {
+        ArtheffectApp {
             session,
             ui,
             workspace_store,
@@ -122,7 +122,7 @@ impl EffectcraftApp {
     fn with_ui_commands(mut self) -> Self {
         let cmds = menus::UI_COMMANDS
             .iter()
-            .map(|c| effectcraft_engine::shortcuts::UiCommand { id: c.id.into(), label: c.label.into(), shortcut: c.shortcut.map(str::to_string), scope: None })
+            .map(|c| artheffect_engine::shortcuts::UiCommand { id: c.id.into(), label: c.label.into(), shortcut: c.shortcut.map(str::to_string), scope: None })
             .collect();
         self.session.set_ui_commands(cmds);
         self
@@ -134,7 +134,7 @@ impl EffectcraftApp {
     }
 }
 
-impl eframe::App for EffectcraftApp {
+impl eframe::App for ArtheffectApp {
     fn on_exit(&mut self) {
         self.save_workspace_state();
         // Clean exit: no crash recovery next launch (unless the graphics device was lost with

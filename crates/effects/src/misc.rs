@@ -1,9 +1,9 @@
 //! Blur & Sharpen, Stylize, Perspective, Channel, Noise and Transition effects.
 
-use effectcraft_color::luminance;
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
-use effectcraft_raster::{Image, gaussian_blur, hash_noise};
+use artheffect_color::luminance;
+use artheffect_keyframe::Value;
+use artheffect_project::ParamUi;
+use artheffect_raster::{Image, gaussian_blur, hash_noise};
 use rayon::prelude::*;
 
 use crate::{Buf, EffectCtx, EffectSpec, col, num, p, popup, slider};
@@ -40,8 +40,8 @@ fn gaussian(ctx: &EffectCtx, mut b: Buf) -> Buf {
     }
     let (sx, sy) = (s * kx, s * ky);
     // Small sigmas: integer-radius box passes would step (and do nothing below ~0.6 px), so sample the kernel (#1939).
-    b.img = if effectcraft_raster::gaussian_is_exact(sx, sy) {
-        effectcraft_raster::gaussian_blur_exact(&b.img, sx, sy, repeat || ctx.adjustment)
+    b.img = if artheffect_raster::gaussian_is_exact(sx, sy) {
+        artheffect_raster::gaussian_blur_exact(&b.img, sx, sy, repeat || ctx.adjustment)
     } else {
         gaussian_blur(&b.img, sx, sy, repeat || ctx.adjustment)
     };
@@ -68,12 +68,12 @@ fn box_blur(ctx: &EffectCtx, mut b: Buf) -> Buf {
         b.cover(ctx.layer_size);
     }
     let edge = repeat || ctx.adjustment;
-    let lo = effectcraft_raster::box_blur(&b.img, r * kx as usize, r * ky as usize, it, edge);
+    let lo = artheffect_raster::box_blur(&b.img, r * kx as usize, r * ky as usize, it, edge);
     if frac == 0.0 {
         b.img = lo;
         return b;
     }
-    let hi = effectcraft_raster::box_blur(&b.img, (r + 1) * kx as usize, (r + 1) * ky as usize, it, edge);
+    let hi = artheffect_raster::box_blur(&b.img, (r + 1) * kx as usize, (r + 1) * ky as usize, it, edge);
     for ((l, h), o) in lo.data.iter().zip(hi.data.iter()).zip(b.img.data.iter_mut()) {
         for c in 0..4 {
             o[c] = l[c] + (h[c] - l[c]) * frac;
@@ -90,7 +90,7 @@ fn directional(ctx: &EffectCtx, mut b: Buf) -> Buf {
     if !ctx.adjustment {
         b.pad(len.ceil() as u32 + 1);
     }
-    b.img = effectcraft_raster::directional_blur(&b.img, ctx.params.f("direction"), len);
+    b.img = artheffect_raster::directional_blur(&b.img, ctx.params.f("direction"), len);
     b
 }
 
@@ -98,7 +98,7 @@ fn radial(ctx: &EffectCtx, mut b: Buf) -> Buf {
     let amt = ctx.params.f("amount");
     let zoom = ctx.params.e("type") == 1;
     let c = b.to_px(ctx.params.v2("center"));
-    b.img = effectcraft_raster::radial_blur(&b.img, c, if zoom { amt / 100.0 } else { amt }, zoom);
+    b.img = artheffect_raster::radial_blur(&b.img, c, if zoom { amt / 100.0 } else { amt }, zoom);
     b
 }
 
@@ -192,9 +192,9 @@ pub const GLOW_OPERATIONS: [&str; 17] = [
 ];
 
 /// Glow's Glow Operation as a blend mode (Add for projects saved before it existed).
-pub fn glow_operation(ctx: &EffectCtx) -> effectcraft_color::BlendMode {
+pub fn glow_operation(ctx: &EffectCtx) -> artheffect_color::BlendMode {
     let name = GLOW_OPERATIONS.get(ctx.params.get("glowOperation").map(|v| v.as_enum()).unwrap_or(1) as usize).copied().unwrap_or("Add");
-    effectcraft_color::BlendMode::ALL.iter().copied().find(|m| m.label() == name).unwrap_or(effectcraft_color::BlendMode::Add)
+    artheffect_color::BlendMode::ALL.iter().copied().find(|m| m.label() == name).unwrap_or(artheffect_color::BlendMode::Add)
 }
 
 /// Glow's Arbitrary Map: red, green and blue curves of the glow brightness, as Curves point
@@ -269,7 +269,7 @@ fn glow(ctx: &EffectCtx, mut b: Buf) -> Buf {
             // None: the glow alone.
             2 => *o = [g[0], g[1], g[2], g[3]],
             // On Top with another Glow Operation: that blend mode.
-            _ if glow_op != effectcraft_color::BlendMode::Add => *o = effectcraft_color::blend_pixel(glow_op, *o, g, 0.0),
+            _ if glow_op != artheffect_color::BlendMode::Add => *o = artheffect_color::blend_pixel(glow_op, *o, g, 0.0),
             // On Top: add (screen-like add on premultiplied colour; alpha grows by the glow's alpha).
             _ => {
                 for c in 0..3 {
@@ -341,7 +341,7 @@ fn invert_color(ch: u32, s: [f32; 3]) -> [f32; 3] {
         2 => [s[0], 1.0 - s[1], s[2]],
         3 => [s[0], s[1], 1.0 - s[2]],
         4..=7 => {
-            let (mut h, mut sat, mut l) = effectcraft_color::rgb_to_hsl(s[0], s[1], s[2]);
+            let (mut h, mut sat, mut l) = artheffect_color::rgb_to_hsl(s[0], s[1], s[2]);
             if matches!(ch, 4 | 5) {
                 h = 1.0 - h;
             }
@@ -351,7 +351,7 @@ fn invert_color(ch: u32, s: [f32; 3]) -> [f32; 3] {
             if matches!(ch, 4 | 7) {
                 sat = 1.0 - sat;
             }
-            let (r, g, b) = effectcraft_color::hsl_to_rgb(h, sat, l);
+            let (r, g, b) = artheffect_color::hsl_to_rgb(h, sat, l);
             [r, g, b]
         }
         8..=11 => {
@@ -875,8 +875,8 @@ mod tests {
     use crate::{EffectEnv, run_fx};
 
     /// White left half, black right half (one vertical edge at x = 20).
-    fn edge() -> effectcraft_raster::Image {
-        let mut img = effectcraft_raster::Image::filled(40, 8, [0.0, 0.0, 0.0, 1.0]);
+    fn edge() -> artheffect_raster::Image {
+        let mut img = artheffect_raster::Image::filled(40, 8, [0.0, 0.0, 0.0, 1.0]);
         for y in 0..8 {
             for x in 0..20 {
                 img.set(x, y, [1.0, 1.0, 1.0, 1.0]);
@@ -911,8 +911,8 @@ mod tests {
     }
 
     /// A bright square on mid grey.
-    fn scene() -> effectcraft_raster::Image {
-        let mut img = effectcraft_raster::Image::filled(24, 24, [0.3, 0.3, 0.3, 1.0]);
+    fn scene() -> artheffect_raster::Image {
+        let mut img = artheffect_raster::Image::filled(24, 24, [0.3, 0.3, 0.3, 1.0]);
         for y in 8..16 {
             for x in 8..16 {
                 img.set(x, y, [1.0, 1.0, 1.0, 1.0]);
@@ -927,7 +927,7 @@ mod tests {
     /// and with Composite Original On Top or Behind; its width follows Glow Radius.
     #[test]
     fn glow_halo_matches_after_effects() {
-        let grey = effectcraft_raster::Image::filled(200, 120, [0.5, 0.5, 0.5, 1.0]);
+        let grey = artheffect_raster::Image::filled(200, 120, [0.5, 0.5, 0.5, 1.0]);
         // AE's red under the halo at 0.5, 1.5, 3.5, 5.5 and 7.5 px outside the left edge
         // (radius 10) and at 0.5, 5.5, 10.5, 20.5 px (radius 30); halo alpha = 1 − red.
         let r10 = [(0.5, 140.0), (1.5, 165.0), (3.5, 208.0), (5.5, 234.0), (7.5, 248.0)];
@@ -969,7 +969,7 @@ mod tests {
             ([0.2, 0.6, 1.0], 2, 83.0),
         ];
         for (c, ch, ae) in cases {
-            let img = effectcraft_raster::Image::filled(200, 200, [c[0], c[1], c[2], 1.0]);
+            let img = artheffect_raster::Image::filled(200, 200, [c[0], c[1], c[2], 1.0]);
             let set = [("threshold", num(60.0)), ("radius", num(10.0)), ("intensity", num(0.25))];
             let o = run_fx("ec.stylize.glow", &set, img, 0.0, EffectEnv::default());
             let (bx, by) = o.to_px([-1.5, 100.0]);
@@ -978,7 +978,7 @@ mod tests {
             assert!((p[3] - 0.353).abs() < 3.0 / 255.0, "{c:?}: alpha {}", p[3]);
         }
         // Intensity scales the colour linearly: white at Intensity 1 is 3.7 × its alpha.
-        let white = effectcraft_raster::Image::filled(200, 200, [1.0, 1.0, 1.0, 1.0]);
+        let white = artheffect_raster::Image::filled(200, 200, [1.0, 1.0, 1.0, 1.0]);
         let o = run_fx("ec.stylize.glow", &[("threshold", num(60.0)), ("radius", num(10.0))], white, 0.0, EffectEnv::default());
         let (bx, by) = o.to_px([-1.5, 100.0]);
         let p = o.img.get(bx.floor() as i64, by.floor() as i64);
@@ -986,19 +986,19 @@ mod tests {
     }
 
     /// After Effects 2026: Radial Blur keeps the layer's edges. Zoom 20 on a flat grey 960 × 540
-    /// solid (case 713) leaves it flat and opaque to the edge (EffectCraft faded the edges toward
+    /// solid (case 713) leaves it flat and opaque to the edge (Artheffect faded the edges toward
     /// transparency, letting the red layer below show through); on a full-frame horizontal ramp
     /// (case 829, centre [960, 540]) row 540 reads 2/255 at x = 2 and 253/255 at x = 1917.
     #[test]
     fn radial_blur_keeps_the_layer_edges_as_after_effects() {
         let zoom = |c: [f64; 2]| [("amount", num(20.0)), ("type", Value::Enum(1)), ("center", Value::Vec2(c))];
-        let grey = effectcraft_raster::Image::filled(960, 540, [0.5, 0.5, 0.5, 1.0]);
+        let grey = artheffect_raster::Image::filled(960, 540, [0.5, 0.5, 0.5, 1.0]);
         let o = run_fx("ec.blur.radial", &zoom([600.0, 300.0]), grey, 0.0, EffectEnv::default());
         for (x, y) in [(0, 270), (1, 270), (959, 270), (480, 0), (480, 539), (0, 0), (959, 539)] {
             let p = o.img.get(x, y);
             assert!((p[3] - 1.0).abs() < 1e-4 && (p[0] - 0.5).abs() < 1e-4, "({x}, {y}): {p:?}");
         }
-        let mut ramp = effectcraft_raster::Image::new(1920, 1080);
+        let mut ramp = artheffect_raster::Image::new(1920, 1080);
         ramp.rows_mut().for_each(|(_, row)| {
             for (x, px) in row.iter_mut().enumerate() {
                 let v = (x as f32 + 0.5) / 1920.0;
@@ -1017,7 +1017,7 @@ mod tests {
     /// at the layer centre's phase, both edges are Gaussian (σ = Feather / 2).
     #[test]
     fn venetian_blinds_match_after_effects() {
-        let img = effectcraft_raster::Image::filled(480, 270, [0.5, 0.5, 0.5, 1.0]);
+        let img = artheffect_raster::Image::filled(480, 270, [0.5, 0.5, 0.5, 1.0]);
         let vals = [("completion", Value::Scalar(40.0)), ("direction", Value::Scalar(30.0)), ("width", Value::Scalar(50.0)), ("feather", Value::Scalar(5.0))];
         let o = run_fx("ec.transition.venetian", &vals, img, 0.0, EffectEnv::default());
         let ae = [
@@ -1041,7 +1041,7 @@ mod tests {
         }
         // No completion leaves the layer; full completion clears it; no feather is a hard edge.
         let full = [("completion", Value::Scalar(100.0)), ("feather", Value::Scalar(5.0))];
-        let img = effectcraft_raster::Image::filled(40, 20, [0.5, 0.5, 0.5, 1.0]);
+        let img = artheffect_raster::Image::filled(40, 20, [0.5, 0.5, 0.5, 1.0]);
         assert!(run_fx("ec.transition.venetian", &full, img.clone(), 0.0, EffectEnv::default()).img.data.iter().all(|p| p[3] < 1e-4));
         assert_eq!(run_fx("ec.transition.venetian", &[("completion", Value::Scalar(0.0))], img.clone(), 0.0, EffectEnv::default()).img, img);
         let hard = run_fx(
@@ -1061,7 +1061,7 @@ mod tests {
     /// edges (8-bit captures of dark steps, so ±0.05).
     #[test]
     fn radial_wipe_feather_matches_after_effects() {
-        let img = effectcraft_raster::Image::filled(400, 300, [1.0, 1.0, 1.0, 1.0]);
+        let img = artheffect_raster::Image::filled(400, 300, [1.0, 1.0, 1.0, 1.0]);
         let vals = [
             ("completion", Value::Scalar(40.0)),
             ("startAngle", Value::Scalar(30.0)),
@@ -1128,7 +1128,7 @@ mod tests {
                 adjustment: false,
                 env: Default::default()
             }),
-            effectcraft_color::BlendMode::Add
+            artheffect_color::BlendMode::Add
         );
         // Arbitrary Map: the glow takes the mapped colour (here pure red for every brightness).
         let red = run(&[("colors", Value::Enum(2)), ("arbitraryMap", Value::Str("0,1 1,1|0,0 1,0|0,0 1,0".into())), ("operation", Value::Enum(2))]);

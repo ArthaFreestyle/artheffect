@@ -9,12 +9,12 @@ use egui::{Align2, Rect, pos2, vec2};
 use serde_json::json;
 
 use super::panel_kit as kit;
-use crate::EffectcraftApp;
+use crate::ArtheffectApp;
 use crate::theme::Tokens;
 
 const ROW: f32 = 28.0;
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     p.rect_filled(rect, 0.0, t.panel_bg);
@@ -37,8 +37,8 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
                         .filter(|g| {
                             matches!(
                                 g.kind,
-                                effectcraft_engine::project::GroupKind::Mask { mode: effectcraft_engine::project::MaskMode::Subtract, .. }
-                                    | effectcraft_engine::project::GroupKind::Mask { inverted: true, .. }
+                                artheffect_engine::project::GroupKind::Mask { mode: artheffect_engine::project::MaskMode::Subtract, .. }
+                                    | artheffect_engine::project::GroupKind::Mask { inverted: true, .. }
                             )
                         })
                         .count()

@@ -21,8 +21,8 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex};
 
-use effectcraft_effects::Buf;
-use effectcraft_project::{FootageKind, ItemKind, Layer, LayerSource, Node, PropGroup};
+use artheffect_effects::Buf;
+use artheffect_project::{FootageKind, ItemKind, Layer, LayerSource, Node, PropGroup};
 
 use crate::eval::EvalCtx;
 
@@ -199,7 +199,7 @@ impl LayerCache {
     /// See [`LayerCache::insert`]: the buffer kept under `key` (`buf`, unless one was kept first
     /// or `buf` is too large to keep).
     fn insert_mem(&self, key: u64, buf: Arc<Buf>) -> Arc<Buf> {
-        let bytes = buf.img.data.len() * std::mem::size_of::<effectcraft_raster::Px>();
+        let bytes = buf.img.data.len() * std::mem::size_of::<artheffect_raster::Px>();
         let Ok(mut g) = self.inner.lock() else { return buf };
         if bytes > g.budget / 4 {
             return buf;
@@ -330,19 +330,19 @@ impl PrefetchStore {
     /// when damaged.
     pub fn provide(&self, key: u128, entry: &[u8]) -> bool {
         let Some(buf) = crate::disk_cache::read_layer_entry(entry) else { return false };
-        let bytes = buf.img.data.len() * std::mem::size_of::<effectcraft_raster::Px>();
+        let bytes = buf.img.data.len() * std::mem::size_of::<artheffect_raster::Px>();
         let Ok(mut s) = self.st.lock() else { return false };
         s.clock += 1;
         let now = s.clock;
         if let Some((old, _)) = s.ready.insert(key, (Arc::new(buf), now)) {
-            s.bytes -= old.img.data.len() * std::mem::size_of::<effectcraft_raster::Px>();
+            s.bytes -= old.img.data.len() * std::mem::size_of::<artheffect_raster::Px>();
         }
         s.bytes += bytes;
         s.known.insert(key);
         while s.bytes > self.budget {
             let Some((&k, _)) = s.ready.iter().min_by_key(|(_, (_, t))| *t) else { break };
             if let Some((b, _)) = s.ready.remove(&k) {
-                s.bytes -= b.img.data.len() * std::mem::size_of::<effectcraft_raster::Px>();
+                s.bytes -= b.img.data.len() * std::mem::size_of::<artheffect_raster::Px>();
             }
         }
         true
@@ -443,14 +443,14 @@ fn time_dependent(layer: &Layer, effects: bool) -> bool {
         && let Some(fx) = layer.effects()
     {
         for g in fx.groups() {
-            if let effectcraft_project::GroupKind::Effect { effect } = &g.kind
+            if let artheffect_project::GroupKind::Effect { effect } = &g.kind
                 && g.enabled
-                && effectcraft_effects::is_time_dependent(effect)
+                && artheffect_effects::is_time_dependent(effect)
             {
                 return true;
             }
             // Clone strokes reading another layer or another time.
-            if g.enabled && effectcraft_effects::paint::is_paint(g) && effectcraft_effects::paint::cache_key(g, 0.0).1 {
+            if g.enabled && artheffect_effects::paint::is_paint(g) && artheffect_effects::paint::cache_key(g, 0.0).1 {
                 return true;
             }
         }
@@ -481,7 +481,7 @@ fn group_has(g: &PropGroup, match_id: &str) -> bool {
 /// at the context time. The static structure is hashed separately.
 /// Mix the collapsed-instance overrides that target `id` into a cache key. They replace values
 /// without editing the layer, so a key without them would reuse another instance's buffer.
-fn hash_overrides(h: &mut KeyHasher, ctx: &EvalCtx, id: effectcraft_project::LayerId) {
+fn hash_overrides(h: &mut KeyHasher, ctx: &EvalCtx, id: artheffect_project::LayerId) {
     for o in ctx.property_overrides.iter().filter(|o| o.layer == id) {
         o.prop.hash(h);
         o.font.hash(h);
@@ -541,8 +541,8 @@ fn reads_other_times(layer: &Layer, effects: Option<usize>) -> bool {
         && layer.effects().is_some_and(|fx| {
             fx.groups().take(effects.unwrap_or(usize::MAX)).any(|g| {
                 g.enabled
-                    && matches!(&g.kind, effectcraft_project::GroupKind::Effect { effect }
-                        if effect.starts_with("ec.time.") || effectcraft_effects::reads_param_history(effect))
+                    && matches!(&g.kind, artheffect_project::GroupKind::Effect { effect }
+                        if effect.starts_with("ec.time.") || artheffect_effects::reads_param_history(effect))
             })
         })
 }
@@ -556,14 +556,14 @@ fn history_unkeyable(layer: &Layer, effects: Option<usize>) -> bool {
 /// A still image (no proxy): its layer is cached like a text or shape layer, so the GPU
 /// compositor uploads it once, not every frame (#1812: four 21120 px plates re-uploaded by every
 /// preview worker ran the GPU out of memory). Movies and sequences stay in the media pool only.
-fn still_footage(ctx: &EvalCtx, item: effectcraft_project::ItemId) -> bool {
+fn still_footage(ctx: &EvalCtx, item: artheffect_project::ItemId) -> bool {
     ctx.project.item(item).is_some_and(|it| it.proxy.is_none() && matches!(&it.kind, ItemKind::Footage(f) if f.kind == FootageKind::Still))
 }
 
 /// Does the layer have an animated mask that motion blur may draw at other times (Layer ▸ Mask ▸
 /// Motion Blur On, or Same As Layer with the layer blurred)?
 fn mask_motion_blur(ctx: &EvalCtx, layer: &Layer, blur: bool) -> bool {
-    use effectcraft_project::{GroupKind, MaskMotionBlur};
+    use artheffect_project::{GroupKind, MaskMotionBlur};
     fn animated(g: &PropGroup) -> bool {
         g.children.iter().any(|c| match c {
             Node::Prop(p) => !p.keys.is_empty() || p.has_expression(),
@@ -678,7 +678,7 @@ fn key_any(ctx: &EvalCtx, layer: &Layer, scale: f64, draft: bool, blur: bool, fo
     for c in &layer.props.children {
         // Transform is applied later; Layer Styles are keyed separately (see [`styles_key`]).
         if let Node::Group(g) = c
-            && (g.match_id == "transform" || g.match_id == effectcraft_project::styles::GROUP)
+            && (g.match_id == "transform" || g.match_id == artheffect_project::styles::GROUP)
         {
             continue;
         }
@@ -719,8 +719,8 @@ fn key_any(ctx: &EvalCtx, layer: &Layer, scale: f64, draft: bool, blur: bool, fo
         && let Some(fx) = layer.effects()
     {
         let lt = layer.layer_time(ctx.time).seconds();
-        for g in fx.groups().filter(|g| g.enabled && effectcraft_effects::paint::is_paint(g)) {
-            effectcraft_effects::paint::cache_key(g, lt).0.hash(&mut h);
+        for g in fx.groups().filter(|g| g.enabled && artheffect_effects::paint::is_paint(g)) {
+            artheffect_effects::paint::cache_key(g, lt).0.hash(&mut h);
         }
     }
     // Mask motion blur draws animated masks at the shutter's other times too: their values at
@@ -748,7 +748,7 @@ fn reads_comp_scene(layer: &Layer) -> bool {
         && layer.effects().is_some_and(|fx| {
             fx.groups().any(|g| {
                 g.enabled
-                    && matches!(&g.kind, effectcraft_project::GroupKind::Effect { effect } if effectcraft_effects::READS_COMP_SCENE.contains(&effect.as_str()))
+                    && matches!(&g.kind, artheffect_project::GroupKind::Effect { effect } if artheffect_effects::READS_COMP_SCENE.contains(&effect.as_str()))
             })
         })
 }
@@ -777,8 +777,8 @@ mod shared_insert_tests {
     use std::sync::Arc;
 
     use super::LayerCache;
-    use effectcraft_effects::Buf;
-    use effectcraft_raster::Image;
+    use artheffect_effects::Buf;
+    use artheffect_raster::Image;
 
     /// Two renders of one layer kept under one key: both use the buffer kept first.
     #[test]

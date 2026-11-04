@@ -1,12 +1,12 @@
 //! Nested compositions: Preserve frame rate when nested or in render queue, Preserve resolution
 //! when nested.
 
-use effectcraft_color::Label;
-use effectcraft_keyframe::{Keyframe, Value};
-use effectcraft_project::build;
-use effectcraft_project::render_queue::RenderSettings;
-use effectcraft_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid};
-use effectcraft_time::{FrameRate, Tick};
+use artheffect_color::Label;
+use artheffect_keyframe::{Keyframe, Value};
+use artheffect_project::build;
+use artheffect_project::render_queue::RenderSettings;
+use artheffect_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid};
+use artheffect_time::{FrameRate, Tick};
 
 use crate::render_frame;
 

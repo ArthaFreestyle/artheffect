@@ -1,8 +1,8 @@
-# EffectCraft — egui 0.37 migration plan
+# Artheffect — egui 0.37 migration plan
 
 Current landing status, 2026-10-25: the working tree includes main `991904888a20b7da72b2a4880b21c7d912154736` and pins egui `6d518fc799681571963842f95b55a6b68431b15a`, winit `a517b3846ee8457d84ee4975110bfda6797c44dc` and shared UI `25da1314d443171b4adeaad2cd9454b273f35c6f`. The final IME adapter uses ordered native reset request identifiers and `ImeResetCompleted`; the earlier tombstone-only description below is historical.
 
-Full current-source CI `egui037-effectcraft-current-main-ci-20261025-0231` recorded 3,961 passing tests, 14 failures and 31 ignored across 88 test summaries. All 14 failures are GPU tests: their names and diagnostic blocks match the frozen pre-migration `eb51087` baseline exactly after removing thread process numbers. Formatting, strict lint, layering, assets and the 32-crate WASM check completed. The 596-test UI regression suite passes. This is not a green full-CI result or hardware-GPU qualification. Native IME, visible final-source workflows and paired performance remain open.
+Full current-source CI `egui037-artheffect-current-main-ci-20261025-0231` recorded 3,961 passing tests, 14 failures and 31 ignored across 88 test summaries. All 14 failures are GPU tests: their names and diagnostic blocks match the frozen pre-migration `eb51087` baseline exactly after removing thread process numbers. Formatting, strict lint, layering, assets and the 32-crate WASM check completed. The 596-test UI regression suite passes. This is not a green full-CI result or hardware-GPU qualification. Native IME, visible final-source workflows and paired performance remain open.
 
 The repository's green-only commit gate remains unmet by the GPU results; the reviewed worktree and complete evidence are retained for human review. No push, publication or merge is authorized by this status.
 
@@ -11,12 +11,12 @@ Historical implementation and research record follows. Its older pins, test coun
 Status: implementation in progress, 2026-10-24. The dependency/API port, IME context adapter,
 screenshots, accessibility, font coverage and text-edit repairs are present in the dirty migration
 worktree. The parent-managed local run
-`egui037-effectcraft-candidate-20261024-upstream-tests-09` recorded **820 passed, 14 ignored**:
-`effectcraft-ui-egui --lib` 297 passed / 3 ignored, `--test it` 521 passed / 11 ignored and
-`--test ui_accessibility` 2 passed; `cargo clippy -p effectcraft-ui-egui --lib --tests -- -D warnings`
-exited 0. That run covers `effectcraft-ui-egui` only; the engine suite, full `cargo xtask ci`, wasm,
+`egui037-artheffect-candidate-20261024-upstream-tests-09` recorded **820 passed, 14 ignored**:
+`artheffect-ui-egui --lib` 297 passed / 3 ignored, `--test it` 521 passed / 11 ignored and
+`--test ui_accessibility` 2 passed; `cargo clippy -p artheffect-ui-egui --lib --tests -- -D warnings`
+exited 0. That run covers `artheffect-ui-egui` only; the engine suite, full `cargo xtask ci`, wasm,
 native GUI and real-platform IME were not rerun for this revision. Evidence:
-`/home/codex/work/ssd2/task-evidence/egui037-effectcraft-candidate-20261023/task-jobs/egui037-effectcraft-candidate-20261024-upstream-tests-09/output.log`.
+`/home/codex/work/ssd2/task-evidence/egui037-artheffect-candidate-20261023/task-jobs/egui037-artheffect-candidate-20261024-upstream-tests-09/output.log`.
 The custom viewer text editor now has an explicit per-viewport IME composition lifecycle instead
 of a frame-number suppression window: an active composition is owned by the edit session's
 layer/session identity, and a target switch or editor end turns it into a tombstone. An empty
@@ -54,9 +54,9 @@ independent review; no new test, native-IME or final dependency-graph acceptance
 Every future push or new pull request still needs a fresh, explicit human approval of the exact
 commit range and its validation; this document is not publication evidence.
 
-Scope: `storytold/effectcraft` only (this checkout). Shared work in `storytold/craft-libs`
+Scope: `ArthaFreestyle/artheffect` only (this checkout). Shared work in `storytold/craft-libs`
 (PR 199 and the CL-2 capture helper), the suite egui fork and the suite winit fork are dependencies
-with their own plans; this document records what EffectCraft needs from them, not what they should
+with their own plans; this document records what Artheffect needs from them, not what they should
 do. Sibling apps, their plans and their dependency bumps are out of scope.
 
 This plan deliberately separates:
@@ -72,9 +72,9 @@ This plan deliberately separates:
 
 | Item | Value |
 | --- | --- |
-| EffectCraft implementation checkout | `/home/codex/work/CraftApps/egui037-migration-20261022/effectcraft-implementation` |
-| Current EffectCraft worktree | HEAD `049070d65c66a73f322b496b22521816e0018f14`; dirty migration worktree. The lock and manifests still use the local integration patch, not final immutable pins. |
-| EffectCraft historical planning baseline | `9581b53c3f8945683252af0eb5fac79e0e43aed4` (`Release 0.16.0`, 2026-10-22), retained for baseline comparisons only |
+| Artheffect implementation checkout | `/home/codex/work/CraftApps/egui037-migration-20261022/artheffect-implementation` |
+| Current Artheffect worktree | HEAD `049070d65c66a73f322b496b22521816e0018f14`; dirty migration worktree. The lock and manifests still use the local integration patch, not final immutable pins. |
+| Artheffect historical planning baseline | `9581b53c3f8945683252af0eb5fac79e0e43aed4` (`Release 0.16.0`, 2026-10-22), retained for baseline comparisons only |
 | Branch | `codex/egui-037-plan-20261022` |
 | Workspace | single root workspace `Cargo.toml` (`resolver = "3"`, members `crates/*`, `apps/*`, `xtask`) |
 | Lockfile | `Cargo.lock`, lock format 4 |
@@ -108,20 +108,20 @@ configuration is review evidence, not an immutable publication pin.
 | `egui-wgpu` / `egui-winit` | `0.36.2` | transitive, one each |
 | `kittest` | `0.4.0` | transitive of `egui_kittest` |
 | `accesskit` / `accesskit_winit` | `0.24.1` / `0.32.2` | transitive |
-| `winit` | `0.30.13` crates.io, checksum `a6755fa5…` | `apps/effectcraft/Cargo.toml:23` (`"0.30"`, default features off) and transitive |
+| `winit` | `0.30.13` crates.io, checksum `a6755fa5…` | `apps/artheffect/Cargo.toml:23` (`"0.30"`, default features off) and transitive |
 | `wgpu` | `30.0.1` | `Cargo.toml:101` |
 | `craft-ui` | baseline `0.1.0` git `storytold/craft-libs` rev `5c874d51…`; implementation resolves local `craft-libs-implementation` at `3832c47…` | `Cargo.toml:107` plus `local-integration-config.toml` |
 | `craft-pdf` | git `storytold/craft-libs` rev `ca50d63b…` | `Cargo.toml:15` |
 | `craft-docpath` | git `storytold/craft-libs` rev `82a24b00…` | `Cargo.toml:16` |
 | `hayro-syntax` patch | git `storytold/craft-libs` rev `ca50d63b…`, `=0.7.2` | `Cargo.toml:213-214` |
-| `wasm-bindgen` | `0.2.129` (exact crate and CLI), `apps/effectcraft-web/Cargo.toml:34` and `xtask/src/main.rs:254` | web only |
+| `wasm-bindgen` | `0.2.129` (exact crate and CLI), `apps/artheffect-web/Cargo.toml:34` and `xtask/src/main.rs:254` | web only |
 | filmcraft crates | git rev `2c5ba7a7…` | `Cargo.toml:76-95` |
 
 There is exactly one egui family in the baseline. The target must preserve that invariant (see §6).
 
 Manifest audit: 38 `Cargo.toml` files (root, 32 `crates/*`, 3 `apps/*`, `xtask`, and the standalone
-plugin). Only `crates/ui-egui`, `apps/effectcraft`, `apps/effectcraft-web` and (through
-`effectcraft-ui-egui`) `apps/effectcraft-cli` use the egui family. `examples/plugins/posterize-bands`
+plugin). Only `crates/ui-egui`, `apps/artheffect`, `apps/artheffect-web` and (through
+`artheffect-ui-egui`) `apps/artheffect-cli` use the egui family. `examples/plugins/posterize-bands`
 has its own workspace/lock and no egui. There are no vendored crates and no `[patch]` on the egui
 family in the baseline; the only patch is `hayro-syntax`.
 
@@ -129,11 +129,11 @@ family in the baseline; the only patch is `hayro-syntax`.
 
 | Target | Kind | egui-family surface |
 | --- | --- | --- |
-| `effectcraft` (`apps/effectcraft`) | native binary | `eframe` with `default_fonts`, `wgpu`, `accesskit`, `links`, `wayland`, `x11` (`apps/effectcraft/Cargo.toml:18`); direct `winit`; native `Desktop` app (`apps/effectcraft/src/main.rs:426-456`) |
-| `effectcraft-web` (`apps/effectcraft-web`) | `cdylib` + `rlib`, wasm32 | `eframe` web runner (`app.rs:88-122`, `start()` at `app.rs:185`); `eframe` features `default_fonts`, `wgpu` |
-| `effectcraft-ui-egui` (`crates/ui-egui`) | library (swappable frontend) | the real UI, control channel, docking, viewer, timeline, kittest dev-dep `eframe` + `wgpu` (`crates/ui-egui/Cargo.toml:24-41`) |
-| `effectcraft-cli` | binary + MCP server | depends on `effectcraft-ui-egui` for `bench --ops` (`apps/effectcraft-cli/Cargo.toml:19`) |
-| `effectcraft-ui-egui --example snapshot` | example | headless kittest+wgpu screenshots (`crates/ui-egui/examples/snapshot.rs`) |
+| `artheffect` (`apps/artheffect`) | native binary | `eframe` with `default_fonts`, `wgpu`, `accesskit`, `links`, `wayland`, `x11` (`apps/artheffect/Cargo.toml:18`); direct `winit`; native `Desktop` app (`apps/artheffect/src/main.rs:426-456`) |
+| `artheffect-web` (`apps/artheffect-web`) | `cdylib` + `rlib`, wasm32 | `eframe` web runner (`app.rs:88-122`, `start()` at `app.rs:185`); `eframe` features `default_fonts`, `wgpu` |
+| `artheffect-ui-egui` (`crates/ui-egui`) | library (swappable frontend) | the real UI, control channel, docking, viewer, timeline, kittest dev-dep `eframe` + `wgpu` (`crates/ui-egui/Cargo.toml:24-41`) |
+| `artheffect-cli` | binary + MCP server | depends on `artheffect-ui-egui` for `bench --ops` (`apps/artheffect-cli/Cargo.toml:19`) |
+| `artheffect-ui-egui --example snapshot` | example | headless kittest+wgpu screenshots (`crates/ui-egui/examples/snapshot.rs`) |
 | `xtask` | tool | `ci`, `wasm`, `web`, `assets`, `layers` (`xtask/src/main.rs:409-428`) |
 | `examples/plugins/posterize-bands` | separate nested workspace | no egui dependency; its own `Cargo.lock`; untouched |
 
@@ -152,36 +152,36 @@ Platform cfgs that the migration must respect:
 - `cargo xtask ci` = `cargo fmt --check`; `cargo clippy --workspace --all-targets --release -- -D warnings`;
   `cargo test --workspace --release`; PDF dependency check; `layers`; `assets`; `wasm`
   (`xtask/src/main.rs:409-418`).
-- `cargo xtask wasm` checks every L0–L4 crate plus `effectcraft-ui-egui` and `effectcraft-web`
+- `cargo xtask wasm` checks every L0–L4 crate plus `artheffect-ui-egui` and `artheffect-web`
   for `wasm32-unknown-unknown` (`xtask/src/main.rs:235-252`).
 - UI tests: 81 files in `crates/ui-egui/tests`, driven by `egui_kittest::Harness`
   (`build_eframe`, `run_steps`, synthetic `Event`s, automation-registry rects, AccessKit queries).
   `ui_gpu.rs` runs the viewer on egui-wgpu's device; `ui_agent_audit.rs` audits commands and
   automation coverage; `viewer_geometry.rs` has an opt-in visual matrix
   (`CRAFT_UI_VISUAL_DIR`).
-- Web: `cargo xtask web --serve 8765`, then `node apps/effectcraft-web/tests/smoke.mjs`,
+- Web: `cargo xtask web --serve 8765`, then `node apps/artheffect-web/tests/smoke.mjs`,
   `workers.mjs`, `page.mjs`, `storage.mjs` (`docs/web.md:412-445`).
-- Performance: `effectcraft-cli bench --ops --json` (`apps/effectcraft-cli/src/main.rs:885-925`),
+- Performance: `artheffect-cli bench --ops --json` (`apps/artheffect-cli/src/main.rs:885-925`),
   `cargo xtask bench` (`xtask/src/bench.rs`), and the headless `ui_egui::bench::Driver`
   (`crates/ui-egui/src/bench.rs:13-108`).
 
-## 2. What actually changes in egui 0.37 that affects EffectCraft
+## 2. What actually changes in egui 0.37 that affects Artheffect
 
 This section is limited to changes visible in the pinned sources. It corrects two assumptions that
 must not enter the plan:
 
 - **`App::logic` / `App::ui` and `Context::run_ui` are not new in 0.37.** They already exist in
   0.36.2 (`egui-0.36.2/crates/eframe/src/epi.rs:167,182`; `egui-0.36.2/crates/egui/src/context.rs:794`),
-  and EffectCraft already uses them (`crates/ui-egui/src/lib.rs:1852-1935`, `apps/effectcraft/src/main.rs:426-456`,
-  `apps/effectcraft-web/src/app.rs:88-122`). The migration is **not** a wholesale update-to-ui rewrite.
+  and Artheffect already uses them (`crates/ui-egui/src/lib.rs:1852-1935`, `apps/artheffect/src/main.rs:426-456`,
+  `apps/artheffect-web/src/app.rs:88-122`). The migration is **not** a wholesale update-to-ui rewrite.
 - **`Context::run_logic` is not a substitute for a pass.** It does not interpret time or events;
   `run_logic` only refreshes viewport state (`egui-0.37.0/crates/egui/src/context.rs:1190-1218`).
   Calling it cannot initialise fonts or consume input.
 
 ### 2.1 Compile-visible API changes (the historical audit is a clue, not acceptance)
 
-The 2026-10-22 audit (`/home/codex/work/ssd2/task-evidence/egui037-audit-20261022/{fork,stock}/effectcraft.errors`)
-compiled only `effectcraft-ui-egui` (lib and lib test), against a historical fork revision and
+The 2026-10-22 audit (`/home/codex/work/ssd2/task-evidence/egui037-audit-20261022/{fork,stock}/artheffect.errors`)
+compiled only `artheffect-ui-egui` (lib and lib test), against a historical fork revision and
 machine-local path patches. It reported the same 15 errors in fork and stock mode, with 602
 (stock) / 603 (fork) warnings; the difference is warning counts only. Those errors are consistent with the upstream 0.37 sources read here:
 
@@ -248,17 +248,17 @@ There is **no** `PointerSource` in the target fork: `Event::PointerButton` keeps
 These are the app-specific risks, each with a source anchor and a planned assertion.
 
 1. **`default_fonts` is no longer a default feature of `egui`/`epaint`.** eframe still enables it by
-   default, but EffectCraft disables eframe defaults and re-enables only
+   default, but Artheffect disables eframe defaults and re-enables only
    `default_fonts`, `wgpu`, `accesskit`, `links`, `wayland`, `x11`
-   (`crates/ui-egui/Cargo.toml:25`, `apps/effectcraft/Cargo.toml:18`). The app relies on
+   (`crates/ui-egui/Cargo.toml:25`, `apps/artheffect/Cargo.toml:18`). The app relies on
    `FontDefinitions::default()` at `theme.rs:334`; the feature must stay explicitly enabled on the
-   `egui` dependency, not only through eframe, so `cargo check -p effectcraft-ui-egui` and test
+   `egui` dependency, not only through eframe, so `cargo check -p artheffect-ui-egui` and test
    builds are deterministic. (`#8583`; `egui-0.37.0/crates/egui/Cargo.toml:40-46`.)
 2. **The bundled emoji fonts are no longer in `FontDefinitions::default()`.** In 0.36.2 the default
    definitions include `NotoEmoji-Regular` and `emoji-icon-font` unconditionally
    (`egui-0.36.2/crates/epaint/src/text/fonts.rs:490-580`). In 0.37 they are behind
    `monochrome_emoji_fonts`, and the default only adds the small `egui-icons` font
-   (`egui-0.37.0/crates/epaint/src/text/font_definitions.rs:105-180`). EffectCraft's own chrome is
+   (`egui-0.37.0/crates/epaint/src/text/font_definitions.rs:105-180`). Artheffect's own chrome is
    affected. A read-only cmap audit of the fonts actually bundled by this app and by egui found:
    - `✔` U+2714 (menu check gutter, `menus.rs:2176`) is in **only** NotoEmoji and emoji-icon-font;
    - `▣` U+25A3 (Media Browser folder, `media_panels.rs:198`; Essential Graphics media row,
@@ -271,7 +271,7 @@ These are the app-specific risks, each with a source anchor and a planned assert
 3. **Clipboard support became an eframe feature.** 0.36.2's eframe always enabled
    `egui-winit/clipboard` (`egui-0.36.2/crates/eframe/Cargo.toml:152`). 0.37 gates it behind
    `clipboard` (`egui-0.37.0/crates/eframe/Cargo.toml:142-144`), which is in eframe's default set
-   but not enabled by EffectCraft's `default-features = false` manifests. Without it, cut/copy/paste
+   but not enabled by Artheffect's `default-features = false` manifests. Without it, cut/copy/paste
    to the OS clipboard silently degrade to an in-app simulated clipboard
    (`egui-winit-0.37.0/Cargo.toml:44-46`), breaking Edit ▸ Copy/Paste, text-field paste and
    `menus.rs:1867-1906` which maps clipboard events back to command keys.
@@ -298,18 +298,18 @@ These are the app-specific risks, each with a source anchor and a planned assert
    `tests/ui_presets_folder.rs:40` (`ja`). Fontconfig on this planning host lists no faces at all, so
    those tests would panic rather than draw tofu until a CJK face is installed or the opt-out is used.
 8. **`Ui::id` → `Ui::scope_id`, `UiBuilder::id` → `scope_id`, `Panel` constructors take
-   `impl AsIdSalt`.** EffectCraft does not use `SidePanel`/`TopBottomPanel`, and uses
+   `impl AsIdSalt`.** Artheffect does not use `SidePanel`/`TopBottomPanel`, and uses
    `CentralPanel::default()` only (`dock_ui.rs:475`, `prefs_live.rs:207`), so no panel-order
    rewrite is needed. The root `Ui` is already the app surface (`lib.rs:1905-1935`,
    `lib.rs:1614-1723`). Never call `Context::root_ui` from a panel or a test closure: it panics
    while the root Ui is borrowed (`context.rs:1005-1055`).
 9. **Style defaults changed** (roomier buttons, larger corner radii; `#8617`, `#8445`).
-   EffectCraft pins `item_spacing`, `button_padding`, `interact_size.y`, `menu_margin`, scroll style
+   Artheffect pins `item_spacing`, `button_padding`, `interact_size.y`, `menu_margin`, scroll style
    and all widget corner radii from tokens (`theme.rs:510-530`, `theme.rs:474-495`), so the visible
    impact should be small, but atom-based `Button`/`ComboBox` layout can still move geometry. This
    is a geometry/pixel test target, not an assumption.
 10. **Menus/popups and text editing changed** (`#7802`, `#7624`, `#8572`, `#8548`, `#8763`,
-    `#8628`). EffectCraft builds its own menu bar and keyboard navigation
+    `#8628`). Artheffect builds its own menu bar and keyboard navigation
     (`menus.rs:2025-2050`, `menu_keys.rs`), with `MenuConfig` style overrides. Regression tests must
     cover hover-switch, arrows, submenu opening, outside-click close, and a button acting on a
     focused `TextEdit`'s selection (the `#8763` case). Container tooltips now also show when their
@@ -344,9 +344,9 @@ These are the app-specific risks, each with a source anchor and a planned assert
 
 ## 3. Fork, winit and craft-libs integration decisions
 
-### 3.1 What EffectCraft actually needs from the suite fork
+### 3.1 What Artheffect actually needs from the suite fork
 
-EffectCraft has no `vendor/` directory and no local egui patch. Its only `[patch.crates-io]` entry is
+Artheffect has no `vendor/` directory and no local egui patch. Its only `[patch.crates-io]` entry is
 `hayro-syntax`, inherited from the craft-libs PDF stack (`Cargo.toml:213-214`); it is unrelated to
 egui and must stay.
 
@@ -359,20 +359,20 @@ CL-2F are approved as one immutable unit at P1; P4 adds extended native/language
 a second compatibility graph (§10). There is no stock or intermediate-fork production stage;
 stock 0.37.0 is a measurement control only.
 
-| Fork patch | EffectCraft use | Decision |
+| Fork patch | Artheffect use | Decision |
 | --- | --- | --- |
 | E1 `viewport_hooks` | not used (craft-tablet only) | keep in fork; no app change |
 | E2+E3 surface fit / wgpu error scopes | protects windows whose surface exceeds the adapter limit and reports configure/renderer failures; relevant to the app's "never crash" rule and its device-loss handling | **keep, benefit**; verify with a required-adapter `ui_gpu.rs` run and a device-loss test |
 | E4 Wayland clipboard/PRIMARY | the app edits text in project rows, timeline fields, expression fields, Script UI and settings; Hyprland serves one data device per client | **keep**; requires winit W15 plus the new **W15P** PRIMARY path (§5.5/§8.7) |
-| E5/E12/E13/E16 bidi and grapheme editing | UI labels and stock `TextEdit`s only; **text layers use `effectcraft-text`, not epaint** | **keep**; do not claim it fixes text layers |
+| E5/E12/E13/E16 bidi and grapheme editing | UI labels and stock `TextEdit`s only; **text layers use `artheffect-text`, not epaint** | **keep**; do not claim it fixes text layers |
 | E6 IME focus | stock `TextEdit`s | keep |
 | E7/E19 letter keys on non-Latin layouts | shortcuts (`menus::parse_shortcut`, `handle_shortcuts`); requires winit W25 | **keep**; manual platform test |
 | E8 `TextEdit` glyph clipping | stock fields (Thai/Vietnamese/Arabic marks) | keep |
-| E9 `Style::right_to_left` | app never sets it; its dock/layout is custom LTR | keep in fork; **do not enable** in EffectCraft (would mirror stock widgets inside an unmirrored custom layout) |
+| E9 `Style::right_to_left` | app never sets it; its dock/layout is custom LTR | keep in fork; **do not enable** in Artheffect (would mirror stock widgets inside an unmirrored custom layout) |
 | E10 web named keys / Latin codes | web keyboard behaviour | keep; no app change |
 | E11 vello_cpu multithreading | not used | keep in fork |
 | E14 `FontTweak::fallback_align` | the app installs system fallback faces (`theme.rs:388-430`) | keep; **optional follow-up** to set it for CJK/Indic fallbacks, with screenshot proof |
-| E15 `LineBreaker` | text layers use `effectcraft-text`; not adopted | keep in fork |
+| E15 `LineBreaker` | text layers use `artheffect-text`; not adopted | keep in fork |
 | E17/E18 `Context::set_language` / `Frame::set_ui_language` | screen-reader language and UI shaping language (the app has an interface language setting, `i18n::language`) | **adopt in the language stage** (fork-only; see §5.9) |
 | E20 widget text language | goes with E17 | adopt with E17 |
 | E21 `ImeEvent::DeleteSurroundingBytes` | the app has a **custom** viewer text editor that consumes IME events itself (`viewer_text.rs:397-508`) | **adopt in the IME stage**; stock 0.37 only has char-based `DeleteSurrounding` |
@@ -382,13 +382,13 @@ stock 0.37.0 is a measurement control only.
 | **P7c** (new prerequisite) | selected upstream fixes `#8763` (a button/menu command acting on a focused `TextEdit` selection) and `#8748` (hidden parent not updating deferred child viewports) | **in P8**; tested in §5.6/§5.8. Local workarounds are not the final unit. |
 
 Removal conditions are the fork's own (`PATCHES.md`): each patch goes when an egui/winit release in
-use contains it. EffectCraft must not add a second copy of any of these fixes locally.
+use contains it. Artheffect must not add a second copy of any of these fixes locally.
 
 ### 3.2 Winit patches that matter here
 
-| Patch | Why EffectCraft needs it | Gate |
+| Patch | Why Artheffect needs it | Gate |
 | --- | --- | --- |
-| W1 mixed-DPI rect | window placement and monitor hit tests (`apps/effectcraft/src/window.rs`) | Windows mixed-DPI manual test |
+| W1 mixed-DPI rect | window placement and monitor hit tests (`apps/artheffect/src/window.rs`) | Windows mixed-DPI manual test |
 | W2/W5/W20/W21 X11 IME | the app's editable fields and expression editor | X11 IME under Xvfb+WM (qualified parts only; §8.7) |
 | W3/W18/W19/W22/W24/W26/W27 IME | the custom text editor and stock fields; W26/W27 are required by E21 and by E21b/P7b | macOS press-and-hold/dictation, Wayland text-input-v3, Windows IME |
 | **W15P** (new) | winit-owned Wayland PRIMARY on the existing connection/event queue, per-seat manager/device/source/offer from SCTK 0.19.2; no second regular data device | wlroots/Hyprland, KWin and Mutter capability matrix (§8.7) |
@@ -417,25 +417,25 @@ focus/target/generation changes.
   relative to current `main`, missing `craft-platform` and reverting security/settings/docking/
   printer fixes) or audit merge `ec8840a` (stale lock, egui 0.36.2) as trees. The historical API
   port `8614e4a` and README `1764bca` on old `main` `4919088` are superseded by the merged base.
-- EffectCraft pins `craft-ui` to the **reviewed CL-1 merge/rebase SHA on craft-libs `main` after the
+- Artheffect pins `craft-ui` to the **reviewed CL-1 merge/rebase SHA on craft-libs `main` after the
   port**, not to the PR head. That revision must keep its egui dependency on registry `0.37` so
-  EffectCraft's `[patch.crates-io]` (not a git URL patch) can redirect it.
+  Artheffect's `[patch.crates-io]` (not a git URL patch) can redirect it.
 - **CL-2 capture completion helper.** The shared plan's selected design is a bounded, cancelable
   per-request completion slot with a weak callback reference, aggregate image-byte and request
-  limits, and an explicit viewport wake-up after the slot lock is released. EffectCraft is one of
+  limits, and an explicit viewport wake-up after the slot lock is released. Artheffect is one of
   the eleven existing craft-ui consumers, so it pins **CL-1 + CL-2F in the same atomic dependency
   stage** as P1; only the DesignCraft/GridCraft pilots use the reviewed provisional CL-2 revision,
   and their adapters are reviewed before CL-2F freezes the API. Any consumer with an incompatible
-  existing craft-ui bump must reconcile it in that same stage. EffectCraft does not pin the
+  existing craft-ui bump must reconcile it in that same stage. Artheffect does not pin the
   provisional revision. **No app-local result channel** and no generic UI compatibility layer.
-  EffectCraft keeps its own request ids, paths, crop, deadlines and reply JSON.
+  Artheffect keeps its own request ids, paths, crop, deadlines and reply JSON.
 - `craft-ui`'s production API used here (`docking::{Action, Zone, Placement, resolve_drop, zone_rect, drop_zone}`,
   `layout::{split_rect, SplitAxis, SplitSize, ResizeHandle, ResizeHandleStyle}`) is unchanged by
-  the port; the additive `printing::tick` is not used by EffectCraft.
+  the port; the additive `printing::tick` is not used by Artheffect.
 - PR 198 / the fork language work is adopted only where §3.1 says so. The app keeps its own
   catalogs (`i18n.rs`, `i18n/ui.rs`, `i18n/effects.rs`) and its own text engine; it does not adopt
   craft-text line breaking or a shared translation layer.
-- Blocking: CL-1 and CL-2F must land before the EffectCraft dependency-pin PR can be reviewed
+- Blocking: CL-1 and CL-2F must land before the Artheffect dependency-pin PR can be reviewed
   honestly. Until then, implementation may use a local pinned SHA only for development, never in a
   publication branch, and never a machine-local path patch.
 
@@ -443,7 +443,7 @@ focus/target/generation changes.
 
 ### 4.1 Current split (already on 0.36.2, must be preserved and completed)
 
-Today `EffectcraftApp::logic` does GPU-failure application, language/theme/font install, FPS, control
+Today `ArtheffectApp::logic` does GPU-failure application, language/theme/font install, FPS, control
 drain, screenshot scheduling/collection (`lib.rs:1870-1903`), while `ui` calls `frame()` which does
 **polls, playback, events, autosave, prefs, window title, close guard and the whole paint**
 (`lib.rs:1905-1935`, `lib.rs:1614-1723`).
@@ -482,7 +482,7 @@ Consequences, all pre-existing in 0.36.2:
   ticks, engine-event draining, the unsaved-close guard and the window-title update **do not run**
   on ordinary logic-only ticks.
 - A discarded pass re-runs the `run_ui` closure, so `logic` runs again for the same frame.
-  `Grid` requests a discard on first show (`egui-0.37.0/crates/egui/src/grid.rs:468`); EffectCraft
+  `Grid` requests a discard on first show (`egui-0.37.0/crates/egui/src/grid.rs:468`); Artheffect
   has 18 `Grid::new` sites across dialogs/settings/forms.
 - The control channel's `AfterInput` replies are completed in `logic` as soon as `synthetic` is
   empty, which is before the pass applies the last synthetic event (`lib.rs:1893-1901`,
@@ -494,7 +494,7 @@ Consequences, all pre-existing in 0.36.2:
 Introduce one explicit app tick and one draw pass; do not add a generic `Context` bridge:
 
 ```rust
-// EffectcraftApp
+// ArtheffectApp
 now: f64,          // monotonic app clock value for this tick, used for deadlines
 focused: bool,     // last known focus, refreshed from viewport info
 last_input_at: f64,
@@ -574,7 +574,7 @@ layers); panels receive the existing `&mut Ui`. `show_viewport_immediate` stays 
   ```
   `tick` stores `self.now = now` before using it. Tests inject `AppClock::manual()` and advance it;
   a regression must show that a stale `ctx.input(|i| i.time)` cannot satisfy a deadline. Native and
-  web use the same `web_time::Instant` source; `EffectcraftApp::now()` exposes the last value so
+  web use the same `web_time::Instant` source; `ArtheffectApp::now()` exposes the last value so
   `WebApp::logic` can pass it to `persist::snapshot` (§8.6).
 - Focus comes from the fresh viewport copy with a visible-pass fallback:
   ```rust
@@ -674,25 +674,25 @@ Notes:
   **not** propagate; the consumer patch above is mandatory.
 - Feature additions in the app manifests:
   - `crates/ui-egui/Cargo.toml:25`: `eframe` features += `clipboard`.
-  - `apps/effectcraft/Cargo.toml:18`: `eframe` features += `clipboard`.
-  - `apps/effectcraft-web/Cargo.toml:30`: keep `default_fonts`, `wgpu` (web has no OS clipboard
+  - `apps/artheffect/Cargo.toml:18`: `eframe` features += `clipboard`.
+  - `apps/artheffect-web/Cargo.toml:30`: keep `default_fonts`, `wgpu` (web has no OS clipboard
     feature; browser clipboard events are separate).
   - `egui_kittest` dev features: `eframe`, `wgpu`, plus `snapshot` only if §8.4's pixel goldens are
     adopted. `egui_kittest` depends on `egui` with `default-features = false`; only kittest's own
     `[dev-dependencies]` enable `default_fonts`/`monochrome_emoji_fonts`, and a dependency's
     dev-dependencies do **not** propagate. The workspace `egui` features above are therefore what
-    EffectCraft's library and integration-test builds receive; do not rely on kittest to enable
+    Artheffect's library and integration-test builds receive; do not rely on kittest to enable
     fonts. If a test root resolves `egui` independently, it must enable the font features itself
     or install controlled fonts, and the actual graph is checked per production/test root.
   - `monochrome_emoji_fonts` is enabled at the workspace `egui` dependency so `✔`/`▣` survive
-    (§2.3.2). It propagates into `effectcraft-web`; record the raw and compressed WASM size change
+    (§2.3.2). It propagates into `artheffect-web`; record the raw and compressed WASM size change
     and either accept it with a budget or introduce a native-only `ui-egui` emoji-fonts feature
     after measuring (§9).
   - `system_fonts` stays **off** initially: the app already installs language-driven system
     fallbacks (`theme.rs:388-430`) and scans fonts for its menus; enabling eframe's fontique
     provider would add startup cost (`#8512`) and make rendering machine-dependent. Revisit as a
     separate product change for colour emoji.
-- `winit` direct dependency in `apps/effectcraft/Cargo.toml:23` must match the patched fork (it
+- `winit` direct dependency in `apps/artheffect/Cargo.toml:23` must match the patched fork (it
   does: `0.30`).
 - Lock/duplicate checks after every pin change:
   ```sh
@@ -785,7 +785,7 @@ Naming work for kittest's accessibility check:
   (`widgets.rs:53-160`), the color field/slider (`color_picker.rs`), the error bar prev/next
   buttons (`expr_bar.rs:59-70`), and the floating-panel resize grip (`dock_ui.rs:367`). Do not
   blanket-wrap `ui.interact`: a node without a real name/role is worse than no node.
-  The helper stays private to `effectcraft-ui-egui`; there is one consumer (this app), so it is not
+  The helper stays private to `artheffect-ui-egui`; there is one consumer (this app), so it is not
   proposed for `craft-ui` and is not a generic compatibility layer.
 
 Accessibility assertions (§8.4) must include roles, `selected`, enabled state, names, and the
@@ -807,7 +807,7 @@ highest-value custom controls), not a claim of screen-reader parity.
 - `widgets.rs:329`: `TextEdit::vertical_align(Align::Center)` → `TextEdit::align(Align2::LEFT_CENTER)`
   (the old call only changed the vertical component; the horizontal default was LEFT).
 - Update the comment at `theme.rs:354-360` ("egui … has no bidirectional layout"): the suite fork
-  shapes RTL runs, but text layers still use `effectcraft-text` and are unaffected. Add a UI-label
+  shapes RTL runs, but text layers still use `artheffect-text` and are unaffected. Add a UI-label
   RTL test (Arabic/Hebrew `Label`/menu text has visual-right-to-left run order) and keep the
   text-layer RTL test in `crates/text/src/layout.rs:1419` as the text-engine contract.
 - Keep `system_fonts` off. If colour emoji is wanted later, it is a separate change with a startup
@@ -889,7 +889,7 @@ highest-value custom controls), not a claim of screen-reader parity.
   - **No new document-sized allocation.** Building the new bounded payload must not clone the full
     document; the baseline `TextEdit` already clones whole buffers for change detection/undo, and
     that pre-existing cost is measured separately.
-  - **EffectCraft custom adapter (viewer_text).** The producer at `viewer_text.rs:568` must supply
+  - **Artheffect custom adapter (viewer_text).** The producer at `viewer_text.rs:568` must supply
     the logical model text from the edited layer's `TextDoc` (committed text), not display-bidi
     text, with preedit excluded (`viewer-text-preedit` stays a display-only temp value), plus the
     editor's owner generation unconditionally. Convert `TextEdit.anchor/caret` (character
@@ -902,7 +902,7 @@ highest-value custom controls), not a claim of screen-reader parity.
     tested there. The payload is scoped to the viewport that owns the focused editor (floating
     panel windows and the main window cannot share state).
   - **Atomic compatibility.** `IMEOutput` loses `Copy` when the payload is owned. The P8 fork SHA,
-    all egui-family crates, the `craft-ui` revision and EffectCraft's single `IMEOutput` literal
+    all egui-family crates, the `craft-ui` revision and Artheffect's single `IMEOutput` literal
     (`viewer_text.rs:568`; there are no destructures in this repo) must change in one dependency
     unit. Do not land a mixed stock/fork lock, and do not claim a stock-0.37 app build after this
     stage: the literal would not compile against stock `IMEOutput` (§11.13).
@@ -916,7 +916,7 @@ highest-value custom controls), not a claim of screen-reader parity.
     conversion remains a separate W26 path; this does not claim new macOS surrounding-text APIs.
 - Clipboard: `eframe/clipboard` feature (§5.1). `ctx.copy_text`/`output.commands` paths at
   `lib.rs:1600-1612`, `lib.rs:1946-1953`, `viewer_text.rs:413-430`, `menus.rs:1867-1906` and the macOS
-  `Hooks::clipboard_text` (`lib.rs:159-160`, `apps/effectcraft/src/main.rs:326`) stay unchanged.
+  `Hooks::clipboard_text` (`lib.rs:159-160`, `apps/artheffect/src/main.rs:326`) stay unchanged.
 - **PRIMARY (E4 + W15P) is a native gate, not one manual row.** Upstream 0.37 fills PRIMARY from
   `Label`/`TextEdit` selections and pastes on middle click (`#8428`); the reviewed fork replaces
   the arboard fallback with a winit-owned PRIMARY path on the existing Wayland
@@ -1052,7 +1052,7 @@ struct PendingShot {
   `ui_gpu.rs` GPU-vs-CPU tolerance (at most 0.3% of pixels differ by more than 1/255, worst channel
   difference ≤4) stays.
 - **A skipped GPU test is not evidence.** `ui_gpu.rs` returns early when
-  `effectcraft_gpu::Gpu::headless()` finds no adapter (`tests/ui_gpu.rs:44-47`) or when egui-wgpu's
+  `artheffect_gpu::Gpu::headless()` finds no adapter (`tests/ui_gpu.rs:44-47`) or when egui-wgpu's
   GL device has WebGL2 limits (`tests/ui_gpu.rs:62-65`). For the GPU acceptance row run with a
   required adapter, assert `gpu_adapter().is_some()`, and record adapter/backend/driver and the
   exact test invocation. The planning host exposes an i915 render node (`/dev/dri/renderD128`) with
@@ -1060,7 +1060,7 @@ struct PendingShot {
 - Device loss must be handled from `tick` (see §4.2); the `ui()` early return currently means a
   device lost while hidden is not acted on (`lib.rs:1905-1910`). Add a logic-only test that a
   reported failure closes the window and keeps the auto-save.
-- 0.37 `Frame::set_wgpu_surface_config` is fixed (`#8442`); EffectCraft does not use it. Do not add it
+- 0.37 `Frame::set_wgpu_surface_config` is fixed (`#8442`); Artheffect does not use it. Do not add it
   as part of this migration.
 
 ### 5.9 Language and screen readers (fork-only stage)
@@ -1074,7 +1074,7 @@ When `craft-libs#198`'s fork APIs are accepted:
 - Assert `ctx.language()` follows the interface language, the AccessKit root node carries the
   language, and a `TextEdit`'s text is shaped with the UI language (CJK glyph choice where fonts
   are installed). Tests that need the fork API are marked fork-required in their module docs.
-- Keep the app LTR (`Style::right_to_left` unset). Text-layer RTL remains `effectcraft-text`'s
+- Keep the app LTR (`Style::right_to_left` unset). Text-layer RTL remains `artheffect-text`'s
   contract; UI-label bidi is epaint's.
 - The E17/E18 policy sub-stage is optional and separately revertable. The production app already
   requires the final fork and E21b from P1; a stock-0.37 control uses a separate minimal adapter
@@ -1085,8 +1085,8 @@ When `craft-libs#198`'s fork APIs are accepted:
 Intended graph (final reviewed storytold revisions; names shown for structure):
 
 ```text
-effectcraft / effectcraft-web / effectcraft-cli
-  -> effectcraft-ui-egui -> craft-ui (craft-libs rev with CL-1 + CL-2F)
+artheffect / artheffect-web / artheffect-cli
+  -> artheffect-ui-egui -> craft-ui (craft-libs rev with CL-1 + CL-2F)
                           -> egui 0.37.0 (git <final storytold egui P8 SHA, incl E21b/P7c>)
                              -> epaint, epaint_default_fonts, ecolor, emath (same git rev)
                              -> eframe, egui-wgpu, egui-winit (same git rev)
@@ -1095,9 +1095,9 @@ effectcraft / effectcraft-web / effectcraft-cli
   -> winit (direct, same git rev)
 ```
 
-- Every egui-family crate EffectCraft resolves must come from the same git revision. `cargo tree -d`
+- Every egui-family crate Artheffect resolves must come from the same git revision. `cargo tree -d`
   must show no second egui family, and `cargo tree -i winit@0.30.13` exactly one source.
-- Publication: EffectCraft is an application, so a git egui/winit dependency is acceptable in its
+- Publication: Artheffect is an application, so a git egui/winit dependency is acceptable in its
   lock, but no branch names, no `path` patches and no machine-local checkout may appear in a
   publication branch. The `aiongg` candidate SHAs are comparison inputs and must not appear in a
   publication lock. `craft-libs` consumers keep their own patches; the app's `[patch.crates-io]`
@@ -1119,7 +1119,7 @@ effectcraft / effectcraft-web / effectcraft-cli
 
 Nothing in the egui bump may change these:
 
-- Every gesture still routes through `effectcraft_engine::Session::execute` or `menus::invoke`
+- Every gesture still routes through `artheffect_engine::Session::execute` or `menus::invoke`
   (`lib.rs:1-6`, `control.rs:1-19`); UI-local state must not become the source of truth.
 - One gesture = one undo step: existing tests such as `ui_viewer.rs:2263` (fit/zoom),
   `ui_viewer.rs:2306` (rotate), `ui_project_delete.rs`, `ui_timeline_trim.rs` and `ui_keyframes.rs`
@@ -1147,7 +1147,7 @@ Nothing in the egui bump may change these:
 Every stage runs the repository gates (through the server job workflow, never directly from the
 planning task): `cargo fmt --check`, `cargo clippy --workspace --all-targets --release -- -D warnings`,
 `cargo test --workspace --release`, `cargo xtask layers`, `cargo xtask assets`, `cargo xtask wasm`,
-plus `node apps/effectcraft-web/tests/{workers,page,storage}.mjs` (no build needed).
+plus `node apps/artheffect-web/tests/{workers,page,storage}.mjs` (no build needed).
 On every dependency stage also run `cargo check --locked`, `cargo test --locked`,
 `cargo tree -d`, the family/winit inverse trees and the wasm-target `wasm-bindgen` tree on a clean
 checkout. `cargo xtask ci` is the final gate.
@@ -1267,7 +1267,7 @@ input → next `run_ui`, and it must not replay input events from `tick`. Use `A
 
 ### 8.5 Save/reopen and command/undo workflows
 
-- UI edit → save `.ecproj` → reopen in a fresh `EffectcraftApp` → project JSON equal and viewer
+- UI edit → save `.ecproj` → reopen in a fresh `ArtheffectApp` → project JSON equal and viewer
   pixels equal; undo/redo across the save still works.
 - Dock/floating/panel-window layout → save workspace → restart → restored; maximize/restore and
   split sizes unchanged.
@@ -1277,12 +1277,12 @@ input → next `run_ui`, and it must not replay input events from `tick`. Use `A
 ### 8.6 Web workflow
 
 - `cargo xtask wasm` (all L0–L4 + ui-egui + web) and `cargo xtask web --serve 8765`.
-- `node apps/effectcraft-web/tests/smoke.mjs --url http://127.0.0.1:8765/ --out <evidence>`:
+- `node apps/artheffect-web/tests/smoke.mjs --url http://127.0.0.1:8765/ --out <evidence>`:
   WebGPU/GPU-compositor path, viewer, `render.frame`, Render Queue downloads, background worker
   event-loop gaps (<400 ms), AudioContext, save/reopen, persistence across reload, offline service
   worker. Also `workers.mjs`, `page.mjs`, `storage.mjs`.
 - Browser screenshots come from CDP (`smoke.mjs:113`), independent of the egui screenshot API; add
-  a page-side check only for the in-app `window.effectcraft.request("ui.screenshot", …)` reply shape
+  a page-side check only for the in-app `window.artheffect.request("ui.screenshot", …)` reply shape
   when the tab is visible. A hidden web tab cannot paint (logic-only passes carry no clipped
   primitives), so `ui.screenshot` on web is a visible-tab feature; record it.
 - Web is a separate feature set: no OS clipboard/PRIMARY, no system fonts, embedded viewports.
@@ -1334,8 +1334,8 @@ Add instrumentation first (stage B0, no behaviour change): raw samples per opera
 the number of **final** paint passes and discarded passes (`Context::will_discard()` at the end of
 `draw`), texture-upload bytes per frame from `FullOutput.textures_delta`, logic-only tick time,
 startup-to-first-frame and font-install/load time, and an optional counting global allocator in
-`effectcraft-cli` for `bench --ops` (byte counts per operation). Record raw and compressed
-`effectcraft-web` `.wasm` sizes. `Measure` gains `samples`, `median`, `p95`, `p99`, `cpu_ms`;
+`artheffect-cli` for `bench --ops` (byte counts per operation). Record raw and compressed
+`artheffect-web` `.wasm` sizes. `Measure` gains `samples`, `median`, `p95`, `p99`, `cpu_ms`;
 existing names and JSON fields stay. Then run the **B0-instrumented** baseline: commit `9581b53c`
 + the instrumentation patch, with its patch SHA and the 0.36.2 lock recorded. The baseline identity
 is B0-instrumented `9581b53c`, not the bare commit. The same instrumentation is applied to the
@@ -1446,7 +1446,7 @@ git grep -n 'with_accessibility_check(false)' -- crates apps # must be empty
    `3832c47ef68a0e6214f2c1e85f3526b6adcb686e`; historical `8614e4a`/`1764bca` on old `main`
    `4919088` and the stale `b68de8c`/`ec8840a` trees must not be merged. The final immutable
    craft-ui revision must keep registry `egui 0.37` and include CL-1 plus CL-2F.
-3. **CL-2F.** EffectCraft requires the approved craft-ui slot helper at the CL-2F freeze in the
+3. **CL-2F.** Artheffect requires the approved craft-ui slot helper at the CL-2F freeze in the
    same atomic stage as P1; only the Design/Grid pilots use the provisional CL-2 revision. If
    CL-2F slips, P1 cannot claim screenshot completion done; no app-local channel or unbounded
    queue is an acceptable substitute.
@@ -1525,7 +1525,7 @@ git grep -n 'with_accessibility_check(false)' -- crates apps # must be empty
 
 The user clarified that reviewed plans remain local and implementation proceeds before publication. The earlier requirement to publish/land this plan first is superseded; pushes and PR publication still require explicit approval.
 
-Canonical `storytold/effectcraft` `main` now resolves to `f6ef1a790625657259f449f3f4f0773d7df449bb`. The owned checkout was fast-forwarded to this revision. Earlier baseline SHAs and line anchors above are retained as historical review evidence; use this new revision and its exact lockfile for current-main integration and paired measurements. The original refs remain reachable.
+Canonical `ArthaFreestyle/artheffect` `main` now resolves to `f6ef1a790625657259f449f3f4f0773d7df449bb`. The owned checkout was fast-forwarded to this revision. Earlier baseline SHAs and line anchors above are retained as historical review evidence; use this new revision and its exact lockfile for current-main integration and paired measurements. The original refs remain reachable.
 
 Preserve queue4096/click1–512/drag<=2048 validation and refusal-without-mutation test; these limits differ from FilmCraft. Preserve chrono feature split.
 
@@ -1560,11 +1560,11 @@ generates the lockfile). Local dependency redirects are the parent's (unpublishe
 
 **Lifecycle**
 
-- `EffectcraftApp::tick` (all eframe logic callbacks, including hidden logic-only ones): engine and
+- `ArtheffectApp::tick` (all eframe logic callbacks, including hidden logic-only ones): engine and
   background queues, script tasks, engine events, native command inbox, close guard, window title,
   project auto-save, workspace-layout auto-save, memory watch/home-on-open, playback + audio,
   control channel, screenshot completion/issuance, and `RequestPaintWhileHidden` when a UI pass is
-  needed. `EffectcraftApp::draw` (the root `Ui`): language/theme/font setup (the existing two-pass
+  needed. `ArtheffectApp::draw` (the root `Ui`): language/theme/font setup (the existing two-pass
   font warm-up), input-driven shortcuts, layout, panels, dialogs, dropped files, Video Preview,
   workspace-state observation, plus the pass geometry/epoch and the `AfterInput` acknowledgement on
   the final non-discarded pass.

@@ -3,13 +3,13 @@
 //! or `layer.cameraSettings` / `layer.lightSettings` with the dialog's values.
 
 use crate::i18n::tr;
-use effectcraft_engine::project::{AutoOrient, LayerSource, LightKind};
-use effectcraft_engine::render::three_d::camera::{PRESETS, angle_of_view, default_aperture, focal_for_zoom, zoom_for_focal};
+use artheffect_engine::project::{AutoOrient, LayerSource, LightKind};
+use artheffect_engine::render::three_d::camera::{PRESETS, angle_of_view, default_aperture, focal_for_zoom, zoom_for_focal};
 use egui::{Color32, vec2};
 use serde_json::{Value, json};
 
 use crate::theme::Tokens;
-use crate::{Dialog, EffectcraftApp};
+use crate::{ArtheffectApp, Dialog};
 
 #[derive(Clone, Debug, Default)]
 pub struct CameraDraft {
@@ -57,16 +57,16 @@ fn casts_shadows(kind: LightKind) -> bool {
     kind != LightKind::Ambient
 }
 
-fn comp_w(app: &EffectcraftApp) -> f64 {
+fn comp_w(app: &ArtheffectApp) -> f64 {
     app.session.active_comp().map(|c| c.width as f64).unwrap_or(1920.0)
 }
 
 /// Open Camera Settings: for `layer` (existing) or a new camera.
-pub fn open_camera(app: &mut EffectcraftApp, layer: Option<u64>) -> Result<(), String> {
+pub fn open_camera(app: &mut ArtheffectApp, layer: Option<u64>) -> Result<(), String> {
     let comp = app.session.active_comp().ok_or("no composition is open")?.clone();
     let w = comp.width as f64;
     let t = app.session.time();
-    let d = match layer.and_then(|id| comp.layer(effectcraft_engine::project::LayerId(id))) {
+    let d = match layer.and_then(|id| comp.layer(artheffect_engine::project::LayerId(id))) {
         Some(l) => {
             let f = |p: &str, d: f64| l.props.prop(p).map(|pr| pr.value_at(l.layer_time(t)).as_f64()).unwrap_or(d);
             let zoom = f("cameraOptions/zoom", 1000.0);
@@ -111,10 +111,10 @@ pub fn open_camera(app: &mut EffectcraftApp, layer: Option<u64>) -> Result<(), S
 }
 
 /// Open Light Settings: for `layer` (existing) or a new light.
-pub fn open_light(app: &mut EffectcraftApp, layer: Option<u64>) -> Result<(), String> {
+pub fn open_light(app: &mut ArtheffectApp, layer: Option<u64>) -> Result<(), String> {
     let comp = app.session.active_comp().ok_or("no composition is open")?.clone();
     let t = app.session.time();
-    let d = match layer.and_then(|id| comp.layer(effectcraft_engine::project::LayerId(id))) {
+    let d = match layer.and_then(|id| comp.layer(artheffect_engine::project::LayerId(id))) {
         Some(l) => {
             let LayerSource::Light { kind } = l.source else { return Err("not a light".into()) };
             let v = |p: &str| l.props.prop(&format!("lightOptions/{p}")).map(|pr| pr.value_at(l.layer_time(t)));
@@ -186,7 +186,7 @@ fn buttons(ui: &mut egui::Ui, t: &Tokens, ok: &mut bool, close: &mut bool, previ
     r
 }
 
-pub fn camera(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn camera(app: &mut ArtheffectApp, ctx: &egui::Context, t: &Tokens) {
     let w = comp_w(app);
     let mut d = app.dialog_state.camera.clone();
     let (mut ok, mut close) = (false, false);
@@ -299,7 +299,7 @@ fn camera_command(d: &CameraDraft) -> (&'static str, Value) {
     (id, p)
 }
 
-pub fn light(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn light(app: &mut ArtheffectApp, ctx: &egui::Context, t: &Tokens) {
     let mut d = app.dialog_state.light.clone();
     let (mut ok, mut close) = (false, false);
     let mut rects = (egui::Rect::NOTHING, egui::Rect::NOTHING, egui::Rect::NOTHING);
@@ -433,14 +433,14 @@ fn light_command(d: &LightDraft) -> (&'static str, Value) {
 
 /// Menu/shortcut routing: commands that open a 3D settings dialog when invoked without params.
 /// Returns true when a dialog was opened.
-pub fn route(app: &mut EffectcraftApp, id: &str, params: &Value) -> Result<bool, String> {
+pub fn route(app: &mut ArtheffectApp, id: &str, params: &Value) -> Result<bool, String> {
     if !params.as_object().is_none_or(|m| m.is_empty() || m.keys().all(|k| k == "layer")) {
         return Ok(false);
     }
     let selected = || -> Option<(u64, bool, bool)> {
         let c = app.session.active_comp()?;
         let id = params.get("layer").and_then(Value::as_u64).or_else(|| app.session.state.selected_layers.first().map(|l| l.0))?;
-        let l = c.layer(effectcraft_engine::project::LayerId(id))?;
+        let l = c.layer(artheffect_engine::project::LayerId(id))?;
         Some((id, l.is_camera(), l.is_light()))
     };
     match id {

@@ -7,7 +7,7 @@ use egui::{Align2, Rect, Sense, pos2, vec2};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-use crate::EffectcraftApp;
+use crate::ArtheffectApp;
 use crate::theme::Tokens;
 
 /// One line of console output.
@@ -60,7 +60,7 @@ impl ScriptConsole {
 }
 
 /// Run the console input.
-pub fn run(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub fn run(app: &mut ArtheffectApp, ctx: &egui::Context) {
     let code = app.ui.script_console.input.trim().to_string();
     if code.is_empty() {
         return;
@@ -77,7 +77,7 @@ pub fn run(app: &mut EffectcraftApp, ctx: &egui::Context) {
 /// The Script Console panel: the output log (newest lines at the bottom, coloured by kind), the
 /// multi-line script input and Run/Clear. Run — the button or ⌘/Ctrl+Enter while typing — hands the
 /// input to the script runner; Clear only empties the log. The input text and log are UI state.
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut ArtheffectApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let input_h = 86.0;
     let bar_h = 26.0;
