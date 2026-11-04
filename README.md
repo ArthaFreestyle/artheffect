@@ -1,5 +1,3 @@
-
-
 <p align="center">
   <img src="assets/app-icon/hicolor/256x256/apps/ai.storyteller.artheffect.png" width="128" height="128" alt="Artheffect icon: an engraved unicorn on a pink tile">
 </p>
@@ -15,6 +13,11 @@
   keyframes, 308 effects, layer styles, expressions, 3D cameras and lights, and a render queue, native on macOS,
   Windows and Linux, and in the browser. Young, moving fast, and already usable.
 </p>
+
+> [!NOTE]
+> **Artheffect is an independent fork of [EffectCraft](https://github.com/storytold/effectcraft)**,
+> taken on 4 November 2026 (upstream commit `58ca9c1c`) to go its own way. It is not affiliated with
+> or endorsed by the EffectCraft or ArtCraft teams. See [Fork](#fork) for what changed.
 
 <p align="center">
   <img alt="Status: young and moving fast" src="https://img.shields.io/badge/status-young%20and%20moving%20fast-e0368f?style=flat-square">
@@ -39,6 +42,7 @@
   <a href="#where-it-stands">Status</a> ·
   <a href="#how-its-made">How it's made</a> ·
   <a href="#downloads">Downloads</a> ·
+  <a href="#fork">Fork</a> ·
   <a href="#license-and-credits">License</a>
 </p>
 
@@ -167,25 +171,11 @@ See [docs/agents.md](docs/agents.md) and [docs/control-protocol.md](docs/control
 
 ## Get started
 
-Installers for each version are on the [Releases](https://github.com/ArthaFreestyle/artheffect/releases)
-page: a universal macOS app; Windows MSIs and portable zips for x64, x86 and ARM64; Linux
-AppImage, Flatpak, deb, rpm and tar.gz for x86_64 and aarch64, plus a riscv64 tar.gz; a FreeBSD x86_64 tarball; and the
-web build. [Downloads](#downloads) lists every file. The Windows ARM64 build runs natively on
-Windows on ARM, without x64 emulation. CI installs that MSI on Windows 11 ARM64 hardware, checks
-both programs are ARM64 and runs the command-line tool there, but it doesn't open the app's window
-or run the test suite natively on ARM64 yet, so please report anything that behaves differently.
+Artheffect has no published releases yet, so for now you build it from source. The first builds
+will appear on the [Releases](https://github.com/ArthaFreestyle/artheffect/releases) page;
+[Downloads](#downloads) lists the formats the packaging scripts produce.
 
-On Gentoo, the community [::snakebyte overlay](https://github.com/switch87/snakebyte-overlay) packages
-the Linux release as `media-video/artheffect-bin` (not maintained by the Artheffect team):
-
-```sh
-eselect repository add snakebyte git https://github.com/switch87/snakebyte-overlay.git
-emaint sync -r snakebyte
-echo 'media-video/artheffect-bin ~amd64' >> /etc/portage/package.accept_keywords/artheffect
-emerge --ask media-video/artheffect-bin
-```
-
-To build it yourself you need [Rust](https://rustup.rs/) 1.95 or newer.
+You need [Rust](https://rustup.rs/) 1.95 or newer (and `rustup target add wasm32-unknown-unknown` for the browser build).
 
 ```sh
 git clone https://github.com/ArthaFreestyle/artheffect
@@ -194,6 +184,9 @@ cargo run --release -p artheffect          # the app (add `-- --demo` to open th
 cargo run --release -p artheffect-cli -- render --out intro.mp4    # render the demo headless
 cargo xtask web --serve 8765                # the browser build on http://127.0.0.1:8765/ (docs/web.md)
 ```
+
+If the window crashes as it opens (some AMD and older Intel graphics drivers do with DirectX 12 or
+Vulkan), start it again: Artheffect notices and switches Window Graphics to OpenGL by itself.
 
 New to it? [docs/footage.md](docs/footage.md) covers importing footage and image sequences and
 Interpret Footage.
@@ -204,8 +197,8 @@ tests, layering, asset attribution and the WebAssembly build). See [CONTRIBUTING
 
 ## Where it stands
 
-Artheffect is young: its first commit was on 1 October 2026. A comprehensive feature set
-exists, including 308 effects, but breadth is not the same as full maturity across every edge
+Artheffect is young: EffectCraft's first commit was on 1 October 2026, and Artheffect was forked
+from it on 4 November 2026. A comprehensive feature set exists, including 308 effects, but breadth is not the same as full maturity across every edge
 case. Today it's a good place to try things and to tell us what breaks. It isn't yet recommended
 for production client work. In particular:
 
@@ -213,8 +206,8 @@ for production client work. In particular:
   project formats and After Effects SDK plug-ins are not supported.
 - **Fidelity is still being refined.** Automated rendering tests currently focus on small
   compositions, so please report visual discrepancies or unexpected behaviour.
-- **macOS is the most tested platform.** Linux and Windows users have hit basic interaction
-  bugs, which we're fixing first.
+- **Platforms.** Upstream EffectCraft was tested most on macOS; Linux and Windows users there hit
+  basic interaction bugs. Artheffect is developed on Windows.
 - **The trained models are new.** Roto Brush can use MobileSAM (an optional 40 MB download in
   Settings ▸ Roto Brush) and face tracking can use Google's MediaPipe Face Landmarker (an optional
   3.8 MB download in Settings ▸ Face Tracking). Both are actively undergoing evaluation and tuning.
@@ -240,7 +233,7 @@ send us right now.
 
 ## Downloads
 
-On GitHub, the [latest release](https://github.com/ArthaFreestyle/artheffect/releases/latest) has every build listed below, and [all releases](https://github.com/ArthaFreestyle/artheffect/releases) has earlier versions and their notes. `<ver>` in the file names is the version number, and `SHA256SUMS.txt` lists a checksum for every file.
+No releases are published yet. These are the files the packaging scripts in [`packaging/`](packaging/) build; once releases start they will be on the [Releases](https://github.com/ArthaFreestyle/artheffect/releases) page. `<ver>` in the file names is the version number, and `SHA256SUMS.txt` lists a checksum for every file.
 
 ### Windows
 
@@ -250,7 +243,7 @@ On GitHub, the [latest release](https://github.com/ArthaFreestyle/artheffect/rel
 | arm64 (Snapdragon and other ARM PCs) | `artheffect-<ver>-windows-arm64.msi` | `artheffect-<ver>-windows-arm64-portable.zip` |
 | x86 (32-bit) | `artheffect-<ver>-windows-x86.msi` | `artheffect-<ver>-windows-x86-portable.zip` |
 
-Installers and executables are code-signed. The installer asks who to install Artheffect for and where. By default it installs for your
+The installer asks who to install Artheffect for and where. By default it installs for your
 account only, into `%LOCALAPPDATA%\Programs\Artheffect`, without an administrator prompt;
 "Everyone on this computer" installs into `C:\Program Files\Artheffect` (`Program Files (x86)` for the 32-bit build). Later versions
 install into the same folder. To install silently
@@ -262,8 +255,8 @@ add `ALLUSERS=1`, from an elevated terminal or deployment tool, for an all-users
 
 | Build | File | Notes |
 |---|---|---|
-| App, universal (Apple silicon + Intel) | `artheffect-<ver>-macos-universal.dmg` | Signed and notarized |
-| Command-line tool, universal | `artheffect-cli-<ver>-macos-universal.zip` | Signed and notarized |
+| App, universal (Apple silicon + Intel) | `artheffect-<ver>-macos-universal.dmg` | |
+| Command-line tool, universal | `artheffect-cli-<ver>-macos-universal.zip` | |
 
 ### Linux
 
@@ -303,6 +296,27 @@ File ▸ Import fallback instead.
 |---|---|---|
 | Static site | `artheffect-web-<ver>.zip` | Runs in a modern browser; host it on any static server |
 
+## Fork
+
+Artheffect started as a copy of EffectCraft at upstream commit `58ca9c1c`. What changed:
+
+- **The name.** Every crate, binary, path and setting is called Artheffect (`artheffect`,
+  `artheffect-cli`, `ARTHEFFECT_*`). The first launch copies an existing EffectCraft settings
+  folder, so settings and shortcuts carry over.
+- **Old files still open.** Animation presets, templates and XML projects written by EffectCraft
+  load as before; `.ecproj` projects are unchanged.
+- **Its own identity.** No ArtCraft logos, Discord or getartcraft.com links. The Windows installer
+  has its own upgrade code and folder (`Program Files\Artheffect`), so it installs beside
+  EffectCraft instead of replacing it, and the updater only looks at this repository's releases.
+
+To pull fixes from upstream:
+
+```sh
+git remote add upstream https://github.com/storytold/effectcraft.git   # once
+git fetch upstream
+git merge upstream/main    # renamed paths and names conflict: resolve them on the Artheffect side
+```
+
 ## License and credits
 
 Artheffect is dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option.
@@ -318,4 +332,4 @@ none of their logos.
 
 ## Star history
 
-[![Star History Chart](https://api.star-history.com/svg?repos=ArthaFreestyle/artheffect&type=Date&legend=top-left)](https://www.star-history.com/?repos=storytold%2Fartheffect&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=ArthaFreestyle/artheffect&type=Date&legend=top-left)](https://www.star-history.com/#ArthaFreestyle/artheffect&Date)
